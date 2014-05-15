@@ -242,7 +242,7 @@ public class LaunchUtil {
 		if (SystemTray.isSupported()) {
 			
 			SystemTray tray = SystemTray.getSystemTray();
-			Image image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
+			Image image = null;
 			if(iconImage != null && iconImage.length() != 0) {
 				iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
 				if(iconImage.contains("!")) {
@@ -260,16 +260,16 @@ public class LaunchUtil {
 				} else {
 					URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
 					if(imageURL == null) {
-						imageURL = LaunchUtil.class.getResource(iconImage);
+						imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
 					}
 					if(imageURL != null) {
 						image = Toolkit.getDefaultToolkit().getImage(imageURL);
 					} 				
 				}
-				// if bad image, use default
-				if(image.getHeight(null) == -1) {
-					image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
-				}	
+			}
+			// if bad image, use default
+			if(image == null || image.getHeight(null) == -1) {
+				image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
 			}
 			MouseListener mouseListener = new MouseListener() {
 				public void mouseClicked(MouseEvent e) {}
@@ -291,7 +291,6 @@ public class LaunchUtil {
 						System.exit(0);
 					} catch (Exception e1) { 
 						trayIcon.displayMessage("Error", e1.getMessage(), TrayIcon.MessageType.INFO);
-						e1.printStackTrace(); 
 					}
 				}
 			};

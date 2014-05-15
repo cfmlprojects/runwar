@@ -13,6 +13,10 @@ public class BrowserOpener {
 
 	public static void openURL(String url) {
 		String osName = System.getProperty("os.name");
+		if(url == null) {
+			System.out.println("ERROR: No URL specified to open the browser to!");
+			return;
+		}
 		try {
 			System.out.println(url);
 			if (osName.startsWith("Mac OS")) {

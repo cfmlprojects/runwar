@@ -804,6 +804,9 @@ public class Start {
 	class OpenBrowserTask extends TimerTask {
 		public void run() {
 			System.out.println("Waiting upto 35 seconds for "+host+":"+portNumber+"...");
+			if(openbrowserURL == null || openbrowserURL.length() == 0) {
+				openbrowserURL = "http://" + host + ":" + portNumber;
+			}
 			try {
 				if (serverCameUp(35000, 3000, InetAddress.getByName(host), portNumber)) {
 					if(!openbrowserURL.startsWith("http")) {
@@ -816,7 +819,7 @@ public class Start {
 					System.out.println("could not open browser to..." + openbrowserURL + "... timeout...");					
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.error(e.getMessage());
 			}
 			return;
 		}

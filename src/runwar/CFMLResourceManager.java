@@ -82,9 +82,11 @@ public class CFMLResourceManager extends FileResourceManager {
 			//System.out.println("nada:"+ contextPath);
 			return super.getResource(contextPath);
 		} catch (MalformedURLException e) {
-			e.printStackTrace();
+			log.error(e.getMessage());
+			//e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error(e.getMessage());
+			//e.printStackTrace();
 		}
 		return null;
 	}
