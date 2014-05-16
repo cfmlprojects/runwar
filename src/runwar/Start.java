@@ -155,8 +155,6 @@ public class Start {
 	    		log.debug(arg.getValue());
 	    	}
 	    }
-	    String userHome = System.getProperty("user.home");
-		String currentDir = System.getProperty("user.dir");
 
 	    if(logDir != null) {
 			File logDirectory = new File(logDir);
@@ -270,6 +268,7 @@ public class Start {
 			} catch (java.lang.ClassNotFoundException e) {
 				restServlet = _classLoader.loadClass("railo.loader.servlet.RestServlet");
 			}
+			log.debug("loaded servlet classes");
 			servletBuilder
             	.addWelcomePages(new String[] {"index.cfm","index.cfml","index.html","index.htm"})
             	.addServlets(
@@ -290,7 +289,7 @@ public class Start {
 //			servletBuilder.setResourceManager(new CFMLResourceManager(new File(homeDir,"server/"), 100, cfmlDirs));
 			File internalRailoRoot = new File(webinfDir);
 			internalRailoRoot.mkdirs();
-			servletBuilder.setResourceManager(new CFMLResourceManager(new File(currentDir), 100, cfmlDirs, internalRailoRoot));
+			servletBuilder.setResourceManager(new CFMLResourceManager(warFile, 100, cfmlDirs, internalRailoRoot));
 		} else if(webinf.exists()) {
 			if(_classLoader == null) {
 				throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());				
@@ -442,7 +441,7 @@ public class Start {
 	}	
 	
 	@SuppressWarnings("static-access")
-	private static CommandLine parseArguments(String[] args) throws RuntimeException {
+	private static CommandLine parseArguments(String[] args) {
 		parser = new PosixParser();
 		options.addOption( OptionBuilder
                 .withDescription( "path to war" )
@@ -568,7 +567,7 @@ public class Start {
 
 		options.addOption( OptionBuilder
 				.withLongOpt( "iconpath" )
-				.withDescription( "icon path for OS X" )
+				.withDescription( "tray icon and OS X dock icon png image" )
 				.hasArg().withArgName("path")
 				.create("icon") );
 		
@@ -578,7 +577,7 @@ public class Start {
 			CommandLine line = parser.parse( options, args );
 		    // parse the command line arguments
 		    if (line.hasOption("help")) {
-		    	printUsage("Options");
+		    	printUsage("Options",0);
 		    }
 		    if (line.hasOption("background")) {
 		    	background = Boolean.valueOf(line.getOptionValue("background"));
@@ -586,14 +585,14 @@ public class Start {
 		    if (line.hasOption("libs")) {
                 File lib = new File(line.getOptionValue("libs"));
                 if (!lib.exists() || !lib.isDirectory())
-                	printUsage("No such lib directory "+lib);
+                	printUsage("No such lib directory "+lib,1);
                 libDirs = line.getOptionValue("libs");
             }
 
 		    if (line.hasOption("jar")) {
 		    	 File jar = new File(line.getOptionValue("jar"));
 	                if (!jar.exists() || jar.isDirectory())
-	                	printUsage("No such jar "+jar);
+	                	printUsage("No such jar "+jar,1);
 	                jarURL = jar.toURI().toURL();
 	        }
 		    
@@ -612,7 +611,7 @@ public class Start {
 		    		throw new RuntimeException("Could not find war! " + warPath);
 		    	}
 		    } else if (!line.hasOption("stop")) {
-		    	printUsage("Must specify -war path/to/war, or -stop [-stop-socket]");
+		    	printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
 		    } 
 		    if (line.hasOption("stop")) {
 		    	if(line.getOptionValue("stop")!=null) {
@@ -689,12 +688,12 @@ public class Start {
 		    return line;
 		}
 		catch( Exception exp ) {
-	    	printUsage(exp.getMessage());
-			throw new RuntimeException(exp.getMessage());
+	    	printUsage(exp.getMessage(),1);
 		}
+		return null;
 	}
 
-	private static void printUsage(String message) {
+	private static void printUsage(String message, int exitCode) {
 	    HelpFormatter formatter = new HelpFormatter();
         formatter.setOptionComparator(new Comparator<Option>() {
             public int compare(Option o1, Option o2) {
@@ -716,6 +715,7 @@ public class Start {
 	    formatter.setLongOptPrefix("--");
 	    //formatter.printHelp( SYNTAX, options,false);
 	    formatter.printHelp(80, SYNTAX, message + '\n' + HEADER, options, FOOTER, false);
+	    System.exit(exitCode);
 	}
 
 	private static class MonitorThread extends Thread {

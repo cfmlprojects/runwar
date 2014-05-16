@@ -51,7 +51,6 @@ public class LaunchUtil {
 
 	private static Logger log = Logger.getLogger("RunwarLogger");
 	private static boolean relaunching;
-	private static TrayIcon trayIcon;
 	public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] {
 			"cfml.cli.home",
 			"railo.server.config.dir",
@@ -90,11 +89,8 @@ public class LaunchUtil {
 		String line;
 		int exit = -1;
 		long start = System.currentTimeMillis();
-		System.out.print("Starting in background");
+		System.out.print("Starting in background - ");
 		while ((System.currentTimeMillis() - start) < timeout) {
-			long time = System.currentTimeMillis();
-			if(Math.abs((time-start)/10) % 300 < 10)
-				System.out.print("."); // print dot ~every 3 secs
 			if (br.ready() && (line = br.readLine()) != null) {
 				// Outputs your process execution
 				try {
@@ -104,6 +100,7 @@ public class LaunchUtil {
 						while((line = br.readLine())!= null) {
 							log.debug(line);
 						}
+						System.exit(0);
 					} else if(exit==1) {
 						System.out.println();
 						printExceptionLine(line);
@@ -126,15 +123,15 @@ public class LaunchUtil {
 			System.err.println("ERROR: Startup exceeded timeout of " + timeout / 1000 + " seconds - aborting!");
 			System.exit(1);
 		}
-		System.out.println("done.");
+		System.out.println("Server is up - ");
 		System.exit(0);
 	}
 
 	private static boolean processOutout(String line, Process process) {
-		log.debug(line);
+		log.info("processoutput: " + line);
 		if(line.indexOf("Server is up - ") != -1) {
 			// start up was successful, quit out
-			System.out.println("done.");
+			System.out.println(line);
 			System.exit(0);
 		} else if(line.indexOf("Exception in thread \"main\" java.lang.RuntimeException") != -1) {
 			return true;
@@ -241,10 +238,10 @@ public class LaunchUtil {
 		
 		if (SystemTray.isSupported()) {
 			
-			SystemTray tray = SystemTray.getSystemTray();
 			Image image = null;
 			if(iconImage != null && iconImage.length() != 0) {
 				iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
+				log.debug("trying to load icon: "+iconImage);
 				if(iconImage.contains("!")) {
 			        String[] zip = iconImage.split("!");
 				    try {
@@ -253,22 +250,32 @@ public class LaunchUtil {
 				    	InputStream entryStream = zipFile.getInputStream(zipEntry);
 						image = ImageIO.read(entryStream);
 						zipFile.close();
+						log.debug("loaded image from archive: " + zip[0] + zip[1]);
 					} catch (IOException e2) {
-						image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
 						log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() +")");
 					}
+				} else if(new File(iconImage).exists()) {
+					try {
+						image = ImageIO.read(new File(iconImage));
+					} catch (IOException e1) { 
+						log.debug("Could not get file resource: " + iconImage + "(" + e1.getMessage() +")");
+					}
 				} else {
+					log.debug("trying parent loader for image: " + iconImage);
 					URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
 					if(imageURL == null) {
+						log.debug("trying loader for image: " + iconImage);
 						imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
 					}
 					if(imageURL != null) {
+						log.debug("Trying getImage for: " + imageURL);
 						image = Toolkit.getDefaultToolkit().getImage(imageURL);
 					} 				
 				}
 			}
 			// if bad image, use default
 			if(image == null || image.getHeight(null) == -1) {
+				log.debug("Bad image, using default.");
 				image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
 			}
 			MouseListener mouseListener = new MouseListener() {
@@ -278,38 +285,26 @@ public class LaunchUtil {
 				public void mousePressed(MouseEvent e) {}
 				public void mouseReleased(MouseEvent e) {}
 			};
-			ActionListener exitListener = new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					try {
-			        	Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopSocket);
-				        OutputStream out = s.getOutputStream();
-			        	out.write(("\r\n").getBytes());
-			        	out.flush();
-			        	s.close();
-			        	out.close();
-						System.out.println("Exiting...");
-						System.exit(0);
-					} catch (Exception e1) { 
-						trayIcon.displayMessage("Error", e1.getMessage(), TrayIcon.MessageType.INFO);
-					}
-				}
-			};
 			final String railoAdminURL = "http://"+host+":"+portNumber + "/railo-context/admin/server.cfm";
+
+			final TrayIcon trayIcon = new TrayIcon(image, processName + " server on " + host + ":" + portNumber + " PID:" + PID);
+
 			PopupMenu popup = new PopupMenu();
 			MenuItem item = new MenuItem("Stop Server (" + processName + ")");
-			item.addActionListener(exitListener);
+			item.addActionListener(new ExitActionListener(trayIcon,host,stopSocket));
 			popup.add(item);
 			item = new MenuItem("Open Browser");
-			item.addActionListener(new OpenBrowserActionListener("http://"+host+":"+portNumber + "/"));
+			item.addActionListener(new OpenBrowserActionListener(trayIcon,"http://"+host+":"+portNumber + "/"));
 			popup.add(item);
 			item = new MenuItem("Open Admin");
-			item.addActionListener(new OpenBrowserActionListener(railoAdminURL));
+			item.addActionListener(new OpenBrowserActionListener(trayIcon,railoAdminURL));
 			popup.add(item);
-			
-			trayIcon = new TrayIcon(image, processName + " server on " + host + ":" + portNumber + " PID:" + PID, popup);
+
+			trayIcon.setPopupMenu(popup);
 			trayIcon.setImageAutoSize(true);
 			trayIcon.addMouseListener(mouseListener);
 			
+			final SystemTray tray = SystemTray.getSystemTray();
 			try {
 				tray.add(trayIcon);
 			} catch (AWTException e) {
@@ -323,16 +318,51 @@ public class LaunchUtil {
 		}
 	}	
 	private static class OpenBrowserActionListener implements ActionListener {
+		private TrayIcon trayIcon;
 		private String url;
 
-		public OpenBrowserActionListener(String url) {
+		public OpenBrowserActionListener(TrayIcon trayIcon, String url) {
 			this.url = url;
+			this.trayIcon = trayIcon;
 		}
 		
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			trayIcon.displayMessage("Browser", "Opening browser", TrayIcon.MessageType.INFO);
 			BrowserOpener.openURL(url);
+		}
+	}
+
+	private static class ExitActionListener implements ActionListener {
+		private TrayIcon trayIcon;
+		private int stopsocket;
+		private String host;
+		
+		public ExitActionListener(TrayIcon trayIcon, String host, int stopsocket) {
+			this.trayIcon = trayIcon;
+			this.stopsocket = stopsocket;
+			this.host = host;
+		}
+		
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			try {
+	        	Socket s = new Socket(InetAddress.getByName(host), stopsocket);
+		        OutputStream out = s.getOutputStream();
+	        	out.write(("\r\n").getBytes());
+	        	out.flush();
+	        	s.close();
+	        	out.close();
+				System.out.println("Exiting...");
+				System.exit(0);
+			} catch (Exception e1) { 
+				trayIcon.displayMessage("Error", e1.getMessage(), TrayIcon.MessageType.INFO);
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e2) {
+				}
+				System.exit(1);
+			}
 		}
 	}
 }
