@@ -50,6 +50,9 @@
 						<fileset dir="${cfdistro.lib.dir}">
 							<include name="*.jar" />
 						</fileset>
+                                                <fileset dir="${runwar.lib.dir}">
+                                                        <include name="*.jar" />
+                                                </fileset>
 						<!--  only needed for fancy file servlets
 						<fileset dir="${war.target.dir}/WEB-INF/cfusion/lib">
 							<include name="*.jar" />
@@ -62,6 +65,9 @@
 						<fileset dir="${cfdistro.lib.dir}">
 							<include name="*.jar" />
 						</fileset>
+                                                <fileset dir="${runwar.lib.dir}">
+                                                        <include name="*.jar" />
+                                                </fileset>
 						<!--  only needed for fancy file servlets
 						<fileset dir="${war.target.dir}/WEB-INF/lib">
 							<include name="*.jar" />
