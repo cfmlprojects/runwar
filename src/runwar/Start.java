@@ -231,8 +231,9 @@ public class Start {
 		}
 
 		DeploymentInfo servletBuilder = deployment()
-                .setContextPath(contextPath)
+                .setContextPath( contextPath.equals("/") ? "" : contextPath )
                 .setDeploymentName(warPath);
+
 		if(!warFile.exists()) {
 			throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
 		}
