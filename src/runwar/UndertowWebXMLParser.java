@@ -29,19 +29,21 @@ public class UndertowWebXMLParser {
 
 	/**
 	 * Parses the web.xml and configures the context.
-	 * 
+	 *
 	 * @param webxml
 	 * @param info
 	 */
 	@SuppressWarnings("unchecked")
 	public static void parseWebXml(File webxml, DeploymentInfo info) {
 		if (webxml.exists() && webxml.canRead()) {
+
 			try {
 				DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 				DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 				Document doc = docBuilder.parse(webxml);
 				// normalize text representation
 				doc.getDocumentElement().normalize();
+
 				log.tracef("Root element of the doc is %s", doc.getDocumentElement().getNodeName());
 				// to hold our servlets
 				Map<String, ServletInfo> servletMap = new HashMap<String, ServletInfo>();
@@ -51,6 +53,7 @@ public class UndertowWebXMLParser {
 				// application
 				NodeList listOfElements = doc.getElementsByTagName("context-param");
 				int totalElements = listOfElements.getLength();
+
 				log.tracef("Total no of context-params: %s", totalElements);
 				for (int s = 0; s < totalElements; s++) {
 					Node fstNode = listOfElements.item(s);
@@ -112,9 +115,9 @@ public class UndertowWebXMLParser {
 						// do init-param - available in the context of a servlet
 						// or filter in the web application
 						listOfElements = fstElmnt.getElementsByTagName("init-param");
-						totalElements = listOfElements.getLength();
-						log.tracef("Total no of init-params: %s", totalElements);
-						for (int i = 0; i < totalElements; i++) {
+						int totalInitParams = listOfElements.getLength();
+						log.tracef("Total no of init-params: %s", totalInitParams);
+						for (int i = 0; i < totalInitParams; i++) {
 							Node inNode = listOfElements.item(i);
 							if (inNode.getNodeType() == Node.ELEMENT_NODE) {
 								Element inElmnt = (Element) inNode;
@@ -134,7 +137,7 @@ public class UndertowWebXMLParser {
 						}
 						// do async-supported
 						NodeList ldElmntLst = fstElmnt.getElementsByTagName("async-supported");
-						if (ldElmntLst != null) {
+						if (ldElmntLst != null && ldElmntLst.getLength()>0) {
 							Element ldElmnt = (Element) ldElmntLst.item(0);
 							NodeList ldNm = ldElmnt.getChildNodes();
 							String pAsync = (ldNm.item(0)).getNodeValue().trim();
@@ -208,7 +211,7 @@ public class UndertowWebXMLParser {
 								NodeList ldNm = ldElmnt.getChildNodes();
 								String pLoad = (ldNm.item(0)).getNodeValue().trim();
 								log.tracef("Load on startup: %s", pLoad);
-								servlet.setLoadOnStartup(Integer.valueOf(pLoad));								
+								servlet.setLoadOnStartup(Integer.valueOf(pLoad));
 							}
 						}
 						// do init-param - available in the context of a servlet
@@ -263,7 +266,7 @@ public class UndertowWebXMLParser {
 									String pValue = (lstNm.item(0)).getNodeValue().trim();
 									log.tracef("Param value: %s", pValue);
 									servlet.addMapping(pValue);
-									
+
 								}
 							} else {
 								log.warnf("No servlet found for %s", pName);
