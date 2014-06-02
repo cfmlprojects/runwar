@@ -19,6 +19,8 @@ import org.jboss.logging.Logger;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
+import javax.servlet.DispatcherType;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -147,6 +149,8 @@ public class UndertowWebXMLParser {
 						// add to map
 						filterMap.put(pName, filter);
 					}
+					// add filters
+					info.addFilters(filterMap.values());
 				}
 				// do filter mappings
 				if (!filterMap.isEmpty()) {
@@ -170,17 +174,24 @@ public class UndertowWebXMLParser {
 								Element lstNmElmnt = (Element) lstNmElmntLst.item(0);
 								NodeList lstNm = lstNmElmnt.getChildNodes();
 								String pValue = (lstNm.item(0)).getNodeValue().trim();
-								log.tracef("Param value: %s", pValue);
-								// TODO email list and find out why this doesnt
-								// match servlet style
-								// filter.addMapping(pValue);
+								NodeList dstNmElmntLst = fstElmnt.getElementsByTagName("dispatcher");
+
+								if ( dstNmElmntLst == null || dstNmElmntLst.getLength() == 0 ){
+									info.addFilterUrlMapping( pName, pValue, DispatcherType.valueOf( "REQUEST") );
+								} else {
+									int totalDispatchers = dstNmElmntLst.getLength();
+									for(int i = 0; i < totalDispatchers; i++){
+										Element dstNmElmnt = (Element) dstNmElmntLst.item(i);
+										NodeList dstNm = dstNmElmnt.getChildNodes();
+										String dValue = (dstNm.item(0)).getNodeValue().trim();
+										info.addFilterUrlMapping( pName, pValue, DispatcherType.valueOf( dValue ) );
+									}
+								}							
 							} else {
 								log.warnf("No servlet found for %s", pName);
 							}
 						}
 					}
-					// add filters
-					info.addFilters(filterMap.values());
 				}
 				// do servlet
 				NodeList listOfServlets = doc.getElementsByTagName("servlet");
@@ -285,12 +296,17 @@ public class UndertowWebXMLParser {
 					if (fstNode.getNodeType() == Node.ELEMENT_NODE) {
 						Element fstElmnt = (Element) fstNode;
 						NodeList fstNmElmntLst = fstElmnt.getElementsByTagName("welcome-file");
-						Element fstNmElmnt = (Element) fstNmElmntLst.item(0);
-						NodeList fstNm = fstNmElmnt.getChildNodes();
-						String pName = (fstNm.item(0)).getNodeValue().trim();
-						log.tracef("Param name: %s", pName);
-						// add welcome page
-						info.addWelcomePage(pName);
+						int totalWelcomeFiles = fstNmElmntLst.getLength();
+
+						for(int i=0; i < totalWelcomeFiles; i++){
+							Element fstNmElmnt = (Element) fstNmElmntLst.item(i);
+							NodeList fstNm = fstNmElmnt.getChildNodes();
+							String pName = (fstNm.item(0)).getNodeValue().trim();
+							log.tracef("Param name: %s", pName);
+							System.out.println( "Adding welcome page: " + pName );
+							// add welcome page
+							info.addWelcomePage(pName);
+						}
 					}
 				}
 				// do display name
