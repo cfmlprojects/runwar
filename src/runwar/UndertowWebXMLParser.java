@@ -19,6 +19,8 @@ import org.jboss.logging.Logger;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
+import javax.servlet.DispatcherType;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -29,19 +31,21 @@ public class UndertowWebXMLParser {
 
 	/**
 	 * Parses the web.xml and configures the context.
-	 * 
+	 *
 	 * @param webxml
 	 * @param info
 	 */
 	@SuppressWarnings("unchecked")
 	public static void parseWebXml(File webxml, DeploymentInfo info) {
 		if (webxml.exists() && webxml.canRead()) {
+
 			try {
 				DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 				DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 				Document doc = docBuilder.parse(webxml);
 				// normalize text representation
 				doc.getDocumentElement().normalize();
+
 				log.tracef("Root element of the doc is %s", doc.getDocumentElement().getNodeName());
 				// to hold our servlets
 				Map<String, ServletInfo> servletMap = new HashMap<String, ServletInfo>();
@@ -51,6 +55,7 @@ public class UndertowWebXMLParser {
 				// application
 				NodeList listOfElements = doc.getElementsByTagName("context-param");
 				int totalElements = listOfElements.getLength();
+
 				log.tracef("Total no of context-params: %s", totalElements);
 				for (int s = 0; s < totalElements; s++) {
 					Node fstNode = listOfElements.item(s);
@@ -112,9 +117,9 @@ public class UndertowWebXMLParser {
 						// do init-param - available in the context of a servlet
 						// or filter in the web application
 						listOfElements = fstElmnt.getElementsByTagName("init-param");
-						totalElements = listOfElements.getLength();
-						log.tracef("Total no of init-params: %s", totalElements);
-						for (int i = 0; i < totalElements; i++) {
+						int totalInitParams = listOfElements.getLength();
+						log.tracef("Total no of init-params: %s", totalInitParams);
+						for (int i = 0; i < totalInitParams; i++) {
 							Node inNode = listOfElements.item(i);
 							if (inNode.getNodeType() == Node.ELEMENT_NODE) {
 								Element inElmnt = (Element) inNode;
@@ -134,7 +139,7 @@ public class UndertowWebXMLParser {
 						}
 						// do async-supported
 						NodeList ldElmntLst = fstElmnt.getElementsByTagName("async-supported");
-						if (ldElmntLst != null) {
+						if (ldElmntLst != null && ldElmntLst.getLength()>0) {
 							Element ldElmnt = (Element) ldElmntLst.item(0);
 							NodeList ldNm = ldElmnt.getChildNodes();
 							String pAsync = (ldNm.item(0)).getNodeValue().trim();
@@ -144,6 +149,8 @@ public class UndertowWebXMLParser {
 						// add to map
 						filterMap.put(pName, filter);
 					}
+					// add filters
+					info.addFilters(filterMap.values());
 				}
 				// do filter mappings
 				if (!filterMap.isEmpty()) {
@@ -167,17 +174,24 @@ public class UndertowWebXMLParser {
 								Element lstNmElmnt = (Element) lstNmElmntLst.item(0);
 								NodeList lstNm = lstNmElmnt.getChildNodes();
 								String pValue = (lstNm.item(0)).getNodeValue().trim();
-								log.tracef("Param value: %s", pValue);
-								// TODO email list and find out why this doesnt
-								// match servlet style
-								// filter.addMapping(pValue);
+								NodeList dstNmElmntLst = fstElmnt.getElementsByTagName("dispatcher");
+
+								if ( dstNmElmntLst == null || dstNmElmntLst.getLength() == 0 ){
+									info.addFilterUrlMapping( pName, pValue, DispatcherType.valueOf( "REQUEST") );
+								} else {
+									int totalDispatchers = dstNmElmntLst.getLength();
+									for(int i = 0; i < totalDispatchers; i++){
+										Element dstNmElmnt = (Element) dstNmElmntLst.item(i);
+										NodeList dstNm = dstNmElmnt.getChildNodes();
+										String dValue = (dstNm.item(0)).getNodeValue().trim();
+										info.addFilterUrlMapping( pName, pValue, DispatcherType.valueOf( dValue ) );
+									}
+								}							
 							} else {
 								log.warnf("No servlet found for %s", pName);
 							}
 						}
 					}
-					// add filters
-					info.addFilters(filterMap.values());
 				}
 				// do servlet
 				NodeList listOfServlets = doc.getElementsByTagName("servlet");
@@ -208,7 +222,7 @@ public class UndertowWebXMLParser {
 								NodeList ldNm = ldElmnt.getChildNodes();
 								String pLoad = (ldNm.item(0)).getNodeValue().trim();
 								log.tracef("Load on startup: %s", pLoad);
-								servlet.setLoadOnStartup(Integer.valueOf(pLoad));								
+								servlet.setLoadOnStartup(Integer.valueOf(pLoad));
 							}
 						}
 						// do init-param - available in the context of a servlet
@@ -263,7 +277,7 @@ public class UndertowWebXMLParser {
 									String pValue = (lstNm.item(0)).getNodeValue().trim();
 									log.tracef("Param value: %s", pValue);
 									servlet.addMapping(pValue);
-									
+
 								}
 							} else {
 								log.warnf("No servlet found for %s", pName);
@@ -282,12 +296,17 @@ public class UndertowWebXMLParser {
 					if (fstNode.getNodeType() == Node.ELEMENT_NODE) {
 						Element fstElmnt = (Element) fstNode;
 						NodeList fstNmElmntLst = fstElmnt.getElementsByTagName("welcome-file");
-						Element fstNmElmnt = (Element) fstNmElmntLst.item(0);
-						NodeList fstNm = fstNmElmnt.getChildNodes();
-						String pName = (fstNm.item(0)).getNodeValue().trim();
-						log.tracef("Param name: %s", pName);
-						// add welcome page
-						info.addWelcomePage(pName);
+						int totalWelcomeFiles = fstNmElmntLst.getLength();
+
+						for(int i=0; i < totalWelcomeFiles; i++){
+							Element fstNmElmnt = (Element) fstNmElmntLst.item(i);
+							NodeList fstNm = fstNmElmnt.getChildNodes();
+							String pName = (fstNm.item(0)).getNodeValue().trim();
+							log.tracef("Param name: %s", pName);
+							System.out.println( "Adding welcome page: " + pName );
+							// add welcome page
+							info.addWelcomePage(pName);
+						}
 					}
 				}
 				// do display name
