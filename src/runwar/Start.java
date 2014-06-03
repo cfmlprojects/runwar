@@ -82,6 +82,7 @@ public class Start {
 	private static String PID;
 
 	private static String warPath;
+	private static String webXmlPath;
 	private static String contextPath = "/";
 	private static String host = "127.0.0.1";
 	private static int portNumber = 8088;
@@ -109,6 +110,7 @@ public class Start {
 	static TrayIcon trayIcon;
 	private static boolean debug = false;
 	private static File warFile;
+	private static File webXmlFile;
 	private static String iconImage = null;
 	private static DeploymentManager manager;
 	private static Undertow server;
@@ -256,41 +258,48 @@ public class Start {
 	        	webinfDir = new File(serverConfigDir,"WEB-INF/").getPath();
 	        }
 	        log.debug("railo.webinf: " + webinfDir);
-			servletBuilder.setClassLoader(Start.class.getClassLoader());
-			Class cfmlServlet;
-			Class restServlet;
-			try{
-				cfmlServlet = servletBuilder.getClass().getClassLoader().loadClass("railo.loader.servlet.CFMLServlet");
-			} catch (java.lang.ClassNotFoundException e) {
-				cfmlServlet = _classLoader.loadClass("railo.loader.servlet.CFMLServlet");
-			}
-			try{
-				restServlet = servletBuilder.getClass().getClassLoader().loadClass("railo.loader.servlet.RestServlet");
-			} catch (java.lang.ClassNotFoundException e) {
-				restServlet = _classLoader.loadClass("railo.loader.servlet.RestServlet");
-			}
-			log.debug("loaded servlet classes");
-			servletBuilder
-            	.addWelcomePages(new String[] {"index.cfm","index.cfml","index.html","index.htm"})
-            	.addServlets(
-	                        servlet("CFMLServlet", cfmlServlet)
-	                                .addInitParam("configuration",webConfigDir)
-	                                .addInitParam("railo-server-root",serverConfigDir)
-	                                .addMapping("*.cfm")
-	                                .addMapping("*.cfc")
-	                                .addMapping("/index.cfc/*")
-	                                .addMapping("/index.cfm/*")
-	                                .addMapping("/index.cfml/*")
-	                                .setLoadOnStartup(1)
-	                                ,
-	                        servlet("RESTServlet", restServlet)
-	                                .addInitParam("railo-web-directory",webConfigDir)
-	                                .addMapping("/rest/*")
-	                                .setLoadOnStartup(2));
+
 //			servletBuilder.setResourceManager(new CFMLResourceManager(new File(homeDir,"server/"), 100, cfmlDirs));
 			File internalRailoRoot = new File(webinfDir);
 			internalRailoRoot.mkdirs();
 			servletBuilder.setResourceManager(new CFMLResourceManager(warFile, 100, cfmlDirs, internalRailoRoot));
+
+			if(webXmlFile != null){
+				servletBuilder.setClassLoader(_classLoader);
+				UndertowWebXMLParser.parseWebXml(webXmlFile, servletBuilder);
+			} else {
+				servletBuilder.setClassLoader(Start.class.getClassLoader());
+				Class cfmlServlet;
+				Class restServlet;
+				try{
+					cfmlServlet = servletBuilder.getClass().getClassLoader().loadClass("railo.loader.servlet.CFMLServlet");
+				} catch (java.lang.ClassNotFoundException e) {
+					cfmlServlet = _classLoader.loadClass("railo.loader.servlet.CFMLServlet");
+				}
+				try{
+					restServlet = servletBuilder.getClass().getClassLoader().loadClass("railo.loader.servlet.RestServlet");
+				} catch (java.lang.ClassNotFoundException e) {
+					restServlet = _classLoader.loadClass("railo.loader.servlet.RestServlet");
+				}
+				log.debug("loaded servlet classes");
+				servletBuilder
+	            	.addWelcomePages(new String[] {"index.cfm","index.cfml","index.html","index.htm"})
+	            	.addServlets(
+		                        servlet("CFMLServlet", cfmlServlet)
+		                                .addInitParam("configuration",webConfigDir)
+		                                .addInitParam("railo-server-root",serverConfigDir)
+		                                .addMapping("*.cfm")
+		                                .addMapping("*.cfc")
+		                                .addMapping("/index.cfc/*")
+		                                .addMapping("/index.cfm/*")
+		                                .addMapping("/index.cfml/*")
+		                                .setLoadOnStartup(1)
+		                                ,
+		                        servlet("RESTServlet", restServlet)
+		                                .addInitParam("railo-web-directory",webConfigDir)
+		                                .addMapping("/rest/*")
+		                                .setLoadOnStartup(2));
+	        }
 		} else if(webinf.exists()) {
 			if(_classLoader == null) {
 				throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());				
@@ -571,8 +580,15 @@ public class Start {
 				.withDescription( "tray icon and OS X dock icon png image" )
 				.hasArg().withArgName("path")
 				.create("icon") );
+
+		options.addOption( OptionBuilder
+				.withLongOpt( "webxmlpath" )
+				.withDescription( "full path to default web.xml file for configuring the server" )
+				.hasArg().withArgName("path")
+				.create("webxmlpath") );
 		
 		options.addOption( new Option( "h", "help", false, "print this message" ) );
+
 
 		try {
 			CommandLine line = parser.parse( options, args );
@@ -614,6 +630,17 @@ public class Start {
 		    } else if (!line.hasOption("stop")) {
 		    	printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
 		    } 
+
+		    if (line.hasOption("webxmlpath")) {
+		    	webXmlPath = line.getOptionValue("webxmlpath");
+		    	webXmlFile = new File(webXmlPath);
+		    	if(webXmlFile.exists()) {
+		    		webXmlPath = webXmlFile.toURI().toURL().toString();
+		    	} else {
+		    		throw new RuntimeException("Could not find web.xml! " + webXmlPath);
+		    	}
+		    }
+
 		    if (line.hasOption("stop")) {
 		    	if(line.getOptionValue("stop")!=null) {
 		    		socketNumber = Integer.parseInt(line.getOptionValue("stop")); 
