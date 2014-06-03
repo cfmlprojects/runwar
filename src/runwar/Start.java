@@ -600,9 +600,14 @@ public class Start {
 		    	background = Boolean.valueOf(line.getOptionValue("background"));
 		    }
 		    if (line.hasOption("libs")) {
-                File lib = new File(line.getOptionValue("libs"));
-                if (!lib.exists() || !lib.isDirectory())
-                	printUsage("No such lib directory "+lib,1);
+		    	String[] list = line.getOptionValue("libs").split(",");
+
+		    	for (String path : list) {
+                	File lib = new File(path);
+	                if (!lib.exists() || !lib.isDirectory())
+	                	printUsage("No such lib directory "+path,1);
+		    	}               
+                
                 libDirs = line.getOptionValue("libs");
             }
 
