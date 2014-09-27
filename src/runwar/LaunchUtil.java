@@ -20,30 +20,21 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.net.JarURLConnection;
-import java.net.MalformedURLException;
 import java.net.Socket;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 
 import org.jboss.logging.Logger;
 
@@ -75,7 +66,7 @@ public class LaunchUtil {
 	}
 
 	public static void launch(List<String> cmdarray, int timeout) throws IOException, InterruptedException {
-		byte[] buffer = new byte[1024];
+		//byte[] buffer = new byte[1024];
 
 		ProcessBuilder processBuilder = new ProcessBuilder(cmdarray);
 		processBuilder.redirectErrorStream(true);
@@ -272,6 +263,8 @@ public class LaunchUtil {
 						image = Toolkit.getDefaultToolkit().getImage(imageURL);
 					} 				
 				}
+			} else {
+				image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
 			}
 			// if bad image, use default
 			if(image == null || image.getHeight(null) == -1) {
@@ -329,7 +322,7 @@ public class LaunchUtil {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			trayIcon.displayMessage("Browser", "Opening browser", TrayIcon.MessageType.INFO);
-			BrowserOpener.openURL(url);
+			openURL(url);
 		}
 	}
 
@@ -365,4 +358,36 @@ public class LaunchUtil {
 			}
 		}
 	}
+	
+	public static void openURL(String url) {
+		String osName = System.getProperty("os.name");
+		if(url == null) {
+			System.out.println("ERROR: No URL specified to open the browser to!");
+			return;
+		}
+		try {
+			System.out.println(url);
+			if (osName.startsWith("Mac OS")) {
+				Class<?> fileMgr = Class.forName("com.apple.eio.FileManager");
+				Method openURL = fileMgr.getDeclaredMethod("openURL", new Class[] { String.class });
+				openURL.invoke(null, new Object[] { url });
+			} else if (osName.startsWith("Windows"))
+				Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
+			else { // assume Unix or Linux
+				String[] browsers = { "firefox", "opera", "konqueror", "epiphany", "mozilla", "netscape" };
+				String browser = null;
+				for (int count = 0; count < browsers.length && browser == null; count++)
+					if (Runtime.getRuntime().exec(new String[] { "which", browsers[count] }).waitFor() == 0)
+						browser = browsers[count];
+				if (browser == null)
+					throw new Exception("Could not find web browser");
+				else
+					Runtime.getRuntime().exec(new String[] { browser, url });
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, e.getMessage() + ":\n" + e.getLocalizedMessage());
+		}
+	}
+
 }
