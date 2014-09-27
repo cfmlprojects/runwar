@@ -314,9 +314,6 @@ public class Start {
 			servletBuilder.setResourceManager(new CFMLResourceManager(warFile, 100, cfmlDirs, webinf));
 			subvertLoggers(loglevel, loggers);
 			UndertowWebXMLParser.parseWebXml(new File(webinf,"/web.xml"), servletBuilder);
-			System.out.println(servletBuilder.getServletContextAttributes());
-			System.out.println(servletBuilder.getServlets().get("ColdFusionStartUpServlet").toString());
-			subvertLoggers(loglevel, loggers);
 		} else {
 			throw new RuntimeException("Didn't know how to handle war:"+warFile.getAbsolutePath());
 		}

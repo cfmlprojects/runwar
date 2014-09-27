@@ -38,12 +38,10 @@ public class UndertowWebXMLParser {
 	 */
 	@SuppressWarnings("unchecked")
 	public static void parseWebXml(File webxml, DeploymentInfo info) {
-		System.out.println("UND");
 		if (!webxml.exists() || !webxml.canRead()) {
 			log.error("Error reading web.xml! exists:"+webxml.exists()+"readable:"+webxml.canRead());
 		}
 		try {
-			System.out.println("UND2");
 			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 			Document doc = docBuilder.parse(webxml);
@@ -75,10 +73,8 @@ public class UndertowWebXMLParser {
 					NodeList lstNm = lstNmElmnt.getChildNodes();
 					String pValue = (lstNm.item(0)).getNodeValue().trim();
 					trace("context param value: %s", pValue);
-					// add the param
-//					./tmp/coldfusion/bootstrap/ClassloaderHelper.class
-//					 this.getServletContext().getInitParameter("cf.class.path");
 					info.addServletContextAttribute(pName, pValue);
+					info.addInitParameter(pName, pValue);
 				}
 			}
 			// do listener
@@ -307,17 +303,16 @@ public class UndertowWebXMLParser {
 					NodeList fstNmElmntLst = fstElmnt.getElementsByTagName("welcome-file");
 					int totalWelcomeFiles = fstNmElmntLst.getLength();
 
-					System.out.println( "Adding welcome pages: " );
+					log.debug( "Adding welcome pages:" );
 					for(int i=0; i < totalWelcomeFiles; i++){
 						Element fstNmElmnt = (Element) fstNmElmntLst.item(i);
 						NodeList fstNm = fstNmElmnt.getChildNodes();
 						String pName = (fstNm.item(0)).getNodeValue().trim();
 						trace("Param name: %s", pName);
-						System.out.print( pName + " ");
+						log.debug( "welcome page:" + pName);
 						// add welcome page
 						info.addWelcomePage(pName);
 					}
-					System.out.println();
 				}
 			}
 			// do display name
@@ -330,7 +325,6 @@ public class UndertowWebXMLParser {
 					info.setDisplayName(dName);
 				}
 			}
-			System.out.println("DONE");
 			// TODO add security stuff
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -340,8 +334,8 @@ public class UndertowWebXMLParser {
 
 	private static void trace(String string, Object elements) {
 		log.tracef(string,elements);
-		System.out.printf(string,elements);
-		System.out.println();
+//		System.out.printf(string,elements);
+//		System.out.println();
 	}
 	
 }
