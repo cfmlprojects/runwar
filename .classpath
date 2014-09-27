@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/commons-cli-1.2.jar"/>
+	<classpathentry kind="lib" path="lib/jboss-el-api_3.0_spec-1.0.0.Beta1.jar"/>
+	<classpathentry kind="lib" path="lib/jboss-jsp-api_2.3_spec-1.0.0.Beta1.jar"/>
+	<classpathentry kind="lib" path="lib/jboss-logging-3.1.4.GA.jar"/>
+	<classpathentry kind="lib" path="lib/jboss-servlet-api_3.1_spec-1.0.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-core-1.0.9.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-jsp-1.0.0.Beta27.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-servlet-1.0.9.Final.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-api-3.2.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-nio-3.2.0.Final.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
