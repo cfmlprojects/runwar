@@ -99,7 +99,7 @@
 		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/icon.png" />
 		<jar destfile="${runwar.jar.file}" duplicate="preserve"
          basedir="${runwar.bin.dir}/runwar/" 
-         includes="**/*.class, **/*.png, **/services/org.xnio.XnioProvider, **/META-INF/INDEX.LIST, **/*.properties, **/*.xml, javax/**" 
+         includes="**/*.class, **/*.png, **/services/org.xnio.XnioProvider, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.xml, javax/**" 
 		 filesetmanifest="mergewithoutmain">
 			<manifest>
 				<attribute name="Main-Class" value="runwar.Start" />

@@ -245,6 +245,8 @@ public class Start {
 		if(!warFile.exists()) {
 			throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
 		}
+		if(System.getProperty("coldfusion.home") == null)
+			System.setProperty("coldfusion.home",warFile.getAbsolutePath());
 		
 		if(warFile.isDirectory() && !webinf.exists()) {
 	        if(railoConfigWebDir == null) {
@@ -449,12 +451,16 @@ public class Start {
 		if(classesDir == null)
 			return classpath;
 		File file = new File(classesDir);
-		for(File item : file.listFiles()) {
-			String fileName = item.getAbsolutePath();
-			if (!item.isDirectory()) {
-				URL url = item.toURI().toURL();
-				classpath.add(url);
-			}				
+		if(file.exists() && file.isDirectory()) {
+			for(File item : file.listFiles()) {
+				String fileName = item.getAbsolutePath();
+				if (!item.isDirectory()) {
+					URL url = item.toURI().toURL();
+					classpath.add(url);
+				}				
+			}
+		} else {
+			log.debug("WEB-INF classes directory ("+file.getAbsolutePath()+") does not exist");
 		}
 		return classpath;
 	}
@@ -625,6 +631,14 @@ public class Start {
 				.hasArg().withArgName("path")
 				.create("railoserver") );
 		
+		options.addOption( OptionBuilder.withArgName( "property=value" )
+				.withLongOpt( "sysprop" )
+                .hasArgs(2)
+                .withValueSeparator()
+				.withDescription( "system property to set" )
+				.create("D") );
+		
+		
 		options.addOption( new Option( "h", "help", false, "print this message" ) );
 
 
@@ -673,6 +687,14 @@ public class Start {
 		    } else if (!line.hasOption("stop")) {
 		    	printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
 		    } 
+		    if(line.hasOption("D")){
+		    	final String[] properties = line.getOptionValues("D");
+		    	for (int i = 0; i < properties.length; i++) {
+					log.debugf("setting system property: %s", properties[i].toString()+'='+properties[i+1].toString());
+		    		System.setProperty(properties[i].toString(),properties[i+1].toString());
+		    		i++;
+		    	}
+		    }
 
 		    if (line.hasOption("webxmlpath")) {
 		    	webXmlPath = line.getOptionValue("webxmlpath");
