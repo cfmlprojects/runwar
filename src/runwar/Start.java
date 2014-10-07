@@ -20,13 +20,17 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.awt.Image;
 import java.awt.TrayIcon;
+
 import javax.imageio.ImageIO;
 import javax.net.SocketFactory;
+import javax.servlet.ServletConfig;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -41,8 +45,11 @@ import io.undertow.Undertow.Builder;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.error.SimpleErrorPageHandler;
+import io.undertow.servlet.api.DefaultServletConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.handlers.DefaultServlet;
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static io.undertow.servlet.Servlets.servlet;
@@ -306,17 +313,26 @@ public class Start {
             }
         });
 		 */
+
+		// this prevents us from having to use our own ResourceHandler (directory listing, welcome files, see below) and error handler for now
+        servletBuilder.addServlet(new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
+                .addInitParam("directory-listing", Boolean.toString(directoryListingEnabled)));
+
 		manager = defaultContainer().addDeployment(servletBuilder);
 		manager.deploy();
         HttpHandler servletHandler = manager.start();
         log.debug("started manager");
+/*
         ResourceHandler resourceHandler = new ResourceHandler(servletBuilder.getResourceManager(), servletHandler);
         resourceHandler.setDirectoryListingEnabled(directoryListingEnabled);
-        PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
-                .addPrefixPath(contextPath, resourceHandler);
+        PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath)).addPrefixPath(contextPath, servletHandler);
         HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
+        Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, "localhost").setHandler(errPageHandler);
+*/
+        PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
+                .addPrefixPath(contextPath, servletHandler);
         Builder serverBuilder = Undertow.builder()
-        		.addHttpListener(portNumber, "localhost").setHandler(errPageHandler);
+                .addHttpListener(portNumber, "localhost").setHandler(pathHandler);
 
         if(enableAJP) {
 			log.info("Enabling AJP protocol on port " + ajpPort);
