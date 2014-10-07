@@ -648,7 +648,7 @@ public class Start {
                 .create("directorylist") );
 		
 		options.addOption( new Option( "h", "help", false, "print this message" ) );
-		options.addOption( new Option( "v", "version", false, "print version" ) );
+		options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
 
 		try {
