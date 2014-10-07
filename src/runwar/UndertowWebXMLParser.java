@@ -28,7 +28,7 @@ import org.w3c.dom.NodeList;
 
 public class UndertowWebXMLParser {
 
-	private static Logger log = Logger.getLogger("io.undertow.UndertowLogger");
+    private static Logger log = Logger.getLogger("RunwarLogger");
 
 	/**
 	 * Parses the web.xml and configures the context.
@@ -42,6 +42,7 @@ public class UndertowWebXMLParser {
 			log.error("Error reading web.xml! exists:"+webxml.exists()+"readable:"+webxml.canRead());
 		}
 		try {
+		    trace("parsing %s",webxml.getCanonicalPath());
 			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 			Document doc = docBuilder.parse(webxml);

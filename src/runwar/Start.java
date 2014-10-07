@@ -295,7 +295,7 @@ public class Start {
 		                                .setLoadOnStartup(2));
 	        }
 		} else if(webinf.exists()) {
-			log.debug("Using existing WEB-INF:" + webinf.getAbsolutePath());
+			log.debug("found WEB-INF: " + webinf.getAbsolutePath());
 			if(_classLoader == null) {
 				throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
 			}
