@@ -1,23 +1,18 @@
 package runwar;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.URLDecoder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,48 +23,29 @@ import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.SimpleFormatter;
-import java.awt.AWTException;
 import java.awt.Image;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
-import java.awt.SystemTray;
-import java.awt.Toolkit;
 import java.awt.TrayIcon;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-
 import javax.imageio.ImageIO;
 import javax.net.SocketFactory;
-import javax.servlet.ServletException;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.jboss.logging.Logger;
 
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
-import io.undertow.UndertowLogger;
-import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.resource.FileResourceManager;
-import io.undertow.server.handlers.resource.ResourceHandler;
-import io.undertow.server.protocol.ajp.AjpOpenListener;
+import io.undertow.server.handlers.error.SimpleErrorPageHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static io.undertow.servlet.Servlets.servlet;
-import static io.undertow.Handlers.resource;
 
 //import railo.loader.engine.CFMLEngine;
 
@@ -116,6 +92,7 @@ public class Start {
 	private static Undertow server;
 	private static String railoConfigWebDir = null;
 	private static String railoConfigServerDir = null;
+    private static boolean directoryListingEnabled = true;
 	public static final Set<String> loggers = new HashSet<String>(Arrays.asList(new String[] {
 			"RunwarLogger",
 			"global",
@@ -124,6 +101,7 @@ public class Start {
 			"org.xnio.nio.NioXnio",
 			"io.undertow.UndertowLogger"
 	}));
+	private static String[] welcomeFiles = new String[]{"index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm", "default.html", "default.htm"};
 	public static final String bar = "*******************************************************************";
 	
 	// for openBrowser 
@@ -290,7 +268,7 @@ public class Start {
 				}
 				log.debug("loaded servlet classes");
 				servletBuilder
-	            	.addWelcomePages(new String[] {"index.cfm","index.cfml","index.html","index.htm"})
+	            	.addWelcomePages(welcomeFiles)
 	            	.addServlets(
 		                        servlet("CFMLServlet", cfmlServlet)
 		                                .addInitParam("configuration",railoConfigWebDir)
@@ -332,10 +310,13 @@ public class Start {
 		manager.deploy();
         HttpHandler servletHandler = manager.start();
         log.debug("started manager");
+        ResourceHandler resourceHandler = new ResourceHandler(servletBuilder.getResourceManager(), servletHandler);
+        resourceHandler.setDirectoryListingEnabled(directoryListingEnabled);
         PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
-                .addPrefixPath(contextPath, servletHandler);
+                .addPrefixPath(contextPath, resourceHandler);
+        HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
         Builder serverBuilder = Undertow.builder()
-        		.addHttpListener(portNumber, "localhost").setHandler(pathHandler);
+        		.addHttpListener(portNumber, "localhost").setHandler(errPageHandler);
 
         if(enableAJP) {
 			log.info("Enabling AJP protocol on port " + ajpPort);
@@ -638,6 +619,15 @@ public class Start {
 				.withDescription( "system property to set" )
 				.create("D") );
 		
+        options.addOption( OptionBuilder
+                .withDescription( "comma delinated list of welcome files" )
+                .hasArg().withArgName("index.cfm,default.cfm,...")
+                .create("welcomefiles") );
+
+        options.addOption( OptionBuilder
+                .withDescription( "enable directory browsing" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("directorylist") );
 		
 		options.addOption( new Option( "h", "help", false, "print this message" ) );
 
@@ -662,6 +652,9 @@ public class Start {
                 
                 libDirs = line.getOptionValue("libs");
             }
+		    if (line.hasOption("welcomefiles")) {
+		        welcomeFiles = line.getOptionValue("welcomefiles").split(",");
+		    }
 
 		    if (line.hasOption("jar")) {
 		    	 File jar = new File(line.getOptionValue("jar"));
