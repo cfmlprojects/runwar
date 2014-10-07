@@ -97,6 +97,10 @@
 	<target name="runwar.jar" depends="runwar.compile">
 		<runwar.initprops />
 		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/icon.png" />
+		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/version.properties">
+			<filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
+		</copy>
+			    	
 		<jar destfile="${runwar.jar.file}" duplicate="preserve"
          basedir="${runwar.bin.dir}/runwar/" 
          includes="**/*.class, **/*.png, **/services/org.xnio.XnioProvider, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.xml, javax/**" 

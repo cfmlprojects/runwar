@@ -1,8 +1,10 @@
 package runwar;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -646,6 +648,7 @@ public class Start {
                 .create("directorylist") );
 		
 		options.addOption( new Option( "h", "help", false, "print this message" ) );
+		options.addOption( new Option( "v", "version", false, "print version" ) );
 
 
 		try {
@@ -653,6 +656,10 @@ public class Start {
 		    // parse the command line arguments
 		    if (line.hasOption("help")) {
 		    	printUsage("Options",0);
+		    }
+		    if (line.hasOption("version")) {
+		        printVersion();
+		        System.exit(0);
 		    }
 		    if (line.hasOption("background")) {
 		    	background = Boolean.valueOf(line.getOptionValue("background"));
@@ -802,6 +809,38 @@ public class Start {
 		return null;
 	}
 
+	private static void printVersion() {
+	    printResource("runwar/version.properties");
+        System.out.println();
+	    printResource("io/undertow/version.properties");
+	    System.out.println();
+	}
+	
+	private static int printResource(String path) {
+	    InputStream is = null;
+	    int hadError = 0;
+	    try {
+	        is = Start.class.getClassLoader().getResourceAsStream(path);
+	        int content;
+	        while ((content = is.read()) != -1) {
+	            // convert to char and display it
+	            System.out.print((char) content);
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	        hadError = 1;
+	    } finally {
+	        try {
+	            if (is != null)
+	                is.close();
+	        } catch (IOException ex) {
+	            ex.printStackTrace();
+	            hadError = 1;
+	        }
+	    }
+	    return hadError;
+	}
+	
 	private static void printUsage(String message, int exitCode) {
 	    HelpFormatter formatter = new HelpFormatter();
         formatter.setOptionComparator(new Comparator<Option>() {
