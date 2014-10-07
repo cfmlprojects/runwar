@@ -638,7 +638,7 @@ public class Start {
 				.create("D") );
 		
         options.addOption( OptionBuilder
-                .withDescription( "comma delinated list of welcome files" )
+                .withDescription( "comma delinated list of welcome files used if no web.xml file exists" )
                 .hasArg().withArgName("index.cfm,default.cfm,...")
                 .create("welcomefiles") );
 
