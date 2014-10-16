@@ -334,7 +334,7 @@ public class Start {
         PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
                 .addPrefixPath(contextPath, servletHandler);
         Builder serverBuilder = Undertow.builder()
-                .addHttpListener(portNumber, "localhost").setHandler(pathHandler);
+                .addHttpListener(portNumber, host).setHandler(pathHandler);
 
         if(enableAJP) {
 			log.info("Enabling AJP protocol on port " + ajpPort);
@@ -497,10 +497,9 @@ public class Start {
 				.create("c") );
 		
 		options.addOption( OptionBuilder
-				.withLongOpt( "host" )
 				.withDescription( "host.  (127.0.0.1)" )
 				.hasArg().withArgName("host")
-				.create("o") );
+				.create("host") );
 		
 		options.addOption( OptionBuilder
 				.withLongOpt( "port" )
@@ -878,7 +877,7 @@ public class Start {
 			setName("StopMonitor");
 			this.socketNumber = socketNumber;
 			try {
-				socket = new ServerSocket(socketNumber, 1, InetAddress.getByName("127.0.0.1"));
+				socket = new ServerSocket(socketNumber, 1, InetAddress.getByName(host));
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -887,7 +886,7 @@ public class Start {
 		@Override
 		public void run() {
 			System.out.println(bar);
-			System.out.println("*** starting 'stop' listener thread - Host: 127.0.0.1 - Socket: " + this.socketNumber);
+			System.out.println("*** starting 'stop' listener thread - Host: "+ host + " - Socket: " + this.socketNumber);
 			System.out.println(bar);
 			Socket accept;
 			try {
