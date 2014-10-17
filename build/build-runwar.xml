@@ -2,6 +2,7 @@
 
 	<dirname property="runwarbuild.basedir" file="${ant.file.runwarbuild}" />
 	<mvn-repo id="repo.local" url="file://${cfdistro.basedir}/artifacts" />
+	<property name="clean" value="false" />
 
 	<macrodef name="runwar.initprops">
 		<sequential>
@@ -127,6 +128,10 @@
 	</target>
 
 	<target name="get.deps">
+		<antcontrib:if>
+			<equals arg1="${clean}" arg2="true"/>
+			<then><delete dir="${runwar.lib.dir}"/></then>
+		</antcontrib:if>
 		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
     	<dependency groupId="commons-cli" artifactId="commons-cli" version="1.2"
     		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo"/>
