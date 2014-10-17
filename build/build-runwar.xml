@@ -142,7 +142,7 @@
             </exclusions>
     	</dependency>
 
-		<dependency groupId="io.undertow" artifactId="undertow-servlet" version="1.0.9.Final"
+		<dependency groupId="io.undertow" artifactId="undertow-servlet" version="${undertow.version}"
                 unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo">
                 <exclusions>
                         <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.2_spec" />
