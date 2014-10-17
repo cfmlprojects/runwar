@@ -64,7 +64,7 @@ public class CFMLResourceManager extends FileResourceManager {
 					//System.out.println(cfmlDirs[x]);
 					//System.out.println("requested ==" + reqFile.getAbsolutePath() + " exists:" + reqFile.exists());
 					if (reqFile.exists()) {
-						System.out.println("returning:" + contextPath);
+						//System.out.println("returning:" + contextPath);
 						//System.out.println("ret1:"+ cfmlDirResource[x].addPath(contextPath).getFile().getAbsolutePath());
 						return new FileResource(reqFile, this, contextPath);
 					} else {
