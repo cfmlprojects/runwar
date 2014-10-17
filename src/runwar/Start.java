@@ -47,6 +47,7 @@ import io.undertow.Undertow.Builder;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.error.SimpleErrorPageHandler;
+import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.servlet.api.DefaultServletConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -324,17 +325,20 @@ public class Start {
 		manager.deploy();
         HttpHandler servletHandler = manager.start();
         log.debug("started manager");
-/*
-        ResourceHandler resourceHandler = new ResourceHandler(servletBuilder.getResourceManager(), servletHandler);
+
+        List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
+        CFMLResourceHandler resourceHandler = new CFMLResourceHandler(servletBuilder.getResourceManager(), servletHandler, welcomePages);
         resourceHandler.setDirectoryListingEnabled(directoryListingEnabled);
-        PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath)).addPrefixPath(contextPath, servletHandler);
+        PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
+                .addPrefixPath(contextPath, resourceHandler);
         HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
-        Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, "localhost").setHandler(errPageHandler);
-*/
+        Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, host).setHandler(errPageHandler);
+/*
         PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
                 .addPrefixPath(contextPath, servletHandler);
         Builder serverBuilder = Undertow.builder()
                 .addHttpListener(portNumber, host).setHandler(pathHandler);
+*/
 
         if(enableAJP) {
 			log.info("Enabling AJP protocol on port " + ajpPort);

@@ -52,20 +52,19 @@ public class CFMLResourceManager extends FileResourceManager {
 	}
 	
 	public Resource getResource(String contextPath) {
+//	    System.out.println("requested:"+contextPath);
 		try {
 			 if(WEBINF != null && contextPath.equals("/WEB-INF")) {
 				return new FileResource(WEBINF, this, contextPath);
 			 }
-			 //System.out.println("requested:"+contextPath);
-			 if(!contextPath.equals("/") && !contextPath.startsWith("/WEB-INF")) {
+			 else if(!contextPath.equals("/") && !contextPath.startsWith("/WEB-INF")) {
 				for (int x = 0; x < cfmlDirs.length; x++) {
 					File reqFile = new File(getBase(), contextPath);
 					//System.out.println(cfmlDirResource[x].addPath(contextPath).getFile().getPath());
 					//System.out.println(cfmlDirs[x]);
 					//System.out.println("requested ==" + reqFile.getAbsolutePath() + " exists:" + reqFile.exists());
 					if (reqFile.exists()) {
-						// System.out.println("returning:" + cfmlDir +
-						// contextPath);
+						System.out.println("returning:" + contextPath);
 						//System.out.println("ret1:"+ cfmlDirResource[x].addPath(contextPath).getFile().getAbsolutePath());
 						return new FileResource(reqFile, this, contextPath);
 					} else {

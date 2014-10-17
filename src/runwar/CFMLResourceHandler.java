@@ -2,6 +2,7 @@ package runwar;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 
 import io.undertow.UndertowLogger;
 import io.undertow.predicate.Predicate;
@@ -9,6 +10,7 @@ import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.cache.ResponseCache;
+import io.undertow.util.CanonicalPathUtils;
 import io.undertow.util.DateUtils;
 import io.undertow.util.ETag;
 import io.undertow.util.ETagUtils;
@@ -30,18 +32,24 @@ import io.undertow.server.handlers.resource.ResourceManager;
 * as well, instead of just setting them on the deploymentInfo as we do currently.
 * 
 * Eventually this class may be useful, so we'll keep it around for a bit.
+* 
+* Ok, eventually came.  Seems like the only way to really handle directory browsing is to handle
+* it here, vs. using the default instance, as some checks for welcome files trigger the servlet
+* first vs. checking the system first, especially with contexts other than "/".
 *
 */
-public class ResourceHandler extends io.undertow.server.handlers.resource.ResourceHandler {
+public class CFMLResourceHandler extends io.undertow.server.handlers.resource.ResourceHandler {
 
     private HttpHandler handlerDelegate;
     private volatile Predicate disallowed = Predicates.prefixes("/META-INF", "META-INF","/WEB-INF","WEB-INF");
     private volatile Predicate cachable = Predicates.truePredicate();
     private volatile long lastExpiryDate;
     private volatile String lastExpiryHeader;
+    private List welcomeFiles;
 
-    public ResourceHandler(ResourceManager resourceManager, HttpHandler servletHandler) {
+    public CFMLResourceHandler(ResourceManager resourceManager, HttpHandler servletHandler, List welcomePages) {
         super(resourceManager);
+        this.welcomeFiles= welcomePages;
         this.handlerDelegate = servletHandler;
     }
 
@@ -100,45 +108,48 @@ public class ResourceHandler extends io.undertow.server.handlers.resource.Resour
                     exchange.endExchange();
                     return;
                 }
-                if (resource == null) {
-                    exchange.setResponseCode(404);
-                    exchange.endExchange();
-                    return;
-                }
-                //System.out.println(resource.getPath());
-                if (resource.isDirectory()) {
-                    //System.out.println("ISDIRE");
-                    String path = exchange.getRequestPath();
-                    if (!path.endsWith("/")) {
+                if (resource != null && resource.isDirectory()) {
+                    Resource indexResource = null;
+                    try {
+                        indexResource = getIndexFiles(getResourceManager(), resource.getPath(), welcomeFiles);
+                    } catch (IOException e) {
+                        UndertowLogger.REQUEST_IO_LOGGER.ioException(e);
+                        exchange.setResponseCode(500);
+                        exchange.endExchange();
+                        return;
+                    }
+                    if (indexResource == null) {
+                        if (isDirectoryListingEnabled()) {
+                            DirectoryUtils.renderDirectoryListing(exchange, resource);
+                            return;
+                        } else {
+                            exchange.setResponseCode(StatusCodes.FORBIDDEN);
+                            exchange.endExchange();
+                            return;
+                        }
+                    } else if (!exchange.getRequestPath().endsWith("/")) {
                         exchange.setResponseCode(302);
-                        exchange.getResponseHeaders().put(Headers.LOCATION,
-                                RedirectBuilder.redirect(exchange, exchange.getRelativePath() + "/", true));
+                        exchange.getResponseHeaders().put(Headers.LOCATION, RedirectBuilder.redirect(exchange, exchange.getRelativePath() + "/", true));
                         exchange.endExchange();
                         return;
                     }
-                    if (isDirectoryListingEnabled()) {
-                        DirectoryUtils.renderDirectoryListing(exchange, resource);
-                        return;
-                    } else {
-                        exchange.setResponseCode(StatusCodes.FORBIDDEN);
+                    resource = indexResource;
+                }
+                if (resource != null) {
+                    final ETag etag = resource.getETag();
+                    final Date lastModified = resource.getLastModified();
+                    if (!ETagUtils.handleIfMatch(exchange, etag, false)
+                            || !DateUtils.handleIfUnmodifiedSince(exchange, lastModified)) {
+                        exchange.setResponseCode(412);
                         exchange.endExchange();
                         return;
                     }
-                }
-
-                final ETag etag = resource.getETag();
-                final Date lastModified = resource.getLastModified();
-                if (!ETagUtils.handleIfMatch(exchange, etag, false)
-                        || !DateUtils.handleIfUnmodifiedSince(exchange, lastModified)) {
-                    exchange.setResponseCode(412);
-                    exchange.endExchange();
-                    return;
-                }
-                if (!ETagUtils.handleIfNoneMatch(exchange, etag, true)
-                        || !DateUtils.handleIfModifiedSince(exchange, lastModified)) {
-                    exchange.setResponseCode(304);
-                    exchange.endExchange();
-                    return;
+                    if (!ETagUtils.handleIfNoneMatch(exchange, etag, true)
+                            || !DateUtils.handleIfModifiedSince(exchange, lastModified)) {
+                        exchange.setResponseCode(304);
+                        exchange.endExchange();
+                        return;
+                    }
                 }
                 try {
                     handlerDelegate.handleRequest(exchange);
@@ -149,6 +160,22 @@ public class ResourceHandler extends io.undertow.server.handlers.resource.Resour
             }
         });
 
+    }
+
+    private Resource getIndexFiles(ResourceManager resourceManager, final String base, List<String> possible) throws IOException {
+        String realBase;
+        if (base.endsWith("/")) {
+            realBase = base;
+        } else {
+            realBase = base + "/";
+        }
+        for (String possibility : possible) {
+            Resource index = resourceManager.getResource(realBase + possibility);
+            if (index != null) {
+                return index;
+            }
+        }
+        return null;
     }
 
 }
