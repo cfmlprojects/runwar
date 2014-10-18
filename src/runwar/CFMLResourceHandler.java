@@ -10,7 +10,6 @@ import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.cache.ResponseCache;
-import io.undertow.util.CanonicalPathUtils;
 import io.undertow.util.DateUtils;
 import io.undertow.util.ETag;
 import io.undertow.util.ETagUtils;
@@ -37,17 +36,19 @@ import io.undertow.server.handlers.resource.ResourceManager;
 * it here, vs. using the default instance, as some checks for welcome files trigger the servlet
 * first vs. checking the system first, especially with contexts other than "/".
 *
+* Nevermind, found an attribute for requiring welcome files, setting that to false fixed it. heh.
+*
 */
 public class CFMLResourceHandler extends io.undertow.server.handlers.resource.ResourceHandler {
 
     private HttpHandler handlerDelegate;
-    private volatile Predicate disallowed = Predicates.prefixes("/META-INF", "META-INF","/WEB-INF","WEB-INF");
+    private volatile Predicate disallowed;
     private volatile Predicate cachable = Predicates.truePredicate();
     private volatile long lastExpiryDate;
     private volatile String lastExpiryHeader;
-    private List welcomeFiles;
+    private List<String> welcomeFiles;
 
-    public CFMLResourceHandler(ResourceManager resourceManager, HttpHandler servletHandler, List welcomePages) {
+    public CFMLResourceHandler(ResourceManager resourceManager, HttpHandler servletHandler, List<String> welcomePages) {
         super(resourceManager);
         this.welcomeFiles= welcomePages;
         this.handlerDelegate = servletHandler;
@@ -70,6 +71,7 @@ public class CFMLResourceHandler extends io.undertow.server.handlers.resource.Re
             return;
         }
 
+        disallowed = Predicates.prefix("/WEB-INF");
         if (disallowed.resolve(exchange)) {
             exchange.setResponseCode(403);
             exchange.endExchange();
@@ -152,6 +154,7 @@ public class CFMLResourceHandler extends io.undertow.server.handlers.resource.Re
                     }
                 }
                 try {
+                    exchange.unDispatch();
                     handlerDelegate.handleRequest(exchange);
                 } catch (Exception e) {
                     // TODO Auto-generated catch block

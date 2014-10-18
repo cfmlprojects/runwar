@@ -231,6 +231,7 @@ public class UndertowWebXMLParser {
 							servlet.setLoadOnStartup(Integer.valueOf(pLoad));
 						}
 					}
+					servlet.setRequireWelcomeFileMapping(true);
 					// do init-param - available in the context of a servlet
 					// or filter in the web application
 					listOfElements = fstElmnt.getElementsByTagName("init-param");

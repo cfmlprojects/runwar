@@ -1,7 +1,6 @@
 package runwar;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,7 +21,6 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -31,8 +29,6 @@ import java.awt.TrayIcon;
 
 import javax.imageio.ImageIO;
 import javax.net.SocketFactory;
-import javax.servlet.ServletConfig;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -46,9 +42,6 @@ import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.error.SimpleErrorPageHandler;
-import io.undertow.server.handlers.resource.ResourceHandler;
-import io.undertow.servlet.api.DefaultServletConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
@@ -283,6 +276,7 @@ public class Start {
 		                        servlet("CFMLServlet", cfmlServlet)
 		                                .addInitParam("configuration",railoConfigWebDir)
 		                                .addInitParam("railo-server-root",railoConfigServerDir)
+		                                .setRequireWelcomeFileMapping(false)
 		                                .addMapping("*.cfm")
 		                                .addMapping("*.cfc")
 		                                .addMapping("/index.cfc/*")
@@ -292,6 +286,7 @@ public class Start {
 		                                ,
 		                        servlet("RESTServlet", restServlet)
 		                                .addInitParam("railo-web-directory",railoConfigWebDir)
+                                        .setRequireWelcomeFileMapping(false)
 		                                .addMapping("/rest/*")
 		                                .setLoadOnStartup(2));
 	        }
@@ -320,12 +315,11 @@ public class Start {
 		// this prevents us from having to use our own ResourceHandler (directory listing, welcome files, see below) and error handler for now
         servletBuilder.addServlet(new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
                 .addInitParam("directory-listing", Boolean.toString(directoryListingEnabled)));
-
 		manager = defaultContainer().addDeployment(servletBuilder);
 		manager.deploy();
         HttpHandler servletHandler = manager.start();
-        log.debug("started manager");
-
+        log.debug("started servlet deployment manager");
+/*
         List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
         CFMLResourceHandler resourceHandler = new CFMLResourceHandler(servletBuilder.getResourceManager(), servletHandler, welcomePages);
         resourceHandler.setDirectoryListingEnabled(directoryListingEnabled);
@@ -333,12 +327,11 @@ public class Start {
                 .addPrefixPath(contextPath, resourceHandler);
         HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
         Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, host).setHandler(errPageHandler);
-/*
+*/
         PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
                 .addPrefixPath(contextPath, servletHandler);
         Builder serverBuilder = Undertow.builder()
                 .addHttpListener(portNumber, host).setHandler(pathHandler);
-*/
 
         if(enableAJP) {
 			log.info("Enabling AJP protocol on port " + ajpPort);
@@ -456,7 +449,6 @@ public class Start {
 		File file = new File(classesDir);
 		if(file.exists() && file.isDirectory()) {
 			for(File item : file.listFiles()) {
-				String fileName = item.getAbsolutePath();
 				if (!item.isDirectory()) {
 					URL url = item.toURI().toURL();
 					classpath.add(url);
