@@ -29,6 +29,7 @@ import java.awt.TrayIcon;
 
 import javax.imageio.ImageIO;
 import javax.net.SocketFactory;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -37,6 +38,9 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 import org.jboss.logging.Logger;
 
+import runwar.undertow.ResourceManager;
+import runwar.undertow.WebXMLParser;
+import runwar.util.TeeOutputStream;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -249,12 +253,12 @@ public class Start {
 //			servletBuilder.setResourceManager(new CFMLResourceManager(new File(homeDir,"server/"), 100, cfmlDirs));
 			File internalRailoRoot = new File(webinfDir);
 			internalRailoRoot.mkdirs();
-			servletBuilder.setResourceManager(new CFMLResourceManager(warFile, 100, cfmlDirs, internalRailoRoot));
+			servletBuilder.setResourceManager(new ResourceManager(warFile, 100, cfmlDirs, internalRailoRoot));
 
 			if(webXmlFile != null){
 				log.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
 				servletBuilder.setClassLoader(_classLoader);
-				UndertowWebXMLParser.parseWebXml(webXmlFile, servletBuilder);
+				WebXMLParser.parseWebXml(webXmlFile, servletBuilder);
 			} else {
 				servletBuilder.setClassLoader(Start.class.getClassLoader());
 				Class cfmlServlet;
@@ -296,9 +300,9 @@ public class Start {
 				throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
 			}
 			servletBuilder.setClassLoader(_classLoader);
-			servletBuilder.setResourceManager(new CFMLResourceManager(warFile, 100, cfmlDirs, webinf));
+			servletBuilder.setResourceManager(new ResourceManager(warFile, 100, cfmlDirs, webinf));
 			subvertLoggers(loglevel, loggers);
-			UndertowWebXMLParser.parseWebXml(new File(webinf,"/web.xml"), servletBuilder);
+			WebXMLParser.parseWebXml(new File(webinf,"/web.xml"), servletBuilder);
 		} else {
 			throw new RuntimeException("Didn't know how to handle war:"+warFile.getAbsolutePath());
 		}

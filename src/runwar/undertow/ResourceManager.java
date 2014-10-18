@@ -1,4 +1,4 @@
-package runwar;
+package runwar.undertow;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,14 +10,14 @@ import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.Resource;
 
-public class CFMLResourceManager extends FileResourceManager {
+public class ResourceManager extends FileResourceManager {
 
 	private static Logger log = Logger.getLogger("RunwarLogger");
 	private File[] cfmlDirsFiles;
 	private String[] cfmlDirs;
 	private File WEBINF = null;
 
-	public CFMLResourceManager(File base, long transferMinSize, String cfmlDirList) {
+	public ResourceManager(File base, long transferMinSize, String cfmlDirList) {
 		super(base, transferMinSize);
 		this.cfmlDirs = cfmlDirList.split(",");
 		this.cfmlDirsFiles = new File[cfmlDirs.length];
@@ -32,7 +32,7 @@ public class CFMLResourceManager extends FileResourceManager {
 		}
 	}
 	
-	public CFMLResourceManager(File base, long transferMinSize, String cfmlDirList, File file) {
+	public ResourceManager(File base, long transferMinSize, String cfmlDirList, File file) {
 		super(base, transferMinSize);
 		this.cfmlDirs = cfmlDirList.split(",");
 		this.cfmlDirsFiles = new File[cfmlDirs.length];

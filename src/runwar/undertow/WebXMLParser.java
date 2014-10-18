@@ -1,4 +1,4 @@
-package runwar;
+package runwar.undertow;
 
 import java.io.File;
 import java.util.HashMap;
@@ -26,7 +26,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-public class UndertowWebXMLParser {
+public class WebXMLParser {
 
     private static Logger log = Logger.getLogger("RunwarLogger");
 

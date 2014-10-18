@@ -1,4 +1,4 @@
-package runwar;
+package runwar.util;
 import java.io.OutputStream;
 import java.io.IOException;
 
