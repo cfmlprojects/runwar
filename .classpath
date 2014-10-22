@@ -12,5 +12,6 @@
 	<classpathentry kind="lib" path="lib/undertow-servlet-1.1.0.CR4.jar" sourcepath="undertow/servlet/src/main/java"/>
 	<classpathentry kind="lib" path="lib/xnio-api-3.3.0.Beta4.jar"/>
 	<classpathentry kind="lib" path="lib/xnio-nio-3.3.0.Beta4.jar"/>
+	<classpathentry kind="lib" path="lib/json-smart-mini-1.0.8.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

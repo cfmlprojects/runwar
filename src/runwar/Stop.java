@@ -21,7 +21,7 @@ public class Stop {
             System.exit(1);
         }
         System.out.println("*** stopped.");
-        System.out.println(Start.bar);
+        System.out.println(Server.bar);
         System.exit(0);
     }
 

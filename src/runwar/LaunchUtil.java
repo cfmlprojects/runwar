@@ -12,12 +12,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
@@ -36,11 +38,14 @@ import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
-import org.jboss.logging.Logger;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
+import runwar.logging.Logger;
 
 public class LaunchUtil {
 
-	private static Logger log = Logger.getLogger("RunwarLogger");
+    private static Logger log = Logger.getLogger("RunwarLogger");
 	private static boolean relaunching;
 	public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] {
 			"cfml.cli.home",
@@ -228,49 +233,7 @@ public class LaunchUtil {
 	static void hookTray(String iconImage, String host, int portNumber, final int stopSocket, String processName, String PID) {
 		
 		if (SystemTray.isSupported()) {
-			
-			Image image = null;
-			if(iconImage != null && iconImage.length() != 0) {
-				iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-				log.debug("trying to load icon: "+iconImage);
-				if(iconImage.contains("!")) {
-			        String[] zip = iconImage.split("!");
-				    try {
-				    	ZipFile zipFile = new ZipFile(zip[0]);
-				    	ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", "")) ;
-				    	InputStream entryStream = zipFile.getInputStream(zipEntry);
-						image = ImageIO.read(entryStream);
-						zipFile.close();
-						log.debug("loaded image from archive: " + zip[0] + zip[1]);
-					} catch (IOException e2) {
-						log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() +")");
-					}
-				} else if(new File(iconImage).exists()) {
-					try {
-						image = ImageIO.read(new File(iconImage));
-					} catch (IOException e1) { 
-						log.debug("Could not get file resource: " + iconImage + "(" + e1.getMessage() +")");
-					}
-				} else {
-					log.debug("trying parent loader for image: " + iconImage);
-					URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
-					if(imageURL == null) {
-						log.debug("trying loader for image: " + iconImage);
-						imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
-					}
-					if(imageURL != null) {
-						log.debug("Trying getImage for: " + imageURL);
-						image = Toolkit.getDefaultToolkit().getImage(imageURL);
-					} 				
-				}
-			} else {
-				image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
-			}
-			// if bad image, use default
-			if(image == null || image.getHeight(null) == -1) {
-				log.debug("Bad image, using default.");
-				image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
-			}
+			Image image = getIconImage(iconImage);
 			MouseListener mouseListener = new MouseListener() {
 				public void mouseClicked(MouseEvent e) {}
 				public void mouseEntered(MouseEvent e) {}
@@ -278,20 +241,48 @@ public class LaunchUtil {
 				public void mousePressed(MouseEvent e) {}
 				public void mouseReleased(MouseEvent e) {}
 			};
-			final String railoAdminURL = "http://"+host+":"+portNumber + "/railo-context/admin/server.cfm";
 
 			final TrayIcon trayIcon = new TrayIcon(image, processName + " server on " + host + ":" + portNumber + " PID:" + PID);
 
 			PopupMenu popup = new PopupMenu();
-			MenuItem item = new MenuItem("Stop Server (" + processName + ")");
-			item.addActionListener(new ExitActionListener(trayIcon,host,stopSocket));
-			popup.add(item);
-			item = new MenuItem("Open Browser");
-			item.addActionListener(new OpenBrowserActionListener(trayIcon,"http://"+host+":"+portNumber + "/"));
-			popup.add(item);
-			item = new MenuItem("Open Admin");
-			item.addActionListener(new OpenBrowserActionListener(trayIcon,railoAdminURL));
-			popup.add(item);
+            MenuItem item = null;
+            JSONArray menuItems;
+            
+			final String defaultMenu = "["
+                +"{label:\"Stop Server (${runwar.processName})\", action:\"stopserver\"}"
+                +",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
+                +"]";
+
+			menuItems = (JSONArray) JSONValue.parse(getResourceAsString("runwar/taskbar.json"));
+			if(menuItems == null) {
+			    log.error("Could not load taskbar properties");
+			    menuItems = (JSONArray) JSONValue.parse(defaultMenu);
+			}
+            for(Object ob : menuItems){
+                 JSONObject itemInfo = (JSONObject) ob;
+                 String label = replaceMenuTokens(itemInfo.get("label").toString(), processName, host, portNumber, stopSocket);
+                 String action = itemInfo.get("action").toString();
+                 item = new MenuItem(label);
+                 if(action.toLowerCase().equals("stopserver")) {
+                     item.addActionListener(new ExitActionListener(trayIcon,host,stopSocket));
+                 } else if(action.toLowerCase().equals("openbrowser")) {
+                     String url = replaceMenuTokens(itemInfo.get("url").toString(), processName, host, portNumber, stopSocket);
+                     item.addActionListener(new OpenBrowserActionListener(trayIcon,url));
+                 } else {
+                     log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
+                 }
+                 popup.add(item);
+             }
+	        
+//			MenuItem item = new MenuItem("Stop Server (" + processName + ")");
+//			item.addActionListener(new ExitActionListener(trayIcon,host,stopSocket));
+//			popup.add(item);
+//			item = new MenuItem("Open Browser");
+//			item.addActionListener(new OpenBrowserActionListener(trayIcon,"http://"+host+":"+portNumber + "/"));
+//			popup.add(item);
+//			item = new MenuItem("Open Admin");
+//			item.addActionListener(new OpenBrowserActionListener(trayIcon,railoAdminURL));
+//			popup.add(item);
 
 			trayIcon.setPopupMenu(popup);
 			trayIcon.setImageAutoSize(true);
@@ -309,8 +300,63 @@ public class LaunchUtil {
 			//  System Tray is not supported
 			
 		}
-	}	
-	private static class OpenBrowserActionListener implements ActionListener {
+	}
+
+	static Image getIconImage(String iconImage) {
+        Image image = null;
+        if(iconImage != null && iconImage.length() != 0) {
+            iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
+            log.debug("trying to load icon: "+iconImage);
+            if(iconImage.contains("!")) {
+                String[] zip = iconImage.split("!");
+                try {
+                    ZipFile zipFile = new ZipFile(zip[0]);
+                    ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", "")) ;
+                    InputStream entryStream = zipFile.getInputStream(zipEntry);
+                    image = ImageIO.read(entryStream);
+                    zipFile.close();
+                    log.debug("loaded image from archive: " + zip[0] + zip[1]);
+                } catch (IOException e2) {
+                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() +")");
+                }
+            } else if(new File(iconImage).exists()) {
+                try {
+                    image = ImageIO.read(new File(iconImage));
+                } catch (IOException e1) { 
+                    log.debug("Could not get file resource: " + iconImage + "(" + e1.getMessage() +")");
+                }
+            } else {
+                log.debug("trying parent loader for image: " + iconImage);
+                URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
+                if(imageURL == null) {
+                    log.debug("trying loader for image: " + iconImage);
+                    imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
+                }
+                if(imageURL != null) {
+                    log.debug("Trying getImage for: " + imageURL);
+                    image = Toolkit.getDefaultToolkit().getImage(imageURL);
+                }               
+            }
+        } else {
+            image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
+        }
+        // if bad image, use default
+        if(image == null) {
+            log.debug("Bad image, using default.");
+            image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
+        }
+        return image;
+    }
+
+    private static String replaceMenuTokens(String label, String processName, String host, int portNumber, int stopSocket) {
+        label = label.replaceAll("\\$\\{runwar.port\\}", Integer.toString(portNumber))
+        .replaceAll("\\$\\{runwar.processName\\}", processName)
+        .replaceAll("\\$\\{runwar.host\\}", host)
+        .replaceAll("\\$\\{runwar.stopsocket\\}", Integer.toString(stopSocket));
+	    return label;
+	}
+	
+    private static class OpenBrowserActionListener implements ActionListener {
 		private TrayIcon trayIcon;
 		private String url;
 
@@ -390,4 +436,31 @@ public class LaunchUtil {
 		}
 	}
 
+    static String getResourceAsString(String path) {
+        InputStream is = null;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream outPrint = new PrintStream(out);
+        try {
+            is = LaunchUtil.class.getClassLoader().getResourceAsStream(path);
+            int content;
+            while ((content = is.read()) != -1) {
+                // convert to char and display it
+                outPrint.print((char) content);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (is != null)
+                    is.close();
+                if (outPrint != null)
+                    outPrint.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        return out.toString();
+    }
+    
+	
 }

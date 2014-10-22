@@ -67,7 +67,6 @@ final class AgentLoader {
 		return false;
 	}
 
-	@SuppressWarnings("UseOfSunClasses")
 	private VirtualMachine getVirtualMachineImplementationFromEmbeddedOnes() {
 		try {
 			if (File.separatorChar == '\\') {

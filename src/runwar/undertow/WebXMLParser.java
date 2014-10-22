@@ -16,7 +16,7 @@ import io.undertow.servlet.api.ServletInfo;
 import java.util.EventListener;
 import java.util.Map;
 
-import org.jboss.logging.Logger;
+import runwar.logging.Logger;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;

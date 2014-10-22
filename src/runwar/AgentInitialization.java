@@ -5,7 +5,7 @@ import java.net.*;
 import java.security.*;
 import java.util.regex.*;
 
-import org.jboss.logging.Logger;
+import runwar.logging.Logger;
 
 final class AgentInitialization {
 	private static final Pattern JAR_REGEX = Pattern

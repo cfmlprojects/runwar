@@ -13,9 +13,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.net.*;
 
 /**
  * A bootstrap class for starting server using an embedded war
@@ -28,11 +25,6 @@ public final class RunEmbeddedWar {
 	private static String WAR_NAME = "cfdistro";
 	private static String WAR_FILENAME = WAR_NAME + WAR_POSTFIX;
 	private static final int KB = 1024;
-
-	public RunEmbeddedWar(int seconds) {
-			Timer timer = new Timer();
-			timer.schedule(this.new OpenBrowserTask(), seconds * 1000);
-	  }
 
 
 	public static void main(String[] args) throws Exception {
@@ -111,38 +103,12 @@ public final class RunEmbeddedWar {
 		argsList.add("../");
 		
 		if(props.getProperty("open.url") != null) {
-			new RunEmbeddedWar(3);
+			new Server(3);
 		}
 		Start.main(argsList.toArray(new String[argsList.size()]));
 		System.exit(0);
 	}
 
-	  class OpenBrowserTask extends TimerTask {
-		    public void run() {
-				ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-				String sConfigFile = "runwar.properties";
-				InputStream in = classLoader.getResourceAsStream(sConfigFile);
-				Properties props = new java.util.Properties();
-				Boolean connected = false;
-				try{					
-					props.load(in);
-					System.out.println("Waiting for server...");
-					while(!connected) {
-						try {
-						Socket socket = new Socket(InetAddress.getLocalHost(), Integer.parseInt(PORT));
-						Thread.currentThread().sleep(3000);
-						connected = true;
-						} catch (Exception any) {
-							connected = false;
-						}												
-					}					
-					System.out.println("Opening browser to..." + props.getProperty("open.url"));
-					BrowserOpener.openURL(props.getProperty("open.url").trim());
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-	    	}
-	  }	
 	
 	public static int writeStreamTo(final InputStream input, final OutputStream output, int bufferSize)
 			throws IOException {

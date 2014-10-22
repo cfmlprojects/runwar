@@ -98,13 +98,16 @@
 	<target name="runwar.jar" depends="runwar.compile">
 		<runwar.initprops />
 		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/icon.png" />
+		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/taskbar.json" />
 		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/version.properties">
 			<filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
 		</copy>
-			    	
+		<copy todir="${runwar.bin.dir}/runwar/">
+			<fileset dir="${runwar.src.dir}/" includes="javax/**, META-INF/**"/>
+		</copy>
 		<jar destfile="${runwar.jar.file}" duplicate="preserve"
          basedir="${runwar.bin.dir}/runwar/" 
-         includes="**/*.class, **/*.png, **/services/org.xnio.XnioProvider, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.xml, javax/**" 
+         includes="**/*.class, **/*.png, **META-INF/services/*, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.json, **/*.xml, javax/**" 
 		 filesetmanifest="mergewithoutmain">
 			<manifest>
 				<attribute name="Main-Class" value="runwar.Start" />
@@ -117,7 +120,6 @@
 			</manifest>
 			<zipgroupfileset dir="${runwar.lib.dir}" includes="**/*.jar"/>
 		</jar>
-		<delete dir="${runwar.bin.dir}"/>
 	</target>
 
 
@@ -133,7 +135,8 @@
 			<then><delete dir="${runwar.lib.dir}"/></then>
 		</antcontrib:if>
 		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
-    	<dependency groupId="commons-cli" artifactId="commons-cli" version="1.2"
+		<dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+		<dependency groupId="commons-cli" artifactId="commons-cli" version="1.2"
     		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo"/>
     	<dependency groupId="io.undertow" artifactId="undertow-jsp" version="1.0.0.Beta27"
     		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo">
