@@ -228,12 +228,12 @@ public class Server {
 		File webXmlFile = serverOptions.getWebXmlFile();
 		if(warFile.isDirectory() && !webinf.exists()) {
 	        if(railoConfigWebDir == null) {
-	        	File webConfigDirFile = new File(getThisJarLocation().getParentFile(),"server/railo-web/");
+	        	File webConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/railo-web/");
 				railoConfigWebDir = webConfigDirFile.getPath();
 	        }
 	        log.debug("railo.web.config.dir: " + railoConfigWebDir);
 	        if(railoConfigServerDir == null || railoConfigServerDir.length() == 0) {
-	        	File serverConfigDirFile = new File(getThisJarLocation().getParentFile(),"server/");
+	        	File serverConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/");
 	        	railoConfigServerDir = serverConfigDirFile.getAbsolutePath();
 	        }
 	        log.debug("railo.server.config.dir: " + railoConfigServerDir);
