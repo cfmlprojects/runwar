@@ -281,7 +281,11 @@ public class CommandLineHandler {
                 if(line.getOptionValue("stop")!=null) {
                     socketNumber = Integer.parseInt(line.getOptionValue("stop")); 
                 }
-                new Stop().main(new String[] {Integer.toString(socketNumber)});
+                String host = "127.0.0.1";
+                if(line.getOptionValue("host")!=null) {
+                    host = line.getOptionValue("host");
+                }
+                new Stop().main(new String[] {Integer.toString(socketNumber),host});
             }
 
             if (line.hasOption("context")) {

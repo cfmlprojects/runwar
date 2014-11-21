@@ -8,8 +8,9 @@ public class Stop {
 
     public static void main(String[] args) throws Exception {
     	int socketNumber = Integer.parseInt(args[0]);
+        String host = args[1];
         try{
-        	Socket s = new Socket(InetAddress.getByName("127.0.0.1"), socketNumber);
+        	Socket s = new Socket(InetAddress.getByName(host), socketNumber);
 	        OutputStream out = s.getOutputStream();
 	        System.out.println("*** sending stop request to socket : " + socketNumber);
         	out.write(("\r\n").getBytes());
