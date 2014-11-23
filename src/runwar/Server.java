@@ -16,6 +16,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -327,15 +328,36 @@ public class Server {
         HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
         Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, host).setHandler(errPageHandler);
 */
+        Builder serverBuilder = Undertow.builder();
+
+        if(serverOptions.isEnableHTTP()) {
+        	serverBuilder.addHttpListener(portNumber, host);
+        }
+
+        if(serverOptions.isEnableSSL()) {
+        	int sslPort = serverOptions.getSSLPort();
+			serverBuilder.setDirectBuffers(true);
+			log.info("Enabling SSL protocol on port " + sslPort); 
+			if(serverOptions.getSSLCertificate() != null) {
+				File certfile = serverOptions.getSSLCertificate();
+				File keyfile = serverOptions.getSSLKey();
+				char[] keypass = serverOptions.getSSLKeyPass();
+				serverBuilder.addHttpsListener(sslPort, host, SSLUtil.createSSLContext(certfile, keyfile, keypass));
+				Arrays.fill(keypass, '*');
+			} else {
+				serverBuilder.addHttpsListener(sslPort, host, SSLUtil.createSSLContext());
+			}
+        }
+        
+        if(serverOptions.isEnableAJP()) {
+			log.info("Enabling AJP protocol on port " + serverOptions.getAJPPort());
+			serverBuilder.addAjpListener(serverOptions.getAJPPort(), host);
+		}
+
         PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
                 .addPrefixPath(contextPath, servletHandler);
-        Builder serverBuilder = Undertow.builder()
-                .addHttpListener(portNumber, host).setHandler(pathHandler);
 
-        if(serverOptions.isEnableAJP()) {
-			log.info("Enabling AJP protocol on port " + serverOptions.getAjpPort());
-			serverBuilder.addAjpListener(serverOptions.getAjpPort(), "localhost");
-		}
+        serverBuilder.setHandler(pathHandler);
 
 		try {
 			PID = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
@@ -363,12 +385,13 @@ public class Server {
 		if (serverOptions.isOpenbrowser()) {
 			new Server(3);
 		}
-
+		
 		undertow = serverBuilder.build();
 		// if this println changes be sure to update the LaunchUtil so it will know success
         String msg = "Server is up - http-port:" + portNumber + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         log.debug(msg);
 		System.out.println(msg);
+		
 		undertow.start();
 	}
 

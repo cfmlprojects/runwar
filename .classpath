@@ -8,10 +8,14 @@
 	<classpathentry kind="lib" path="lib/jboss-logging-3.1.4.GA.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-servlet-api_3.1_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-jsp-1.0.0.Beta27.jar"/>
-	<classpathentry kind="lib" path="lib/undertow-core-1.1.0.CR4.jar" sourcepath="undertow/core/src/main/java"/>
-	<classpathentry kind="lib" path="lib/undertow-servlet-1.1.0.CR4.jar" sourcepath="undertow/servlet/src/main/java"/>
-	<classpathentry kind="lib" path="lib/xnio-api-3.3.0.Beta4.jar"/>
-	<classpathentry kind="lib" path="lib/xnio-nio-3.3.0.Beta4.jar"/>
 	<classpathentry kind="lib" path="lib/json-smart-mini-1.0.8.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-nio-3.3.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-api-3.3.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-core-1.1.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-servlet-1.1.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/bcpg-jdk16-1.46.jar"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk16-1.46.jar"/>
+	<classpathentry kind="lib" path="lib/bcpkix-jdk14-1.51.jar"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk14-1.51.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

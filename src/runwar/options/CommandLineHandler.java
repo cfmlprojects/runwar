@@ -63,10 +63,46 @@ public class CommandLineHandler {
                 .create("stop") );
         
         options.addOption( OptionBuilder
+        		.withLongOpt( "enable-http" )
+        		.withDescription( "Enable HTTP.  Default is true." )
+        		.hasArg().withArgName("true|false").withType(Boolean.class)
+        		.create("enablehttp") );
+        
+        options.addOption( OptionBuilder
                 .withLongOpt( "enable-ajp" )
                 .withDescription( "Enable AJP.  Default is false" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("enableajp") );
+        
+        options.addOption( OptionBuilder
+        		.withLongOpt( "enable-ssl" )
+        		.withDescription( "Enable SSL.  Default is false.  Add '-enablehttp false' for SSL only." )
+        		.hasArg().withArgName("true|false").withType(Boolean.class)
+        		.create("enablessl") );
+        
+        options.addOption( OptionBuilder
+        		.withLongOpt( "ssl-port" )
+        		.withDescription( "SSL port.  Disabled if not set." )
+        		.hasArg().withArgName("ssl port").withType(Number.class)
+        		.create("sslport") );
+        
+        options.addOption( OptionBuilder
+        		.withLongOpt( "ssl-cert" )
+        		.withDescription( "SSL certificate file in x509 (PKS#12) format." )
+        		.hasArg().withArgName("ssl certificate")
+        		.create("sslcert") );
+        
+        options.addOption( OptionBuilder
+        		.withLongOpt( "ssl-key" )
+        		.withDescription( "SSL private key file in DER (PKS#8) format." )
+        		.hasArg().withArgName("ssl key")
+        		.create("sslkey") );
+        
+        options.addOption( OptionBuilder
+        		.withLongOpt( "ssl-keypass" )
+        		.withDescription( "SSL key passphrase." )
+        		.hasArg().withArgName("ssl key passphrase")
+        		.create("sslkeypass") );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "ajp-port" )
@@ -248,12 +284,7 @@ public class CommandLineHandler {
             }
             if (line.hasOption("war")) {
                 String warPath = line.getOptionValue("war");
-                File warFile = new File(warPath);
-                if(warFile.exists()) {
-                    serverOptions.setWarFile(warFile);
-                } else {
-                    throw new RuntimeException("Could not find war! " + warPath);
-                }
+                serverOptions.setWarFile(getFile(warPath));
             } else if (!line.hasOption("stop")) {
                 printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
             } 
@@ -297,11 +328,32 @@ public class CommandLineHandler {
             if (line.hasOption("port")) {
                 serverOptions.setPortNumber(((Number)line.getParsedOptionValue("port")).intValue());
             }
-            if (line.hasOption("enable-ajp")) {
-                serverOptions.setEnableAJP(Boolean.valueOf(line.getOptionValue("enable-ajp")));
+            if (line.hasOption("enable-ssl")) {
+                serverOptions.setEnableSSL(Boolean.valueOf(line.getOptionValue("enable-ssl")));
+            }
+            if (line.hasOption("sslport")) {
+                serverOptions.setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue("sslport")).intValue());
+            }
+            if (line.hasOption("sslcert")) {
+            	serverOptions.setSSLCertificate(getFile(line.getOptionValue("sslcert")));
+                if (!line.hasOption("sslkey") || !line.hasOption("sslkey")) {
+                    throw new RuntimeException("Using a SSL certificate requires -sslkey /path/to/file and -sslkeypass pass**** arguments!");  	
+                }
+            }
+            if (line.hasOption("sslkey")) {
+            	serverOptions.setSSLKey(getFile(line.getOptionValue("sslkey")));
+            }
+            if (line.hasOption("sslkeypass")) {
+            	serverOptions.setSSLKeyPass(line.getOptionValue("sslkeypass").toCharArray());
+            }
+            if (line.hasOption("enableajp")) {
+            	serverOptions.setEnableAJP(Boolean.valueOf(line.getOptionValue("enableajp")));
+            }
+            if (line.hasOption("enablehttp")) {
+            	serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue("enablehttp")));
             }
             if (line.hasOption("ajp")) {
-                serverOptions.setAjpPort(((Number)line.getParsedOptionValue("ajp")).intValue());
+                serverOptions.setEnableAJP(true).setAJPPort(((Number)line.getParsedOptionValue("ajp")).intValue());
             }
             if (line.hasOption("logdir")) {
                 serverOptions.setLogDir(line.getOptionValue("logdir"));
@@ -364,6 +416,14 @@ public class CommandLineHandler {
         }
         return null;
     }    
+    
+    private static File getFile(String path) {
+        File file = new File(path);
+        if(!file.exists()) {
+            throw new RuntimeException("File not found: " + path);
+        }
+    	return file;
+    }
 
     static void printUsage(String message, int exitCode) {
         HelpFormatter formatter = new HelpFormatter();

@@ -97,6 +97,8 @@
 
 	<target name="runwar.jar" depends="runwar.compile">
 		<runwar.initprops />
+		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/runwar.keystore" />
+		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/runwar.truststore" />
 		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/icon.png" />
 		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/taskbar.json" />
 		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/version.properties">
@@ -107,10 +109,10 @@
 		</copy>
 		<jar destfile="${runwar.jar.file}" duplicate="preserve"
          basedir="${runwar.bin.dir}/runwar/" 
-         includes="**/*.class, **/*.png, **META-INF/services/*, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.json, **/*.xml, javax/**" 
+         includes="**/*.class, **/*.png, **META-INF/services/*,**/runwar.*store, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.json, **/*.xml, javax/**"
 		 filesetmanifest="mergewithoutmain">
 			<manifest>
-				<attribute name="Main-Class" value="runwar.Start" />
+ 				<attribute name="Main-Class" value="runwar.Start" />
 				<attribute name="Class-Path" value="./${runwar.jar}" />
 				<attribute name="Premain-Class" value="railo.runtime.instrumentation.Agent"/>
 				<attribute name="Agent-Class" value="railo.runtime.instrumentation.Agent"/>
@@ -118,9 +120,18 @@
 				<attribute name="Can-Retransform-Classes" value="true"/>
 				<attribute name="Implementation-Version" value="${runwarbuild.version}"/>
 			</manifest>
-			<zipgroupfileset dir="${runwar.lib.dir}" includes="**/*.jar"/>
+			<zipgroupfileset dir="${runwar.lib.dir}"/>
 		</jar>
-	</target>
+	    <unzip src="${runwar.jar.file}" dest="${temp.dir}/jar" />
+	    <delete file="${runwar.jar.file}" />
+		<zip destfile="${runwar.jar.file}" update="false">
+	       	<fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA"/>
+	   	</zip>
+<!--
+		<property name="cfmlprojects.keystore" value="/tmp/keystore" />
+ 		<signjar jar="${runwar.jar.file}" alias="cfmlprojects" force="true" tsaurl="http://tsa.starfieldtech.com" keystore="${cfmlprojects.keystore}" storepass="changeit" sigfile="BCKEY"/>
+ -->
+ 	</target>
 
 
 	<target name="runwar.mvn" depends="runwar.jar">
@@ -130,12 +141,10 @@
 	</target>
 
 	<target name="get.deps">
-		<antcontrib:if>
-			<equals arg1="${clean}" arg2="true"/>
-			<then><delete dir="${runwar.lib.dir}"/></then>
-		</antcontrib:if>
+		<delete dir="${runwar.lib.dir}"/>
 		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
 		<dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+		<dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk14" version="1.51" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
 		<dependency groupId="commons-cli" artifactId="commons-cli" version="1.2"
     		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo"/>
     	<dependency groupId="io.undertow" artifactId="undertow-jsp" version="1.0.0.Beta27"
