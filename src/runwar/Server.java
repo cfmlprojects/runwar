@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.awt.Image;
 import java.awt.TrayIcon;
 
@@ -55,13 +57,13 @@ public class Server {
 	private static Logger log = Logger.getLogger("RunwarLogger");
 	private static ServerOptions serverOptions;
 
-	private static String PID;
+	private String PID;
+	private String serverState = ServerState.STOPPED;
 
 	private static URLClassLoader _classLoader;
 
-	static TrayIcon trayIcon;
-	private static DeploymentManager manager;
-	private static Undertow undertow;
+	private DeploymentManager manager;
+	private Undertow undertow;
 	public static final String bar = "******************************************************************************";
 	
 	public Server() {
@@ -73,19 +75,19 @@ public class Server {
 	    timer.schedule(this.new OpenBrowserTask(), seconds * 1000);
 	}
 	
-    protected static void initClassLoader(List<URL> _classpath) {
+    protected void initClassLoader(List<URL> _classpath) {
         if (_classLoader == null && _classpath != null && _classpath.size() > 0) {
             log.debugf("classpath: %s",_classpath);
-//            _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
+//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
 //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
 //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
           _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
 //          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-            //Thread.currentThread().setContextClassLoader(_classLoader);
+//          Thread.currentThread().setContextClassLoader(_classLoader);
         }
     }
     
-    protected static void setClassLoader(URLClassLoader classLoader){
+    protected void setClassLoader(URLClassLoader classLoader){
         _classLoader = classLoader;
     }
     
@@ -93,15 +95,18 @@ public class Server {
         return _classLoader;
     }
     
-	public static void startServer(String[] args, URLClassLoader classLoader) throws Exception {
+	public void startServer(String[] args, URLClassLoader classLoader) throws Exception {
 	    setClassLoader(classLoader);
 	    startServer(args);
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static void startServer(String[] args) throws Exception {
-	    serverOptions = new ServerOptions();
-		CommandLine line = new CommandLineHandler().parseArguments(args,serverOptions);
+	public void startServer(String[] args) throws Exception {
+		serverState = ServerState.STARTING;
+	    serverOptions = CommandLineHandler.parseArguments(args);
+        if(serverOptions.getAction().equals("stop")){
+            Stop.stopServer(args);
+        }
         String processName = serverOptions.getProcessName();
         int portNumber = serverOptions.getPortNumber();
         int socketNumber = serverOptions.getSocketNumber();
@@ -110,8 +115,10 @@ public class Server {
         File warFile = serverOptions.getWarFile();
         String warPath = serverOptions.getWarPath();
         String loglevel = serverOptions.getLoglevel();
+        char[] stoppassword = serverOptions.getStopPassword();
 
 		if (serverOptions.isBackground()) {
+			serverState = ServerState.STARTING_BACKGROUND;
 			// this will eventually system.exit();
 			List<String> argarray = new ArrayList<String>();
 			for(String arg : args) {
@@ -125,17 +132,12 @@ public class Server {
 			argarray.add("false");
 			int launchTimeout = serverOptions.getLaunchTimeout();
 			LaunchUtil.relaunchAsBackgroundProcess(launchTimeout, argarray.toArray(new String[argarray.size()]), processName);
+			serverState = ServerState.STARTED_BACKGROUND;
 			// just in case
 			Thread.sleep(200);
 			System.exit(0);
 		}
 		TeeOutputStream tee = null;
-	    if(loglevel.equals("DEBUG")) {
-	    	for(Option arg: line.getOptions()) {
-	    		log.debug(arg);
-	    		log.debug(arg.getValue());
-	    	}
-	    }
 	    if(serverOptions.getLogDir() != null) {
 			File logDirectory = serverOptions.getLogDir();
 			logDirectory.mkdir();
@@ -376,10 +378,11 @@ public class Server {
 			log.error("request log currently unsupported");
 		}
 
-		Thread monitor = new MonitorThread(tee, socketNumber);
+		// start the stop monitor thread
+		Thread monitor = new MonitorThread(tee, socketNumber, stoppassword);
 		monitor.start();
         log.debug("started stop monitor");
-		LaunchUtil.hookTray(serverOptions.getIconImage(), host, portNumber, socketNumber, processName, PID);
+		LaunchUtil.hookTray(this);
 		log.debug("hooked system tray");
 
 		if (serverOptions.isOpenbrowser()) {
@@ -391,6 +394,7 @@ public class Server {
         String msg = "Server is up - http-port:" + portNumber + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         log.debug(msg);
 		System.out.println(msg);
+		serverState = ServerState.STARTED;
 		
 		undertow.start();
 	}
@@ -399,8 +403,11 @@ public class Server {
 	    return new File(Server.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile();
 	}
 	
+	public String getPID() {
+		return PID;
+	}
 	
-	private static int getPortOrErrorOut(int portNumber, String host) {
+	private int getPortOrErrorOut(int portNumber, String host) {
         try {
 			ServerSocket nextAvail = new ServerSocket(portNumber, 1, InetAddress.getByName(host));
 			portNumber = nextAvail.getLocalPort();
@@ -415,7 +422,7 @@ public class Server {
 		}
 	}
 	
-	private static List<URL> getJarList(String libDirs) throws IOException {
+	private List<URL> getJarList(String libDirs) throws IOException {
 		List<URL> classpath=new ArrayList<URL>();
 		String[] list = libDirs.split(",");
 		if (list == null)
@@ -440,7 +447,7 @@ public class Server {
 		return classpath;
 	}
 
-	private static List<URL> getClassesList(String classesDir) throws IOException {
+	private List<URL> getClassesList(String classesDir) throws IOException {
 		List<URL> classpath=new ArrayList<URL>();
 		if(classesDir == null)
 			return classpath;
@@ -468,43 +475,70 @@ public class Server {
 	    return version[version.length-1].trim();
 	}
 
-	private static class MonitorThread extends Thread {
+	private class MonitorThread extends Thread {
 
-		private ServerSocket socket;
 		private TeeOutputStream stdout;
 		private int socketNumber;
+		private char[] stoppassword;
+		private boolean listening;
 
-		public MonitorThread(TeeOutputStream tee, int socketNumber) {
+		public MonitorThread(TeeOutputStream tee, int socketNumber, char[] stoppassword) {
 			stdout = tee;
+			this.stoppassword = stoppassword;
 			setDaemon(true);
 			setName("StopMonitor");
 			this.socketNumber = socketNumber;
-			try {
-				socket = new ServerSocket(socketNumber, 1, InetAddress.getByName(serverOptions.getHost()));
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
 		}
 
 		@Override
 		public void run() {
-			System.out.println(bar);
-			System.out.println("*** starting 'stop' listener thread - Host: "+ serverOptions.getHost() + " - Socket: " + this.socketNumber);
-			System.out.println(bar);
-			Socket accept;
+			Executor exe = Executors.newCachedThreadPool();
+			ServerSocket serverSocket = null;
+			int exitCode = 0;
 			try {
-				accept = socket.accept();
-				BufferedReader reader = new BufferedReader(new InputStreamReader(accept.getInputStream()));
-				reader.readLine();
+				serverSocket = new ServerSocket(socketNumber, 1, InetAddress.getByName(serverOptions.getHost()));
+				System.out.println(bar);
+				System.out.println("*** starting 'stop' listener thread - Host: "+ serverOptions.getHost() + " - Socket: " + this.socketNumber);
+				System.out.println(bar);
+				listening = true;
+				while (listening) {
+					final Socket clientSocket = serverSocket.accept();
+					int r,i=0;
+					BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+					try{
+						while ((r = reader.read()) != -1) {
+							char ch = (char) r;
+							if(stoppassword.length > i && ch == stoppassword[i]) {
+								i++;
+							} else {
+								i = 0; // prevent prefix only matches
+							}
+						}
+						if(i == stoppassword.length){
+							listening = false;
+						} else {
+							log.warn("Incorrect password used when trying to stop server.");
+						}
+					} catch (java.net.SocketException e) {
+						// reset
+					}
+					try {
+						clientSocket.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				serverSocket.close();
 				System.out.println(bar);
 				System.out.println("*** stopping server");
 				System.out.println(bar);
 				manager.undeploy();
 				undertow.stop();
-				accept.close();
-				socket.close();
+				serverState = ServerState.STOPPED;
 			} catch (Exception e) {
-				throw new RuntimeException(e);
+				serverState = ServerState.UNKNOWN;
+				log.error(e);
+				exitCode = 1;
 			}
 			try {
 				if(stdout != null) 
@@ -512,8 +546,24 @@ public class Server {
 			} catch (Exception e) {
 				System.out.println("Redirect:  Unable to close this log file!");
 			}
-			System.exit(0);
+			System.exit(exitCode);
 		}
+	}
+
+	public static boolean serverWentDown(int timeout, long sleepTime, InetAddress server, int port) {
+		long start = System.currentTimeMillis();
+		while ((System.currentTimeMillis() - start) < timeout) {
+			if (checkServerIsUp(server, port)) {
+				try {
+					Thread.sleep(sleepTime);
+				} catch (InterruptedException e) {
+					return false;
+				}
+			} else {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static boolean serverCameUp(int timeout, long sleepTime, InetAddress server, int port) {
@@ -581,5 +631,20 @@ public class Server {
     public static ServerOptions getServerOptions() {
         return serverOptions;
     }
-	
+
+    public String getServerState() {
+    	return serverState;
+    }
+    
+    public static class ServerState {
+    	public static final String STARTING = "STARTING";
+    	public static final String STARTED = "STARTED";
+		public static final String STARTING_BACKGROUND = "STARTING_BACKGROUND";
+		public static final String STARTED_BACKGROUND = "STARTED_BACKGROUND";
+		public static final String STOPPING = "STOPPING";
+		public static final String STOPPED = "STOPPED";
+		public static final String UNKNOWN = "UNKNOWN";
+	}
+
+
 }

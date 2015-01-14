@@ -11,7 +11,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 
 import runwar.Server;
-import runwar.Stop;
 import runwar.logging.Logger;
 
 public class CommandLineHandler {
@@ -25,8 +24,14 @@ public class CommandLineHandler {
     public CommandLineHandler(){
     }
 
+    public static ServerOptions parseArguments(String[] args) {
+    	ServerOptions serverOptions = new ServerOptions();
+    	parseArguments(args,serverOptions);
+    	return serverOptions;
+    }
+
     @SuppressWarnings("static-access")
-    public CommandLine parseArguments(String[] args, ServerOptions serverOptions) {
+    public static CommandLine parseArguments(String[] args, ServerOptions serverOptions) {
         parser = new PosixParser();
         options.addOption( OptionBuilder
                 .withDescription( "path to war" )
@@ -58,57 +63,65 @@ public class CommandLineHandler {
                 .create("stopsocket") );
         
         options.addOption( OptionBuilder
+        		.withLongOpt( "stop-password" )
+        		.withDescription( "Pasword checked when stopping server\n" )
+        		.hasArg().withArgName("password")
+        		.create("password") );
+        
+        options.addOption( OptionBuilder
                 .withDescription( "stop backgrounded.  Optional stop-port" )
-                .hasOptionalArg().withArgName("stop port")
+                .hasOptionalArg().withArgName("port")
+                .hasOptionalArg().withArgName("password")
+                .withValueSeparator(' ')
                 .create("stop") );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "enable-http" )
-        		.withDescription( "Enable HTTP.  Default is true." )
+        		.withLongOpt( "http-enable" )
+        		.withDescription( "Enable HTTP.  Default is true ,unless SSL or AJP are enabled." )
         		.hasArg().withArgName("true|false").withType(Boolean.class)
-        		.create("enablehttp") );
+        		.create("httpenable") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "enable-ajp" )
-                .withDescription( "Enable AJP.  Default is false" )
+                .withLongOpt( "ajp-enable" )
+                .withDescription( "Enable AJP.  Default is false.  When enabled, http is disabled by default." )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
-                .create("enableajp") );
+                .create("ajpenable") );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "enable-ssl" )
-        		.withDescription( "Enable SSL.  Default is false.  Add '-enablehttp false' for SSL only." )
+        		.withLongOpt( "ssl-enable" )
+        		.withDescription( "Enable SSL.  Default is false.  When enabled, http is disabled by default." )
         		.hasArg().withArgName("true|false").withType(Boolean.class)
-        		.create("enablessl") );
+        		.create("sslenable") );
         
         options.addOption( OptionBuilder
         		.withLongOpt( "ssl-port" )
         		.withDescription( "SSL port.  Disabled if not set." )
-        		.hasArg().withArgName("ssl port").withType(Number.class)
+        		.hasArg().withArgName("port").withType(Number.class)
         		.create("sslport") );
         
         options.addOption( OptionBuilder
         		.withLongOpt( "ssl-cert" )
         		.withDescription( "SSL certificate file in x509 (PKS#12) format." )
-        		.hasArg().withArgName("ssl certificate")
+        		.hasArg().withArgName("certificate")
         		.create("sslcert") );
         
         options.addOption( OptionBuilder
         		.withLongOpt( "ssl-key" )
         		.withDescription( "SSL private key file in DER (PKS#8) format." )
-        		.hasArg().withArgName("ssl key")
+        		.hasArg().withArgName("key")
         		.create("sslkey") );
         
         options.addOption( OptionBuilder
         		.withLongOpt( "ssl-keypass" )
         		.withDescription( "SSL key passphrase." )
-        		.hasArg().withArgName("ssl key passphrase")
+        		.hasArg().withArgName("passphrase")
         		.create("sslkeypass") );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "ajp-port" )
                 .withDescription( "AJP port.  Disabled if not set." )
                 .hasArg().withArgName("ajp port").withType(Number.class)
-                .create("ajp") );
+                .create("ajpport") );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "log-dir" )
@@ -186,25 +199,25 @@ public class CommandLineHandler {
                 .create("procname") );
 
         options.addOption( OptionBuilder
-                .withLongOpt( "iconpath" )
+                .withLongOpt( "icon-path" )
                 .withDescription( "tray icon and OS X dock icon png image" )
                 .hasArg().withArgName("path")
                 .create("icon") );
 
         options.addOption( OptionBuilder
-                .withLongOpt( "webxmlpath" )
+                .withLongOpt( "web-xml-path" )
                 .withDescription( "full path to default web.xml file for configuring the server" )
                 .hasArg().withArgName("path")
                 .create("webxmlpath") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "railoweb" )
+                .withLongOpt( "railo-web-config" )
                 .withDescription( "full path to railo web config directory" )
                 .hasArg().withArgName("path")
                 .create("railoweb") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "railoserver" )
+                .withLongOpt( "railo-server-config" )
                 .withDescription( "full path to railo server config directory" )
                 .hasArg().withArgName("path")
                 .create("railoserver") );
@@ -222,6 +235,7 @@ public class CommandLineHandler {
                 .create("welcomefiles") );
 
         options.addOption( OptionBuilder
+                .withLongOpt( "directory-list" )
                 .withDescription( "enable directory browsing" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directorylist") );
@@ -279,6 +293,9 @@ public class CommandLineHandler {
             if (line.hasOption("timeout")) {
                 serverOptions.setLaunchTimeout(((Number)line.getParsedOptionValue("timeout")).intValue() * 1000);
             }
+            if (line.hasOption("password")) {
+            	serverOptions.setStopPassword(line.getOptionValue("password").toCharArray());
+            }
             if (line.hasOption("stop-port")) {
                 serverOptions.setSocketNumber(((Number)line.getParsedOptionValue("stop-port")).intValue());
             }
@@ -308,15 +325,16 @@ public class CommandLineHandler {
             }
 
             if (line.hasOption("stop")) {
-                int socketNumber = serverOptions.getSocketNumber();
-                if(line.getOptionValue("stop")!=null) {
-                    socketNumber = Integer.parseInt(line.getOptionValue("stop")); 
+                serverOptions.setAction("stop");
+                String[] values = line.getOptionValues("stop");
+                if(values != null && values.length > 0) {
+                    serverOptions.setSocketNumber(Integer.parseInt(values[0])); 
                 }
-                String host = "127.0.0.1";
-                if(line.getOptionValue("host")!=null) {
-                    host = line.getOptionValue("host");
+                if(values != null && values.length >= 1) {
+                	serverOptions.setStopPassword(values[1].toCharArray()); 
                 }
-                new Stop().main(new String[] {Integer.toString(socketNumber),host});
+            } else {
+                serverOptions.setAction("start");
             }
 
             if (line.hasOption("context")) {
@@ -328,11 +346,12 @@ public class CommandLineHandler {
             if (line.hasOption("port")) {
                 serverOptions.setPortNumber(((Number)line.getParsedOptionValue("port")).intValue());
             }
-            if (line.hasOption("enable-ssl")) {
-                serverOptions.setEnableSSL(Boolean.valueOf(line.getOptionValue("enable-ssl")));
+            if (line.hasOption("ajpport")) {
+                serverOptions.setEnableHTTP(false)
+                	.setEnableAJP(true).setAJPPort(((Number)line.getParsedOptionValue("ajpport")).intValue());
             }
             if (line.hasOption("sslport")) {
-                serverOptions.setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue("sslport")).intValue());
+            	serverOptions.setEnableHTTP(false).setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue("sslport")).intValue());
             }
             if (line.hasOption("sslcert")) {
             	serverOptions.setSSLCertificate(getFile(line.getOptionValue("sslcert")));
@@ -349,30 +368,34 @@ public class CommandLineHandler {
             if (line.hasOption("enableajp")) {
             	serverOptions.setEnableAJP(Boolean.valueOf(line.getOptionValue("enableajp")));
             }
+            if (line.hasOption("enablessl")) {
+                serverOptions.setEnableHTTP(false).setEnableSSL(Boolean.valueOf(line.getOptionValue("enablessl")));
+            }
             if (line.hasOption("enablehttp")) {
             	serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue("enablehttp")));
-            }
-            if (line.hasOption("ajp")) {
-                serverOptions.setEnableAJP(true).setAJPPort(((Number)line.getParsedOptionValue("ajp")).intValue());
             }
             if (line.hasOption("logdir")) {
                 serverOptions.setLogDir(line.getOptionValue("logdir"));
             } else {
-                File warFile = serverOptions.getWarFile();
-                String logDir;
-                if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
-                    logDir = warFile.getPath() + "/WEB-INF/logs/";
-                } else {
-                    String serverConfigDir = System.getProperty("railo.server.config.dir");
-                    if(serverConfigDir == null) {
-                        logDir = new File(Server.getThisJarLocation().getParentFile(),"server/log/").getAbsolutePath();
-                    } else {
-                        logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
-                    }
+                if(serverOptions.getWarFile() != null){
+                	File warFile = serverOptions.getWarFile();
+                	String logDir;
+                	if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
+                		logDir = warFile.getPath() + "/WEB-INF/logs/";
+                	} else {
+                		String serverConfigDir = System.getProperty("railo.server.config.dir");
+                		if(serverConfigDir == null) {
+                			logDir = new File(Server.getThisJarLocation().getParentFile(),"server/log/").getAbsolutePath();
+                		} else {
+                			logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
+                		}
+                	}
+                	serverOptions.setLogDir(logDir);
                 }
-                serverOptions.setLogDir(logDir);
             }
-            serverOptions.setCfmlDirs(serverOptions.getWarFile().getAbsolutePath());
+            if(serverOptions.getWarFile() != null){
+            	serverOptions.setCfmlDirs(serverOptions.getWarFile().getAbsolutePath());
+            }
             if (line.hasOption("dirs")) {
                 serverOptions.setCfmlDirs(line.getOptionValue("dirs"));
             }
@@ -405,6 +428,12 @@ public class CommandLineHandler {
             if (line.hasOption("railoweb")) {
                 serverOptions.setRailoConfigWebDir(line.getOptionValue("railoweb"));
             }
+    	    if(serverOptions.getLoglevel().equals("DEBUG")) {
+    	    	for(Option arg: line.getOptions()) {
+    	    		log.debug(arg);
+    	    		log.debug(arg.getValue());
+    	    	}
+    	    }
             return line;
         }
         catch( Exception exp ) {

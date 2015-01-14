@@ -4,26 +4,42 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
+import runwar.options.CommandLineHandler;
+import runwar.options.ServerOptions;
+
 public class Stop {
 
     public static void main(String[] args) throws Exception {
-    	int socketNumber = Integer.parseInt(args[0]);
-        String host = args[1];
-        try{
-        	Socket s = new Socket(InetAddress.getByName(host), socketNumber);
-	        OutputStream out = s.getOutputStream();
-	        System.out.println("*** sending stop request to socket : " + socketNumber);
-        	out.write(("\r\n").getBytes());
-        	out.flush();
-        	s.close();
-        	out.close();
-        } catch (Exception e) {
-        	System.err.println("Could not stop server.  Are you sure it is running, and listing for stop requests on port "+socketNumber+"?");
-            System.exit(1);
-        }
-        System.out.println("*** stopped.");
-        System.out.println(Server.bar);
-        System.exit(0);
+    	stopServer(args);
+    }
+    
+    public static void stopServer(String[] args) throws Exception {
+    	ServerOptions serverOptions = CommandLineHandler.parseArguments(args);
+    	int socketNumber = serverOptions.getSocketNumber();
+    	String host = serverOptions.getHost();
+    	char[] stoppassword = serverOptions.getStopPassword();
+    	try{
+    		InetAddress addr = InetAddress.getByName(host);
+    		Socket s = new Socket(addr, socketNumber);
+    		OutputStream out = s.getOutputStream();
+    		System.out.println("*** sending stop request to socket : " + socketNumber);
+    		for (int i = 0; i < stoppassword.length; i++) {
+    			out.write(stoppassword[i]);
+    		}
+    		out.flush();
+    		out.close();
+    		s.close();
+    		if(!Server.serverWentDown(10000, 500, addr, socketNumber)){
+    			System.err.println("Timeout stopping server.  Did you set a stop-password, and are you passing it?  Check the log for more information.");
+        		System.exit(1);
+    		}
+    	} catch (Exception e) {
+    		System.err.println("Could not stop server.  Are you sure it is running, and listing for stop requests on port "+socketNumber+"?");
+    		System.exit(1);
+    	}
+    	System.out.println("*** stopped.");
+    	System.out.println(Server.bar);
+    	System.exit(0);
     }
 
 }

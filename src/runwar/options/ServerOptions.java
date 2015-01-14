@@ -5,21 +5,15 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 public class ServerOptions {
-    private String loglevel = "WARN";
+	private String processName = "RunWAR", loglevel = "WARN";
     private String host = "127.0.0.1", contextPath = "/";
     private int portNumber = 8088, ajpPort = 8009, sslPort = 443, socketNumber = 8779;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true;
-    private File logDir;
-    private String cfmlDirs;
-    private boolean isBackground = true, keepRequestLog = false, openbrowser = false;
-    private String openbrowserURL;
-    private String pidFile;
+    private boolean debug = false, isBackground = true, keepRequestLog = false, openbrowser = false;
+    private String pidFile, openbrowserURL, cfmlDirs, libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
-    private String processName = "RunWAR";
-    private String libDirs = null;
     private URL jarURL = null;
-    private boolean debug = false;
-    private File warFile, webXmlFile;
+    private File warFile, webXmlFile, logDir;
     private String iconImage = null;
     private String railoConfigWebDir = null, railoConfigServerDir = null;
     private boolean directoryListingEnabled = true;
@@ -27,6 +21,8 @@ public class ServerOptions {
             "default.html", "default.htm" };
 	private File sslCertificate, sslKey;
 	private char[] sslKeyPass;
+	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
+	private String action;
 
     public String getLoglevel() {
         return loglevel;
@@ -262,6 +258,20 @@ public class ServerOptions {
 	}
 	public char[] getSSLKeyPass() {
 		return this.sslKeyPass;
+	}
+	public ServerOptions setStopPassword(char[] password) {
+		this.stopPassword = password;
+		return this;
+	}
+	public char[] getStopPassword() {
+		return this.stopPassword;
+	}
+	public ServerOptions setAction(String action) {
+		this.action = action;
+		return this;
+	}
+	public String getAction() {
+		return this.action;
 	}
 
 }

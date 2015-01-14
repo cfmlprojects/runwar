@@ -10,20 +10,16 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.KeyPair;
 import java.security.KeyFactory;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,7 +32,6 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 
@@ -49,22 +44,6 @@ public class SSLUtil {
     private static final String SERVER_TRUST_STORE = "runwar/runwar.truststore";
     private static final char[] STORE_PASSWORD = "password".toCharArray();
     
-	private static KeyStore loadKeyStore(final String name) throws IOException {
-        final InputStream stream = SSLUtil.class.getClassLoader().getResourceAsStream(name);
-        if(stream == null)
-            throw new IOException(String.format("Unable to load KeyStore from classpath %s", name));
-        try {
-            KeyStore loadedKeystore = KeyStore.getInstance("JKS");
-            loadedKeystore.load(stream, STORE_PASSWORD);
-            log.debug("loaded store: " + name);
-            return loadedKeystore;
-        } catch (Exception e) {
-            throw new IOException(String.format("Unable to load KeyStore %s", name), e);
-        } finally {
-            IoUtils.safeClose(stream);
-        }
-    }
-
 	public static SSLContext createSSLContext() throws IOException {
 		log.debug("Creating SSL context from: " + SERVER_KEY_STORE + " trust store: " + SERVER_TRUST_STORE);
 		return createSSLContext(loadKeyStore(SERVER_KEY_STORE), loadKeyStore(SERVER_TRUST_STORE));
@@ -118,6 +97,22 @@ public class SSLUtil {
         }
 
         return sslContext;
+    }
+
+	private static KeyStore loadKeyStore(final String name) throws IOException {
+        final InputStream stream = SSLUtil.class.getClassLoader().getResourceAsStream(name);
+        if(stream == null)
+            throw new IOException(String.format("Unable to load KeyStore from classpath %s", name));
+        try {
+            KeyStore loadedKeystore = KeyStore.getInstance("JKS");
+            loadedKeystore.load(stream, STORE_PASSWORD);
+            log.debug("loaded store: " + name);
+            return loadedKeystore;
+        } catch (Exception e) {
+            throw new IOException(String.format("Unable to load KeyStore %s", name), e);
+        } finally {
+            IoUtils.safeClose(stream);
+        }
     }
 
 	public static KeyStore keystoreFromDERCertificate ( File certfile, File keyfile, char[] passphrase) throws Exception {

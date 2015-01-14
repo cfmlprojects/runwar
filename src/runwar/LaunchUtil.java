@@ -41,12 +41,15 @@ import javax.swing.JOptionPane;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
+import runwar.Server.ServerState;
 import runwar.logging.Logger;
+import runwar.options.ServerOptions;
 
 public class LaunchUtil {
 
     private static Logger log = Logger.getLogger("RunwarLogger");
 	private static boolean relaunching;
+	private static Server hookedServer;
 	public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] {
 			"cfml.cli.home",
 			"railo.server.config.dir",
@@ -230,7 +233,16 @@ public class LaunchUtil {
 		return resultBuffer.toArray(result);
 	}
 
-	static void hookTray(String iconImage, String host, int portNumber, final int stopSocket, String processName, String PID) {
+	public static void hookTray(Server server) {
+		hookedServer = server;
+		ServerOptions serverOptions = server.getServerOptions();
+		String iconImage = serverOptions.getIconImage();
+		String host = serverOptions.getHost();
+		int portNumber = serverOptions.getPortNumber();
+		final int stopSocket = serverOptions.getSocketNumber();
+		char[] stoppassword = serverOptions.getStopPassword();
+		String processName = serverOptions.getProcessName();
+		String PID = server.getPID();
 		
 		if (SystemTray.isSupported()) {
 			Image image = getIconImage(iconImage);
@@ -264,7 +276,7 @@ public class LaunchUtil {
                  String action = itemInfo.get("action").toString();
                  item = new MenuItem(label);
                  if(action.toLowerCase().equals("stopserver")) {
-                     item.addActionListener(new ExitActionListener(trayIcon,host,stopSocket));
+                     item.addActionListener(new ExitActionListener(trayIcon,host,stopSocket,stoppassword));
                  } else if(action.toLowerCase().equals("openbrowser")) {
                      String url = replaceMenuTokens(itemInfo.get("url").toString(), processName, host, portNumber, stopSocket);
                      item.addActionListener(new OpenBrowserActionListener(trayIcon,url));
@@ -376,10 +388,12 @@ public class LaunchUtil {
 		private TrayIcon trayIcon;
 		private int stopsocket;
 		private String host;
+		private char[] stoppassword;
 		
-		public ExitActionListener(TrayIcon trayIcon, String host, int stopsocket) {
+		public ExitActionListener(TrayIcon trayIcon, String host, int stopsocket, char[] stoppassword) {
 			this.trayIcon = trayIcon;
 			this.stopsocket = stopsocket;
+			this.stoppassword = stoppassword;
 			this.host = host;
 		}
 		
@@ -388,10 +402,26 @@ public class LaunchUtil {
 			try {
 	        	Socket s = new Socket(InetAddress.getByName(host), stopsocket);
 		        OutputStream out = s.getOutputStream();
-	        	out.write(("\r\n").getBytes());
+//		        stoppassword = "klaatuBarada".toCharArray();
+		        for (int i = 0; i < stoppassword.length; i++) {
+	                out.write(stoppassword[i]);
+	            }
 	        	out.flush();
 	        	s.close();
 	        	out.close();
+	        	int elapsed = 0;
+	        	int maxElapse = 30000; // wait 30 seconds max for clean shutdown
+	        	Thread.sleep(300);
+	        	if(hookedServer.getServerState() == ServerState.STOPPING) {
+	        		while(hookedServer.getServerState() == ServerState.STOPPING && elapsed < maxElapse){
+	        			Thread.sleep(1000);
+	        			elapsed += 1000;
+	        		}
+	        	}
+	        	if(hookedServer.getServerState() != Server.ServerState.STOPPED) {
+					System.out.println("Forced exit after 30 seconds.  Last state: " + hookedServer.getServerState());
+					System.exit(1);
+	        	}
 				System.out.println("Exiting...");
 				System.exit(0);
 			} catch (Exception e1) { 
@@ -461,6 +491,5 @@ public class LaunchUtil {
         }
         return out.toString();
     }
-    
 	
 }

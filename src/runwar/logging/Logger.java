@@ -10,7 +10,7 @@ public class Logger {
     private static org.jboss.logging.Logger logger;
     private static String loggerName;
     private static ArrayList<HashMap<String, Object>> lazyMessages;
-    private static org.jboss.logging.Logger.Level logLevel;
+    private static org.jboss.logging.Logger.Level logLevel = org.jboss.logging.Logger.Level.WARN;
 
     public Logger(String name) {
         loggerName = name;
@@ -165,16 +165,17 @@ public class Logger {
     // the first time the invoking app calls a log method
     private static void initLogging() {
         logger = org.jboss.logging.Logger.getLogger("RunwarLogger");
-        LogSubverter.subvertLoggers(Server.getServerOptions().getLoglevel());
-        logLevel = org.jboss.logging.Logger.Level.valueOf(Server.getServerOptions().getLoglevel());
-        loggingIsInitialized = true;
-        for(HashMap<String, Object> lm : lazyMessages) {
-            org.jboss.logging.Logger.Level level = (org.jboss.logging.Logger.Level)lm.get("level");
-            log(level,loggerName + lm.get("message"));
+        if(Server.getServerOptions() != null) {
+        	logLevel = org.jboss.logging.Logger.Level.valueOf(Server.getServerOptions().getLoglevel());
+        	loggingIsInitialized = true;
+        	LogSubverter.subvertLoggers(logLevel.toString());
+        	for(HashMap<String, Object> lm : lazyMessages) {
+        		org.jboss.logging.Logger.Level level = (org.jboss.logging.Logger.Level)lm.get("level");
+        		log(level,loggerName + lm.get("message"));
+        	}
+        	//org.apache.log4j.Logger debugLogger = org.apache.log4j.LoggerFactory.getLogger("DebugLogger");
+        	//debugLogger.addAppender(someConfiguredFileAppender);
         }
-
-        //org.apache.log4j.Logger debugLogger = org.apache.log4j.LoggerFactory.getLogger("DebugLogger");
-        //debugLogger.addAppender(someConfiguredFileAppender);
     }
     
     public static Logger getLogger(String string) {
