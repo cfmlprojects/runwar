@@ -229,18 +229,18 @@ public class Server {
 		File webXmlFile = serverOptions.getWebXmlFile();
 		if(warFile.isDirectory() && !webinf.exists()) {
 	        if(railoConfigWebDir == null) {
-	        	File webConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/server/"+ serverName +"/railo-web/");
-				railoConfigWebDir = webConfigDirFile.getPath() + "/{web-context-label}";
+	        	File webConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/server/railo-web/");
+				railoConfigWebDir = webConfigDirFile.getPath() + "/" + serverName;
 	        }
 	        log.debug("railo.web.config.dir: " + railoConfigWebDir);
 	        if(railoConfigServerDir == null || railoConfigServerDir.length() == 0) {
-	        	File serverConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/server/"+ serverName);
+	        	File serverConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/server/");
 	        	railoConfigServerDir = serverConfigDirFile.getAbsolutePath();
 	        }
 	        log.debug("railo.server.config.dir: " + railoConfigServerDir);
 	        String webinfDir = System.getProperty("railo.webinf");
 	        if(webinfDir == null) {
-	        	webinfDir = new File(railoConfigServerDir,"WEB-INF/").getPath();
+	        	webinfDir = new File(railoConfigWebDir,"WEB-INF/").getPath();
 	        }
 	        log.debug("railo.webinf: " + webinfDir);
 
@@ -289,7 +289,7 @@ public class Server {
 		                                .addInitParam("railo-web-directory",railoConfigWebDir)
 		                                .addMapping("/rest/*")
 		                                .setLoadOnStartup(2));
-				configureURLRewrite(servletBuilder, railoConfigServerDir + "/WEB-INF");
+				configureURLRewrite(servletBuilder, webinfDir);
 			}
 		} else if(webinf.exists()) {
 			log.debug("found WEB-INF: " + webinf.getAbsolutePath());
@@ -413,7 +413,7 @@ public class Server {
                 if(!serverOptions.getURLRewriteFile().isFile()) {
                     log.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
                 } else {
-                    String rewriteFileName = "urlrewrite-"+ serverName +".xml";
+                    String rewriteFileName = "urlrewrite.xml";
                     LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir + "/"+rewriteFileName));
                     log.debug("Copying URL rewrite file to WEB-INF: " + webInfDir + "/"+rewriteFileName);
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;

@@ -108,7 +108,7 @@
 			<fileset dir="${runwar.src.dir}/" includes="javax/**, META-INF/**"/>
 		</copy>
 		<jar destfile="${runwar.jar.file}" duplicate="preserve"
-         basedir="${runwar.bin.dir}/runwar/" 
+         basedir="${runwar.bin.dir}/runwar/"
          includes="**/*.class, **/*.png, **META-INF/services/*,**/runwar.*store, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.json, **/*.xml, javax/**"
 		 filesetmanifest="mergewithoutmain">
 			<manifest>
@@ -124,7 +124,7 @@
 		</jar>
 	    <unzip src="${runwar.jar.file}" dest="${temp.dir}/jar" />
 	    <delete file="${runwar.jar.file}" />
-		<zip destfile="${runwar.jar.file}" update="false">
+		<zip destfile="${runwar.jar.file}" update="false" level="9">
 	       	<fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA"/>
 	   	</zip>
 <!--
@@ -145,7 +145,7 @@
 		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
 		<dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
 		<dependency groupId="org.tuckey" artifactId="urlrewritefilter" version="4.0.4" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
-		<dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk14" version="1.51" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+		<dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.51" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
 		<dependency groupId="commons-cli" artifactId="commons-cli" version="1.2"
     		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo"/>
     	<dependency groupId="io.undertow" artifactId="undertow-jsp" version="1.0.0.Beta27"
