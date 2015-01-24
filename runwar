@@ -4,6 +4,7 @@ cd $reldir/build
 ANTCMD="/bin/sh $HOME/cfdistro/ant/bin/ant -nouserlib -f build.xml"
 export ANT_HOME=$HOME/cfdistro/ant
 CFDISTRO_ZIP=$HOME/cfdistro/cfdistro.zip
+
 if [ "$HTTP_CLIENT" = "" ]; then
     if type -p curl >/dev/null 2>&1; then
         if [ "$https_proxy" != "" ]; then
@@ -39,6 +40,11 @@ if [ ! -d "$ANT_HOME" ]; then
         exit 1
     fi
 	unzip "$CFDISTRO_ZIP" -d "$CFDISTRO_DIR"
+fi
+if [ -z "$JAVA_HOME" ] ; then
+   if [ -x ${HOME}/cfdistro/jre/bin/java ] ; then
+	   export JAVA_HOME="${HOME}/cfdistro/jre/"
+   fi
 fi
 if [ -z "$1" ]; then
 echo "runwar control script"
