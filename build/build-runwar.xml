@@ -97,10 +97,10 @@
 
 	<target name="runwar.jar" depends="runwar.compile">
 		<runwar.initprops />
-		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/runwar.keystore" />
-		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/runwar.truststore" />
-		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/icon.png" />
-		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/taskbar.json" />
+		<copy todir="${runwar.bin.dir}/runwar/runwar/">
+			<fileset dir="${runwar.src.dir}/runwar/" 
+			includes="runwar.keystore, runwar.truststore, icon.png, taskbar.json, urlrewrite.xml"/>
+		</copy>
 		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/version.properties">
 			<filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
 		</copy>
@@ -144,6 +144,7 @@
 		<delete dir="${runwar.lib.dir}"/>
 		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
 		<dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+		<dependency groupId="org.tuckey" artifactId="urlrewritefilter" version="4.0.4" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
 		<dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk14" version="1.51" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
 		<dependency groupId="commons-cli" artifactId="commons-cli" version="1.2"
     		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo"/>

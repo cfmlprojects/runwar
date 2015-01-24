@@ -1,0 +1,10 @@
+{
+	"name" : "runwar-default",
+	"war": "./dist/runwar.war",
+	"port": "8088",
+	"workspaces" : {
+	    "predefined" : ["otherWorkspace"],
+	    "default" : "default",
+	    "allowCreation" : ""
+	    }
+}

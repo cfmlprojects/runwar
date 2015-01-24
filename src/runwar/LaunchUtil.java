@@ -14,7 +14,9 @@ import java.awt.event.MouseListener;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -50,6 +52,7 @@ public class LaunchUtil {
     private static Logger log = Logger.getLogger("RunwarLogger");
 	private static boolean relaunching;
 	private static Server hookedServer;
+    private static final int KB = 1024;
 	public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] {
 			"cfml.cli.home",
 			"railo.server.config.dir",
@@ -235,7 +238,7 @@ public class LaunchUtil {
 
 	public static void hookTray(Server server) {
 		hookedServer = server;
-		ServerOptions serverOptions = server.getServerOptions();
+		ServerOptions serverOptions = Server.getServerOptions();
 		String iconImage = serverOptions.getIconImage();
 		String host = serverOptions.getHost();
 		int portNumber = serverOptions.getPortNumber();
@@ -265,7 +268,11 @@ public class LaunchUtil {
                 +",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
                 +"]";
 
-			menuItems = (JSONArray) JSONValue.parse(getResourceAsString("runwar/taskbar.json"));
+			if(serverOptions.getTrayConfig() != null){
+                menuItems = (JSONArray) JSONValue.parse(readFile(serverOptions.getTrayConfig()));
+			} else {
+			    menuItems = (JSONArray) JSONValue.parse(getResourceAsString("runwar/taskbar.json"));
+			}
 			if(menuItems == null) {
 			    log.error("Could not load taskbar properties");
 			    menuItems = (JSONArray) JSONValue.parse(defaultMenu);
@@ -466,12 +473,24 @@ public class LaunchUtil {
 		}
 	}
 
-    static String getResourceAsString(String path) {
-        InputStream is = null;
+    public static String getResourceAsString(String path) {
+        return readStream(LaunchUtil.class.getClassLoader().getResourceAsStream(path));
+    }
+
+    public static void copyInternalFile(ClassLoader classLoader, String resourcePath, File dest) {
+        URL resource = classLoader.getResource(resourcePath);
+        try {
+            copyStream(resource.openStream(),dest);
+        } catch (IOException e) {
+            log.error(e);
+        }
+        
+    }
+    
+    public static String readStream(InputStream is) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintStream outPrint = new PrintStream(out);
         try {
-            is = LaunchUtil.class.getClassLoader().getResourceAsStream(path);
             int content;
             while ((content = is.read()) != -1) {
                 // convert to char and display it
@@ -491,5 +510,49 @@ public class LaunchUtil {
         }
         return out.toString();
     }
-	
+    
+    public static String readFile(File source) {
+        try {
+            return readStream(new FileInputStream(source));
+        } catch (FileNotFoundException e) {
+            log.error(e);
+        }
+        return null;
+    }
+    
+    public static void copyFile(File source, File dest) {
+        try {
+            copyStream(new FileInputStream(source), dest);
+        } catch (FileNotFoundException e) {
+            log.error(e);
+        }
+    }
+    
+    public static void copyStream(InputStream bis, File dest) {
+        try {
+            FileOutputStream output = new FileOutputStream(dest);
+            writeStreamTo(bis, output, 8 * KB);
+            output.close();
+        } catch (FileNotFoundException e) {
+            log.error(e);
+        } catch (IOException e) {
+            log.error(e);
+        }
+        
+    }
+    
+    public static int writeStreamTo(final InputStream input, final OutputStream output, int bufferSize)
+            throws IOException {
+        int available = Math.min(input.available(), 256 * KB);
+        byte[] buffer = new byte[Math.max(bufferSize, available)];
+        int answer = 0;
+        int count = input.read(buffer);
+        while (count >= 0) {
+            output.write(buffer, 0, count);
+            answer += count;
+            count = input.read(buffer);
+        }
+        return answer;
+    }
+    
 }

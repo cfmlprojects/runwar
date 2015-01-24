@@ -5,25 +5,32 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 public class ServerOptions {
-	private String processName = "RunWAR", loglevel = "WARN";
+	private String serverName = "default", processName = "RunWAR", loglevel = "WARN";
     private String host = "127.0.0.1", contextPath = "/";
     private int portNumber = 8088, ajpPort = 8009, sslPort = 443, socketNumber = 8779;
-    private boolean enableAJP = false, enableSSL = false, enableHTTP = true;
+    private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = true;
     private boolean debug = false, isBackground = true, keepRequestLog = false, openbrowser = false;
     private String pidFile, openbrowserURL, cfmlDirs, libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
-    private File warFile, webXmlFile, logDir;
+    private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig = null;
     private String iconImage = null;
     private String railoConfigWebDir = null, railoConfigServerDir = null;
     private boolean directoryListingEnabled = true;
     private String[] welcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
             "default.html", "default.htm" };
-	private File sslCertificate, sslKey;
+	private File sslCertificate, sslKey, configFile;
 	private char[] sslKeyPass;
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
 	private String action;
 
+	public String getServerName() {
+	    return serverName;
+	}
+    public ServerOptions setServerName(String serverName) {
+        this.serverName = serverName;
+        return this;
+    }
     public String getLoglevel() {
         return loglevel;
     }
@@ -33,6 +40,13 @@ public class ServerOptions {
     }
     public String getContextPath() {
         return contextPath;
+    }
+    public File getConfigFile() {
+        return configFile;
+    }
+    public ServerOptions setConfigFile(File file) {
+        this.configFile = file;
+        return this;
     }
     public ServerOptions setContextPath(String contextPath) {
         this.contextPath = contextPath;
@@ -79,6 +93,20 @@ public class ServerOptions {
     public ServerOptions setEnableHTTP(boolean bool) {
     	this.enableHTTP = bool;
         return this;
+    }
+    public boolean isEnableURLRewrite() {
+        return enableURLRewrite;
+    }
+    public ServerOptions setEnableURLRewrite(boolean bool) {
+        this.enableURLRewrite = bool;
+        return this;
+    }
+    public ServerOptions setURLRewriteFile(File file) {
+        this.urlRewriteFile = file;
+        return this;
+    }
+    public File getURLRewriteFile() {
+        return this.urlRewriteFile;
     }
     public int getSocketNumber() {
         return socketNumber;
@@ -205,6 +233,13 @@ public class ServerOptions {
     }
     public ServerOptions setIconImage(String iconImage) {
         this.iconImage = iconImage;
+        return this;
+    }
+    public File getTrayConfig() {
+        return trayConfig;
+    }
+    public ServerOptions setTrayConfig(File trayConfig) {
+        this.trayConfig = trayConfig;
         return this;
     }
     public String getRailoConfigWebDir() {

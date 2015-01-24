@@ -1,0 +1,283 @@
+package runwar.options;
+
+import java.io.File;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+
+import runwar.LaunchUtil;
+import runwar.Server;
+import runwar.logging.Logger;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
+
+public class ConfigParser {
+
+    private static Logger log = Logger.getLogger("RunwarLogger");
+    private ServerOptions serverOptions;
+
+    public ConfigParser(){
+    }
+    
+    public ConfigParser(File config){
+        parseOptions(config);
+    }
+
+    public ServerOptions getServerOptions(){
+        return serverOptions;
+    }
+    
+    private ServerOptions parseOptions(File config) {
+        JSONObject jsonConfig;
+        jsonConfig = (JSONObject) JSONValue.parse(LaunchUtil.readFile(config));
+        if(jsonConfig == null) {
+            log.error("Could not load server config");
+        } else {
+            serverOptions = new ServerOptions();
+            JSONOption serverConfig = new JSONOption(jsonConfig);
+            if (serverConfig.hasOption("help")) {
+                printUsage("Options",0);
+            }
+            if (serverConfig.hasOption("loglevel")) {
+                serverOptions.setLoglevel(serverConfig.getOptionValue("loglevel"));
+            }
+
+            if (serverConfig.hasOption("name")) {
+                serverOptions.setServerName(serverConfig.getOptionValue("name"));
+            }
+
+            if (serverConfig.hasOption("debug")) {
+                Boolean debug= Boolean.valueOf(serverConfig.getOptionValue("debug"));
+                serverOptions.setDebug(debug);
+                if(debug)serverOptions.setLoglevel("DEBUG");
+                if(serverConfig.hasOption("loglevel")) {
+                    System.out.println("Warning:  debug overrides loglevel (both are specified, setting level to DEBUG)");
+                }
+            }
+
+            if (serverConfig.hasOption("background")) {
+                serverOptions.setBackground(Boolean.valueOf(serverConfig.getOptionValue("background")));
+            }
+            if (serverConfig.hasOption("libs")) {
+                String[] list = serverConfig.getOptionValue("libs").split(",");
+                for (String path : list) {
+                    File lib = new File(path);
+                    if (!lib.exists() || !lib.isDirectory())
+                        printUsage("No such lib directory "+path,1);
+                }               
+                serverOptions.setLibDirs(serverConfig.getOptionValue("libs"));
+            }
+            if (serverConfig.hasOption("welcomefiles")) {
+                serverOptions.setWelcomeFiles(serverConfig.getOptionValue("welcomefiles").split(","));
+            }
+
+            if (serverConfig.hasOption("jar")) {
+                 File jar = new File(serverConfig.getOptionValue("jar"));
+                    try {
+                        serverOptions.setJarURL(jar.toURI().toURL());
+                        if (!jar.exists() || jar.isDirectory())
+                            printUsage("No such jar "+jar,1);
+                    } catch (MalformedURLException e) {
+                        printUsage("No such jar "+jar,1);
+                        e.printStackTrace();
+                    }
+            }
+            
+            if (serverConfig.hasOption("timeout")) {
+                serverOptions.setLaunchTimeout(((Number)serverConfig.getParsedOptionValue("timeout")).intValue() * 1000);
+            }
+            if (serverConfig.hasOption("password")) {
+                serverOptions.setStopPassword(serverConfig.getOptionValue("password").toCharArray());
+            }
+            if (serverConfig.hasOption("stop-port")) {
+                serverOptions.setSocketNumber(((Number)serverConfig.getParsedOptionValue("stop-port")).intValue());
+            }
+            if (serverConfig.hasOption("war")) {
+                String warPath = serverConfig.getOptionValue("war");
+                serverOptions.setWarFile(getFile(warPath));
+            } else if (!serverConfig.hasOption("stop") && !serverConfig.hasOption("c")) {
+                printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
+            } 
+            if(serverConfig.hasOption("D")){
+                final String[] properties = serverConfig.getOptionValue("D").split(" ");
+                for (int i = 0; i < properties.length; i++) {
+                    log.debugf("setting system property: %s", properties[i].toString()+'='+properties[i+1].toString());
+                    System.setProperty(properties[i].toString(),properties[i+1].toString());
+                    i++;
+                }
+            }
+
+            if (serverConfig.hasOption("webxmlpath")) {
+                String webXmlPath = serverConfig.getOptionValue("webxmlpath");
+                File webXmlFile = new File(webXmlPath);
+                if(webXmlFile.exists()) {
+                    serverOptions.setWebXmlFile(webXmlFile);
+                } else {
+                    throw new RuntimeException("Could not find web.xml! " + webXmlPath);
+                }
+            }
+
+            if (serverConfig.hasOption("stop")) {
+                serverOptions.setAction("stop");
+                String[] values = serverConfig.getOptionValue("stop").split(" ");
+                if(values != null && values.length > 0) {
+                    serverOptions.setSocketNumber(Integer.parseInt(values[0])); 
+                }
+                if(values != null && values.length >= 1) {
+                    serverOptions.setStopPassword(values[1].toCharArray()); 
+                }
+            } else {
+                serverOptions.setAction("start");
+            }
+
+            if (serverConfig.hasOption("context")) {
+                serverOptions.setContextPath(serverConfig.getOptionValue("context"));
+            }
+            if (serverConfig.hasOption("host")) {
+                serverOptions.setHost(serverConfig.getOptionValue("host"));
+            }
+            if (serverConfig.hasOption("port")) {
+                serverOptions.setPortNumber(((Number)serverConfig.getParsedOptionValue("port")).intValue());
+            }
+            if (serverConfig.hasOption("ajpport")) {
+                serverOptions.setEnableHTTP(false)
+                    .setEnableAJP(true).setAJPPort(((Number)serverConfig.getParsedOptionValue("ajpport")).intValue());
+            }
+            if (serverConfig.hasOption("sslport")) {
+                serverOptions.setEnableHTTP(false).setEnableSSL(true).setSSLPort(((Number)serverConfig.getParsedOptionValue("sslport")).intValue());
+            }
+            if (serverConfig.hasOption("sslcert")) {
+                serverOptions.setSSLCertificate(getFile(serverConfig.getOptionValue("sslcert")));
+                if (!serverConfig.hasOption("sslkey") || !serverConfig.hasOption("sslkey")) {
+                    throw new RuntimeException("Using a SSL certificate requires -sslkey /path/to/file and -sslkeypass pass**** arguments!");   
+                }
+            }
+            if (serverConfig.hasOption("sslkey")) {
+                serverOptions.setSSLKey(getFile(serverConfig.getOptionValue("sslkey")));
+            }
+            if (serverConfig.hasOption("sslkeypass")) {
+                serverOptions.setSSLKeyPass(serverConfig.getOptionValue("sslkeypass").toCharArray());
+            }
+            if (serverConfig.hasOption("urlrewritefile")) {
+                serverOptions.setURLRewriteFile(getFile(serverConfig.getOptionValue("urlrewritefile")));
+            }
+            if (serverConfig.hasOption("enableajp")) {
+                serverOptions.setEnableAJP(Boolean.valueOf(serverConfig.getOptionValue("enableajp")));
+            }
+            if (serverConfig.hasOption("enablessl")) {
+                serverOptions.setEnableHTTP(false).setEnableSSL(Boolean.valueOf(serverConfig.getOptionValue("enablessl")));
+            }
+            if (serverConfig.hasOption("enablehttp")) {
+                serverOptions.setEnableHTTP(Boolean.valueOf(serverConfig.getOptionValue("enablehttp")));
+            }
+            if (serverConfig.hasOption("logdir")) {
+                serverOptions.setLogDir(serverConfig.getOptionValue("logdir"));
+            } else {
+                if(serverOptions.getWarFile() != null){
+                    File warFile = serverOptions.getWarFile();
+                    String logDir;
+                    if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
+                        logDir = warFile.getPath() + "/WEB-INF/logs/";
+                    } else {
+                        String serverConfigDir = System.getProperty("railo.server.config.dir");
+                        if(serverConfigDir == null) {
+                            logDir = new File(Server.getThisJarLocation().getParentFile(),"server/log/").getAbsolutePath();
+                        } else {
+                            logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
+                        }
+                    }
+                    serverOptions.setLogDir(logDir);
+                }
+            }
+            if(serverOptions.getWarFile() != null){
+                serverOptions.setCfmlDirs(serverOptions.getWarFile().getAbsolutePath());
+            }
+            if (serverConfig.hasOption("dirs")) {
+                serverOptions.setCfmlDirs(serverConfig.getOptionValue("dirs"));
+            }
+            if (serverConfig.hasOption("requestlog")) {
+                serverOptions.setKeepRequestLog(Boolean.valueOf(serverConfig.getOptionValue("requestlog")));
+            }
+            
+            if (serverConfig.hasOption("open-browser")) {
+                serverOptions.setOpenbrowser(Boolean.valueOf(serverConfig.getOptionValue("open")));
+            }
+            if (serverConfig.hasOption("open-url")) {
+                serverOptions.setOpenbrowserURL(serverConfig.getOptionValue("open-url"));
+            }
+
+            if (serverConfig.hasOption("pidfile")) {
+                serverOptions.setPidFile(serverConfig.getOptionValue("pidfile"));
+            }
+
+            if (serverConfig.hasOption("processname")) {
+                serverOptions.setProcessName(serverConfig.getOptionValue("processname"));
+            }
+
+            if (serverConfig.hasOption("trayconfig")) {
+                serverOptions.setTrayConfig(getFile(serverConfig.getOptionValue("trayconfig")));
+            }
+
+            if (serverConfig.hasOption("icon")) {
+                serverOptions.setIconImage(serverConfig.getOptionValue("icon"));
+            }
+
+            if (serverConfig.hasOption("railoserver")) {
+                serverOptions.setRailoConfigServerDir(serverConfig.getOptionValue("railoserver"));
+            }
+            if (serverConfig.hasOption("railoweb")) {
+                serverOptions.setRailoConfigWebDir(serverConfig.getOptionValue("railoweb"));
+            }
+            if(serverOptions.getLoglevel().equals("DEBUG")) {
+                Iterator<String> optionsIterator = serverConfig.getOptions().iterator();
+                while(optionsIterator.hasNext()) {
+                    log.debug(optionsIterator.next());
+                }
+            }            
+        }
+        return serverOptions;
+    }
+    
+    private void printUsage(String string, int exitCode) {
+        CommandLineHandler.printUsage(string, exitCode);
+    }
+
+    private File getFile(String filePath) {
+        return CommandLineHandler.getFile(filePath);
+    }
+    
+    private class JSONOption {
+        private JSONObject jsonConfig;
+
+        public JSONOption(JSONObject jsonConfig) {
+            this.jsonConfig = jsonConfig;
+        }
+
+        public Number getParsedOptionValue(String string) {
+            return Integer.parseInt(getOptionValue(string));
+        }
+
+        public ArrayList<String> getOptions() {
+            Iterator<String> keys = jsonConfig.keySet().iterator();
+            ArrayList<String> options = new ArrayList<String>();
+            while(keys.hasNext()) {
+                String key = keys.next();
+                options.add(jsonConfig.get(key)+"="+jsonConfig.get(key).toString());
+            }
+            return options;
+        }
+
+        public String getOptionValue(String key) {
+            if(hasOption(key)){
+                jsonConfig.get(key).toString();                
+            }
+            return null;
+        }
+
+        public boolean hasOption(String key) {
+            return jsonConfig.containsKey(key);
+        }
+    }
+
+}

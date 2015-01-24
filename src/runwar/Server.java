@@ -20,15 +20,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.awt.Image;
-import java.awt.TrayIcon;
 
 import javax.net.SocketFactory;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
+import javax.servlet.DispatcherType;
 
 import runwar.logging.Logger;
 import runwar.logging.LogSubverter;
@@ -44,6 +39,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import static io.undertow.servlet.Servlets.defaultContainer;
@@ -107,6 +103,7 @@ public class Server {
         if(serverOptions.getAction().equals("stop")){
             Stop.stopServer(args);
         }
+        String serverName = serverOptions.getServerName();
         String processName = serverOptions.getProcessName();
         int portNumber = serverOptions.getPortNumber();
         int socketNumber = serverOptions.getSocketNumber();
@@ -231,12 +228,12 @@ public class Server {
 		File webXmlFile = serverOptions.getWebXmlFile();
 		if(warFile.isDirectory() && !webinf.exists()) {
 	        if(railoConfigWebDir == null) {
-	        	File webConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/railo-web/");
-				railoConfigWebDir = webConfigDirFile.getPath();
+	        	File webConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/server/"+ serverName +"/railo-web/");
+				railoConfigWebDir = webConfigDirFile.getPath() + "/{web-context-label}";
 	        }
 	        log.debug("railo.web.config.dir: " + railoConfigWebDir);
 	        if(railoConfigServerDir == null || railoConfigServerDir.length() == 0) {
-	        	File serverConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/");
+	        	File serverConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/railo/server/"+ serverName);
 	        	railoConfigServerDir = serverConfigDirFile.getAbsolutePath();
 	        }
 	        log.debug("railo.server.config.dir: " + railoConfigServerDir);
@@ -291,7 +288,8 @@ public class Server {
 		                                .addInitParam("railo-web-directory",railoConfigWebDir)
 		                                .addMapping("/rest/*")
 		                                .setLoadOnStartup(2));
-	        }
+				configureURLRewrite(servletBuilder, railoConfigServerDir + "/WEB-INF");
+			}
 		} else if(webinf.exists()) {
 			log.debug("found WEB-INF: " + webinf.getAbsolutePath());
 			if(_classLoader == null) {
@@ -399,13 +397,43 @@ public class Server {
 		undertow.start();
 	}
 
-	public static File getThisJarLocation() {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	private void configureURLRewrite(DeploymentInfo servletBuilder, String webInfDir) throws ClassNotFoundException, IOException {
+        if(serverOptions.isEnableURLRewrite()) {
+            log.debug("enabling URL rewriting");
+            Class rewriteFilter;
+            String urlRewriteFile = "runwar/urlrewrite.xml";
+            try{
+                rewriteFilter = _classLoader.loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+            } catch (java.lang.ClassNotFoundException e) {
+                rewriteFilter = Server.class.getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+            }
+            if(serverOptions.getURLRewriteFile() != null) {
+                if(!serverOptions.getURLRewriteFile().isFile()) {
+                    log.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
+                } else {
+                    LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir + "/urlrewrite.xml"));
+                    log.debug("Copying URL rewrite file to WEB-INF: " + webInfDir + "/urlrewrite.xml");
+                    urlRewriteFile = "/WEB-INF/urlrewrite.xml";
+                }
+            }
+            log.debug("URL rewriting config file: " + urlRewriteFile);
+            servletBuilder.addFilter(new FilterInfo("UrlRewriteFilter", rewriteFilter)
+                .addInitParam("confPath", urlRewriteFile)
+                .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
+                .addInitParam("modRewriteConf", "false"));
+            servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
+        }
+    }
+
+    public static File getThisJarLocation() {
 	    return new File(Server.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile();
 	}
 	
 	public String getPID() {
 		return PID;
 	}
+
 	
 	private int getPortOrErrorOut(int portNumber, String host) {
         try {
@@ -492,7 +520,7 @@ public class Server {
 
 		@Override
 		public void run() {
-			Executor exe = Executors.newCachedThreadPool();
+			//Executor exe = Executors.newCachedThreadPool();
 			ServerSocket serverSocket = null;
 			int exitCode = 0;
 			try {

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="tests/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-el-api_3.0_spec-1.0.0.Beta1.jar"/>
@@ -13,9 +14,8 @@
 	<classpathentry kind="lib" path="lib/xnio-api-3.3.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-core-1.1.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-servlet-1.1.0.Final.jar"/>
-	<classpathentry kind="lib" path="lib/bcpg-jdk16-1.46.jar"/>
-	<classpathentry kind="lib" path="lib/bcprov-jdk16-1.46.jar"/>
 	<classpathentry kind="lib" path="lib/bcpkix-jdk14-1.51.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk14-1.51.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

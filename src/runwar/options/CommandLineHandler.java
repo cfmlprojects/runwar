@@ -31,8 +31,14 @@ public class CommandLineHandler {
     }
 
     @SuppressWarnings("static-access")
-    public static CommandLine parseArguments(String[] args, ServerOptions serverOptions) {
+    public static ServerOptions parseArguments(String[] args, ServerOptions serverOptions) {
         parser = new PosixParser();
+        options.addOption( OptionBuilder
+                .withLongOpt( "config" )
+                .withDescription( "config file" )
+                .hasArg().withArgName("file")
+                .create("c") );
+        
         options.addOption( OptionBuilder
                 .withDescription( "path to war" )
                 .hasArg()
@@ -40,10 +46,16 @@ public class CommandLineHandler {
                 .create("war") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "context" )
+                .withDescription( "server name (default)" )
+                .hasArg()
+                .withArgName("name")
+                .create("name") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "context-path" )
                 .withDescription( "context path.  (/)" )
                 .hasArg().withArgName("context")
-                .create("c") );
+                .create("context") );
         
         options.addOption( OptionBuilder
                 .withDescription( "host.  (127.0.0.1)" )
@@ -88,6 +100,18 @@ public class CommandLineHandler {
                 .create("ajpenable") );
         
         options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-enable" )
+                .withDescription( "Enable URL Rewriting.  Default is true." )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("urlrewriteenable") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-file" )
+                .withDescription( "URL rewriting config file." )
+                .hasArg().withArgName("path/to/urlrewrite/file")
+                .create("urlrewritefile") );
+
+        options.addOption( OptionBuilder
         		.withLongOpt( "ssl-enable" )
         		.withDescription( "Enable SSL.  Default is false.  When enabled, http is disabled by default." )
         		.hasArg().withArgName("true|false").withType(Boolean.class)
@@ -130,16 +154,22 @@ public class CommandLineHandler {
                 .create("logdir") );
 
         options.addOption( OptionBuilder
+                .withLongOpt( "request-log" )
+                .withDescription( "Log requests to specified file" )
+                .hasArg().withArgName("/path/to/log")
+                .create("requestlog") );
+
+        options.addOption( OptionBuilder
                 .withLongOpt( "dirs" )
                 .withDescription( "List of external directories to serve from" )
                 .hasArg().withArgName("path,path,...")
                 .create("d") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "libdir" )
+                .withLongOpt( "lib-dirs" )
                 .withDescription( "List of directories to add contents of to classloader" )
                 .hasArg().withArgName("path,path,...")
-                .create("libs") );
+                .create("libdirs") );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "jar" )
@@ -154,11 +184,6 @@ public class CommandLineHandler {
                 .create('b') );
         
         options.addOption( OptionBuilder
-                .withDescription( "Log requests to specified file" )
-                .hasArg().withArgName("/path/to/log")
-                .create("requestlog") );
-
-        options.addOption( OptionBuilder
                 .withLongOpt( "open-browser" )
                 .withDescription( "Open default web browser after start (false)" )
                 .hasArg().withArgName("true|false")
@@ -171,6 +196,7 @@ public class CommandLineHandler {
                 .create("url") );
         
         options.addOption( OptionBuilder
+                .withLongOpt( "pid-file" )
                 .withDescription( "Process ID file." )
                 .hasArg().withArgName("pidfile")
                 .create("pidfile") );
@@ -182,12 +208,13 @@ public class CommandLineHandler {
                 .create("t") );
 
         options.addOption( OptionBuilder
-                .withLongOpt( "loglevel" )
+                .withLongOpt( "log-level" )
                 .withDescription( "log level [DEBUG|INFO|WARN|ERROR] (WARN)" )
                 .hasArg().withArgName("level")
                 .create("level") );
 
         options.addOption( OptionBuilder
+                .withLongOpt( "debug-enable" )
                 .withDescription( "set log level to debug" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("debug") );
@@ -199,11 +226,17 @@ public class CommandLineHandler {
                 .create("procname") );
 
         options.addOption( OptionBuilder
-                .withLongOpt( "icon-path" )
+                .withLongOpt( "tray-icon" )
                 .withDescription( "tray icon and OS X dock icon png image" )
                 .hasArg().withArgName("path")
                 .create("icon") );
 
+        options.addOption( OptionBuilder
+                .withLongOpt( "tray-config" )
+                .withDescription( "tray menu config path" )
+                .hasArg().withArgName("path")
+                .create("trayconfig") );
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "web-xml-path" )
                 .withDescription( "full path to default web.xml file for configuring the server" )
@@ -230,15 +263,16 @@ public class CommandLineHandler {
                 .create("D") );
         
         options.addOption( OptionBuilder
+                .withLongOpt( "welcome-files" )
                 .withDescription( "comma delinated list of welcome files used if no web.xml file exists" )
                 .hasArg().withArgName("index.cfm,default.cfm,...")
                 .create("welcomefiles") );
 
         options.addOption( OptionBuilder
-                .withLongOpt( "directory-list" )
+                .withLongOpt( "directory-index" )
                 .withDescription( "enable directory browsing" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
-                .create("directorylist") );
+                .create("directoryindex") );
         
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
@@ -254,6 +288,17 @@ public class CommandLineHandler {
                 Server.printVersion();
                 System.exit(0);
             }
+            if (line.hasOption("c")) {
+                String config = line.getOptionValue("c");
+                serverOptions = new ConfigParser(getFile(config)).getServerOptions();
+                serverOptions.setConfigFile(getFile(config));
+                return serverOptions;
+            }
+            
+            if (line.hasOption("name")) {
+                serverOptions.setServerName(line.getOptionValue("name"));
+            }
+
             if (line.hasOption("loglevel")) {
                 serverOptions.setLoglevel(line.getOptionValue("loglevel"));
             }
@@ -270,14 +315,14 @@ public class CommandLineHandler {
             if (line.hasOption("background")) {
                 serverOptions.setBackground(Boolean.valueOf(line.getOptionValue("background")));
             }
-            if (line.hasOption("libs")) {
-                String[] list = line.getOptionValue("libs").split(",");
+            if (line.hasOption("libdirs")) {
+                String[] list = line.getOptionValue("libdirs").split(",");
                 for (String path : list) {
                     File lib = new File(path);
                     if (!lib.exists() || !lib.isDirectory())
                         printUsage("No such lib directory "+path,1);
                 }               
-                serverOptions.setLibDirs(line.getOptionValue("libs"));
+                serverOptions.setLibDirs(line.getOptionValue("libdirs"));
             }
             if (line.hasOption("welcomefiles")) {
                 serverOptions.setWelcomeFiles(line.getOptionValue("welcomefiles").split(","));
@@ -302,7 +347,7 @@ public class CommandLineHandler {
             if (line.hasOption("war")) {
                 String warPath = line.getOptionValue("war");
                 serverOptions.setWarFile(getFile(warPath));
-            } else if (!line.hasOption("stop")) {
+            } else if (!line.hasOption("stop") && !line.hasOption("c")) {
                 printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
             } 
             if(line.hasOption("D")){
@@ -365,6 +410,9 @@ public class CommandLineHandler {
             if (line.hasOption("sslkeypass")) {
             	serverOptions.setSSLKeyPass(line.getOptionValue("sslkeypass").toCharArray());
             }
+            if (line.hasOption("urlrewritefile")) {
+                serverOptions.setURLRewriteFile(getFile(line.getOptionValue("urlrewritefile")));
+            }
             if (line.hasOption("enableajp")) {
             	serverOptions.setEnableAJP(Boolean.valueOf(line.getOptionValue("enableajp")));
             }
@@ -385,7 +433,7 @@ public class CommandLineHandler {
                 	} else {
                 		String serverConfigDir = System.getProperty("railo.server.config.dir");
                 		if(serverConfigDir == null) {
-                			logDir = new File(Server.getThisJarLocation().getParentFile(),"server/log/").getAbsolutePath();
+                			logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/railo/server/log/").getAbsolutePath();
                 		} else {
                 			logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
                 		}
@@ -422,6 +470,10 @@ public class CommandLineHandler {
                 serverOptions.setIconImage(line.getOptionValue("icon"));
             }
 
+            if (line.hasOption("trayconfig")) {
+                serverOptions.setTrayConfig(getFile(line.getOptionValue("trayconfig")));
+            }
+            
             if (line.hasOption("railoserver")) {
                 serverOptions.setRailoConfigServerDir(line.getOptionValue("railoserver"));
             }
@@ -434,7 +486,7 @@ public class CommandLineHandler {
     	    		log.debug(arg.getValue());
     	    	}
     	    }
-            return line;
+            return serverOptions;
         }
         catch( Exception exp ) {
             String msg = exp.getMessage();
@@ -446,7 +498,7 @@ public class CommandLineHandler {
         return null;
     }    
     
-    private static File getFile(String path) {
+    static File getFile(String path) {
         File file = new File(path);
         if(!file.exists()) {
             throw new RuntimeException("File not found: " + path);
@@ -461,6 +513,7 @@ public class CommandLineHandler {
                 if(o1.getOpt().equals("war")) {return -1;} else if(o2.getOpt().equals("war")) {return 1;}
                 if(o1.getOpt().equals("p")) {return -1;} else if(o2.getOpt().equals("p")) {return 1;}
                 if(o1.getOpt().equals("c")) { return -1; } else if(o2.getOpt().equals("c")) {return 1;}
+                if(o1.getOpt().equals("context")) { return -1; } else if(o2.getOpt().equals("context")) {return 1;}
                 if(o1.getOpt().equals("d")) { return -1; } else if(o2.getOpt().equals("d")) {return 1;}
                 if(o1.getOpt().equals("b")) { return -1; } else if(o2.getOpt().equals("b")) {return 1;}
                 if(o1.getOpt().equals("h")) {return 1;} else if(o2.getOpt().equals("h")) {return -1;}
