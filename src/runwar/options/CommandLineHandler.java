@@ -46,6 +46,7 @@ public class CommandLineHandler {
                 .create("war") );
         
         options.addOption( OptionBuilder
+                .withLongOpt( "server-name" )
                 .withDescription( "server name (default)" )
                 .hasArg()
                 .withArgName("name")
@@ -528,7 +529,11 @@ public class CommandLineHandler {
         formatter.setSyntaxPrefix("USAGE:");
         formatter.setLongOptPrefix("--");
         //formatter.printHelp( SYNTAX, options,false);
-        formatter.printHelp(80, SYNTAX, message + '\n' + HEADER, options, FOOTER, false);
+        if(exitCode == 0) {
+            formatter.printHelp(80, SYNTAX, message + '\n' + HEADER, options, FOOTER, false);
+        } else {
+            System.out.println("USAGE:  " + SYNTAX + '\n' + message);
+        }
         System.exit(exitCode);
     }
 

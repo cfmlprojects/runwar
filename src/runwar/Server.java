@@ -60,6 +60,7 @@ public class Server {
 
 	private DeploymentManager manager;
 	private Undertow undertow;
+    private String serverName = "default";
 	public static final String bar = "******************************************************************************";
 	
 	public Server() {
@@ -103,7 +104,7 @@ public class Server {
         if(serverOptions.getAction().equals("stop")){
             Stop.stopServer(args);
         }
-        String serverName = serverOptions.getServerName();
+        serverName = serverOptions.getServerName();
         String processName = serverOptions.getProcessName();
         int portNumber = serverOptions.getPortNumber();
         int socketNumber = serverOptions.getSocketNumber();
@@ -412,9 +413,10 @@ public class Server {
                 if(!serverOptions.getURLRewriteFile().isFile()) {
                     log.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
                 } else {
-                    LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir + "/urlrewrite.xml"));
-                    log.debug("Copying URL rewrite file to WEB-INF: " + webInfDir + "/urlrewrite.xml");
-                    urlRewriteFile = "/WEB-INF/urlrewrite.xml";
+                    String rewriteFileName = "urlrewrite-"+ serverName +".xml";
+                    LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir + "/"+rewriteFileName));
+                    log.debug("Copying URL rewrite file to WEB-INF: " + webInfDir + "/"+rewriteFileName);
+                    urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
             }
             log.debug("URL rewriting config file: " + urlRewriteFile);
