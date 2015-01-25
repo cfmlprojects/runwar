@@ -392,9 +392,13 @@ public class CommandLineHandler {
             if (line.hasOption("port")) {
                 serverOptions.setPortNumber(((Number)line.getParsedOptionValue("port")).intValue());
             }
+            if (line.hasOption("enableajp")) {
+                serverOptions.setEnableAJP(Boolean.valueOf(line.getOptionValue("enableajp")));
+            }
             if (line.hasOption("ajpport")) {
-                serverOptions.setEnableHTTP(false)
-                	.setEnableAJP(true).setAJPPort(((Number)line.getParsedOptionValue("ajpport")).intValue());
+                // disable http if no http port is specified
+                serverOptions.setEnableHTTP(line.hasOption("port"))
+                .setEnableAJP(true).setAJPPort(((Number)line.getParsedOptionValue("ajpport")).intValue());
             }
             if (line.hasOption("sslport")) {
             	serverOptions.setEnableHTTP(false).setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue("sslport")).intValue());
@@ -411,17 +415,17 @@ public class CommandLineHandler {
             if (line.hasOption("sslkeypass")) {
             	serverOptions.setSSLKeyPass(line.getOptionValue("sslkeypass").toCharArray());
             }
-            if (line.hasOption("urlrewritefile")) {
-                serverOptions.setURLRewriteFile(getFile(line.getOptionValue("urlrewritefile")));
-            }
-            if (line.hasOption("enableajp")) {
-            	serverOptions.setEnableAJP(Boolean.valueOf(line.getOptionValue("enableajp")));
-            }
             if (line.hasOption("enablessl")) {
                 serverOptions.setEnableHTTP(false).setEnableSSL(Boolean.valueOf(line.getOptionValue("enablessl")));
             }
             if (line.hasOption("enablehttp")) {
             	serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue("enablehttp")));
+            }
+            if (line.hasOption("urlrewritefile")) {
+                serverOptions.setURLRewriteFile(getFile(line.getOptionValue("urlrewritefile")));
+            }
+            if (line.hasOption("urlrewriteenable")) {
+                serverOptions.setEnableURLRewrite(Boolean.valueOf(line.getOptionValue("urlrewriteenable")));
             }
             if (line.hasOption("logdir")) {
                 serverOptions.setLogDir(line.getOptionValue("logdir"));

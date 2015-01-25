@@ -5,7 +5,6 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-
 import runwar.LaunchUtil;
 import runwar.Server;
 import runwar.logging.Logger;
@@ -159,9 +158,6 @@ public class ConfigParser {
             if (serverConfig.hasOption("sslkeypass")) {
                 serverOptions.setSSLKeyPass(serverConfig.getOptionValue("sslkeypass").toCharArray());
             }
-            if (serverConfig.hasOption("urlrewritefile")) {
-                serverOptions.setURLRewriteFile(getFile(serverConfig.getOptionValue("urlrewritefile")));
-            }
             if (serverConfig.hasOption("enableajp")) {
                 serverOptions.setEnableAJP(Boolean.valueOf(serverConfig.getOptionValue("enableajp")));
             }
@@ -170,6 +166,12 @@ public class ConfigParser {
             }
             if (serverConfig.hasOption("enablehttp")) {
                 serverOptions.setEnableHTTP(Boolean.valueOf(serverConfig.getOptionValue("enablehttp")));
+            }
+            if (serverConfig.hasOption("urlrewritefile")) {
+                serverOptions.setURLRewriteFile(getFile(serverConfig.getOptionValue("urlrewritefile")));
+            }
+            if (serverConfig.hasOption("urlrewriteenable")) {
+                serverOptions.setEnableURLRewrite(Boolean.valueOf(serverConfig.getOptionValue("urlrewriteenable")));
             }
             if (serverConfig.hasOption("logdir")) {
                 serverOptions.setLogDir(serverConfig.getOptionValue("logdir"));
