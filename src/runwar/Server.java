@@ -425,6 +425,8 @@ public class Server {
                 .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
                 .addInitParam("modRewriteConf", "false"));
             servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
+        } else {
+            log.debug("URL rewriting is disabled");            
         }
     }
 
