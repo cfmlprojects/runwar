@@ -8,13 +8,14 @@ public class ServerOptions {
 	private String serverName = "default", processName = "RunWAR", loglevel = "WARN";
     private String host = "127.0.0.1", contextPath = "/";
     private int portNumber = 8088, ajpPort = 8009, sslPort = 443, socketNumber = 8779;
-    private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = true;
+    private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
     private boolean debug = false, isBackground = true, keepRequestLog = false, openbrowser = false;
     private String pidFile, openbrowserURL, cfmlDirs, libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
     private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig = null;
     private String iconImage = null;
+    private String cfmlengine = null;
     private String railoConfigWebDir = null, railoConfigServerDir = null;
     private boolean directoryListingEnabled = true;
     private String[] welcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",

@@ -342,8 +342,8 @@ public class CommandLineHandler {
             if (line.hasOption("password")) {
             	serverOptions.setStopPassword(line.getOptionValue("password").toCharArray());
             }
-            if (line.hasOption("stop-port")) {
-                serverOptions.setSocketNumber(((Number)line.getParsedOptionValue("stop-port")).intValue());
+            if (line.hasOption("stopsocket")) {
+                serverOptions.setSocketNumber(((Number)line.getParsedOptionValue("stopsocket")).intValue());
             }
             if (line.hasOption("war")) {
                 String warPath = line.getOptionValue("war");
@@ -389,8 +389,8 @@ public class CommandLineHandler {
             if (line.hasOption("host")) {
                 serverOptions.setHost(line.getOptionValue("host"));
             }
-            if (line.hasOption("port")) {
-                serverOptions.setPortNumber(((Number)line.getParsedOptionValue("port")).intValue());
+            if (line.hasOption("p")) {
+                serverOptions.setPortNumber(((Number)line.getParsedOptionValue("p")).intValue());
             }
             if (line.hasOption("enableajp")) {
                 serverOptions.setEnableAJP(Boolean.valueOf(line.getOptionValue("enableajp")));
