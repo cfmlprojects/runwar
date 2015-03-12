@@ -97,8 +97,19 @@ public class Server {
 	    startServer(args);
 	}
 	
+	public void ensureJavaVersion() {
+	    Class<?> nio;
+	    log.debug("Checking that we're running on > java7");
+        try{
+            nio = Server.class.getClassLoader().loadClass("java.nio.charset.StandardCharsets");
+        } catch (java.lang.ClassNotFoundException e) {
+            throw new RuntimeException("Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting...");
+        }
+	}
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void startServer(String[] args) throws Exception {
+	    ensureJavaVersion();
 		serverState = ServerState.STARTING;
 	    serverOptions = CommandLineHandler.parseArguments(args);
         if(serverOptions.getAction().equals("stop")){
@@ -254,7 +265,10 @@ public class Server {
 				servletBuilder.setClassLoader(_classLoader);
 				WebXMLParser.parseWebXml(webXmlFile, servletBuilder);
 			} else {
-				servletBuilder.setClassLoader(_classLoader);
+			    if (_classLoader == null) {
+	                throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());			        
+			    }
+			    servletBuilder.setClassLoader(_classLoader);
 				Class cfmlServlet;
 				Class restServlet;
 				try{

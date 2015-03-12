@@ -438,7 +438,7 @@ public class CommandLineHandler {
                 	} else {
                 		String serverConfigDir = System.getProperty("railo.server.config.dir");
                 		if(serverConfigDir == null) {
-                			logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/railo/server/log/").getAbsolutePath();
+                			logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
                 		} else {
                 			logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
                 		}
