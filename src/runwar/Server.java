@@ -46,8 +46,6 @@ import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static io.undertow.servlet.Servlets.servlet;
 
-//import railo.loader.engine.CFMLEngine;
-
 public class Server {
 
 	private static Logger log = Logger.getLogger("RunwarLogger");
@@ -58,8 +56,6 @@ public class Server {
 
 	private static URLClassLoader _classLoader;
 
-	private DeploymentManager manager;
-	private Undertow undertow;
     private String serverName = "default";
 	public static final String bar = "******************************************************************************";
 	
@@ -74,6 +70,7 @@ public class Server {
 	
     protected void initClassLoader(List<URL> _classpath) {
         if (_classLoader == null && _classpath != null && _classpath.size() > 0) {
+            log.debug("Loading classes from lib dir");
             log.debugf("classpath: %s",_classpath);
 //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
 //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
@@ -102,6 +99,7 @@ public class Server {
 	    log.debug("Checking that we're running on > java7");
         try{
             nio = Server.class.getClassLoader().loadClass("java.nio.charset.StandardCharsets");
+            nio.getClass().getName();
         } catch (java.lang.ClassNotFoundException e) {
             throw new RuntimeException("Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting...");
         }
@@ -109,6 +107,8 @@ public class Server {
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void startServer(String[] args) throws Exception {
+		DeploymentManager manager;
+		Undertow undertow;
 	    ensureJavaVersion();
 		serverState = ServerState.STARTING;
 	    serverOptions = CommandLineHandler.parseArguments(args);
@@ -116,6 +116,7 @@ public class Server {
             Stop.stopServer(args);
         }
         serverName = serverOptions.getServerName();
+        String cfengine = serverOptions.getCFEngineName();
         String processName = serverOptions.getProcessName();
         int portNumber = serverOptions.getPortNumber();
         int socketNumber = serverOptions.getSocketNumber();
@@ -235,30 +236,30 @@ public class Server {
 		if(System.getProperty("coldfusion.home") == null)
 			System.setProperty("coldfusion.home",warFile.getAbsolutePath());
 		
-		String railoConfigWebDir = serverOptions.getRailoConfigWebDir();
-		String railoConfigServerDir = serverOptions.getRailoConfigServerDir();
+		String cfmlServletConfigWebDir = serverOptions.getCFMLServletConfigWebDir();
+		String cfmlServletConfigServerDir = serverOptions.getCFMLServletConfigServerDir();
 		File webXmlFile = serverOptions.getWebXmlFile();
 		if(warFile.isDirectory() && !webinf.exists()) {
-	        if(railoConfigWebDir == null) {
+	        if(cfmlServletConfigWebDir == null) {
 	        	File webConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/cfml/server/cfml-web/");
-				railoConfigWebDir = webConfigDirFile.getPath() + "/" + serverName;
+				cfmlServletConfigWebDir = webConfigDirFile.getPath() + "/" + serverName;
 	        }
-	        log.debug("railo.web.config.dir: " + railoConfigWebDir);
-	        if(railoConfigServerDir == null || railoConfigServerDir.length() == 0) {
+	        log.debug("cfml.web.config.dir: " + cfmlServletConfigWebDir);
+	        if(cfmlServletConfigServerDir == null || cfmlServletConfigServerDir.length() == 0) {
 	        	File serverConfigDirFile = new File(getThisJarLocation().getParentFile(),"engine/cfml/server/");
-	        	railoConfigServerDir = serverConfigDirFile.getAbsolutePath();
+	        	cfmlServletConfigServerDir = serverConfigDirFile.getAbsolutePath();
 	        }
-	        log.debug("railo.server.config.dir: " + railoConfigServerDir);
-	        String webinfDir = System.getProperty("railo.webinf");
+	        log.debug("cfml.server.config.dir: " + cfmlServletConfigServerDir);
+	        String webinfDir = System.getProperty("cfml.webinf");
 	        if(webinfDir == null) {
-	        	webinfDir = new File(railoConfigWebDir,"WEB-INF/").getPath();
+	        	webinfDir = new File(cfmlServletConfigWebDir,"WEB-INF/").getPath();
 	        }
-	        log.debug("railo.webinf: " + webinfDir);
+	        log.debug("cfml.webinf: " + webinfDir);
 
 //			servletBuilder.setResourceManager(new CFMLResourceManager(new File(homeDir,"server/"), 100, cfmlDirs));
-			File internalRailoRoot = new File(webinfDir);
-			internalRailoRoot.mkdirs();
-			servletBuilder.setResourceManager(new MappedResourceManager(warFile, 100, cfmlDirs, internalRailoRoot));
+			File internalCFMLServerRoot = new File(webinfDir);
+			internalCFMLServerRoot.mkdirs();
+			servletBuilder.setResourceManager(new MappedResourceManager(warFile, 100, cfmlDirs, internalCFMLServerRoot));
 
 			if(webXmlFile != null){
 				log.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
@@ -272,16 +273,16 @@ public class Server {
 				Class cfmlServlet;
 				Class restServlet;
 				try{
-					cfmlServlet = _classLoader.loadClass("railo.loader.servlet.CFMLServlet");
+					cfmlServlet = _classLoader.loadClass(cfengine+".loader.servlet.CFMLServlet");
 	                log.debug("dynamically loaded CFML servlet from runwar child classloader");
 				} catch (java.lang.ClassNotFoundException e) {
-					cfmlServlet = Server.class.getClassLoader().loadClass("railo.loader.servlet.CFMLServlet");
+					cfmlServlet = Server.class.getClassLoader().loadClass(cfengine+".loader.servlet.CFMLServlet");
 					log.debug("dynamically loaded CFML servlet from runwar classloader");
 				}
 				try{
-					restServlet = _classLoader.loadClass("railo.loader.servlet.RestServlet");
+					restServlet = _classLoader.loadClass(cfengine+".loader.servlet.RestServlet");
 				} catch (java.lang.ClassNotFoundException e) {
-					restServlet = Server.class.getClassLoader().loadClass("railo.loader.servlet.RestServlet");
+					restServlet = Server.class.getClassLoader().loadClass(cfengine+".loader.servlet.RestServlet");
 				}
 				log.debug("loaded servlet classes");
 				servletBuilder
@@ -289,8 +290,8 @@ public class Server {
 	            	.addServlets(
 		                        servlet("CFMLServlet", cfmlServlet)
         		                        .setRequireWelcomeFileMapping(true)
-		                                .addInitParam("configuration",railoConfigWebDir)
-		                                .addInitParam("railo-server-root",railoConfigServerDir)
+		                                .addInitParam("configuration",cfmlServletConfigWebDir)
+		                                .addInitParam(cfengine+"-server-root",cfmlServletConfigServerDir)
 		                                .addMapping("*.cfm")
 		                                .addMapping("*.cfc")
 		                                .addMapping("/index.cfc/*")
@@ -300,7 +301,7 @@ public class Server {
 		                                ,
 		                        servlet("RESTServlet", restServlet)
         		                        .setRequireWelcomeFileMapping(true)
-		                                .addInitParam("railo-web-directory",railoConfigWebDir)
+		                                .addInitParam(cfengine+"-web-directory",cfmlServletConfigWebDir)
 		                                .addMapping("/rest/*")
 		                                .setLoadOnStartup(2));
 				configureURLRewrite(servletBuilder, webinfDir);
@@ -392,7 +393,8 @@ public class Server {
 		}
 
 		// start the stop monitor thread
-		Thread monitor = new MonitorThread(tee, socketNumber, stoppassword);
+		undertow = serverBuilder.build();
+		Thread monitor = new MonitorThread(manager, undertow, tee, socketNumber, stoppassword);
 		monitor.start();
         log.debug("started stop monitor");
 		LaunchUtil.hookTray(this);
@@ -402,7 +404,6 @@ public class Server {
 			new Server(3);
 		}
 		
-		undertow = serverBuilder.build();
 		// if this println changes be sure to update the LaunchUtil so it will know success
         String msg = "Server is up - http-port:" + portNumber + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         log.debug(msg);
@@ -483,9 +484,9 @@ public class Server {
 				String fileName = item.getAbsolutePath();
 				if (!item.isDirectory()) {
 					if (fileName.toLowerCase().endsWith(".jar") || fileName.toLowerCase().endsWith(".zip")) {
-							URL url = item.toURI().toURL();
-							classpath.add(url);
-//							System.out.println("lib: added to classpath: "+fileName);
+						URL url = item.toURI().toURL();
+						classpath.add(url);
+			            log.debug("lib: added to classpath: "+fileName); 
 					}
 				}				
 			}
@@ -527,9 +528,14 @@ public class Server {
 		private int socketNumber;
 		private char[] stoppassword;
 		private boolean listening;
+		private DeploymentManager manager;
+		private Undertow undertow;
 
-		public MonitorThread(TeeOutputStream tee, int socketNumber, char[] stoppassword) {
+
+		public MonitorThread(DeploymentManager manager, Undertow undertow, TeeOutputStream tee, int socketNumber, char[] stoppassword) {
 			stdout = tee;
+			this.manager = manager;
+			this.undertow = undertow;
 			this.stoppassword = stoppassword;
 			setDaemon(true);
 			setName("StopMonitor");

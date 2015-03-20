@@ -245,16 +245,22 @@ public class CommandLineHandler {
                 .create("webxmlpath") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "railo-web-config" )
-                .withDescription( "full path to railo web config directory" )
-                .hasArg().withArgName("path")
-                .create("railoweb") );
+                .withLongOpt( "cfengine-name" )
+                .withDescription( "name of cfml engine, defaults to lucee" )
+                .hasArg().withArgName("name")
+                .create("cfengine") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "railo-server-config" )
-                .withDescription( "full path to railo server config directory" )
+        		.withLongOpt( "cfml-web-config" )
+        		.withDescription( "full path to cfml web context config directory" )
+        		.hasArg().withArgName("path")
+        		.create("cfwebconf") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "cfml-server-config" )
+                .withDescription( "full path to cfml server context config directory" )
                 .hasArg().withArgName("path")
-                .create("railoserver") );
+                .create("cfserverconf") );
         
         options.addOption( OptionBuilder.withArgName( "property=value" )
                 .withLongOpt( "sysprop" )
@@ -436,7 +442,7 @@ public class CommandLineHandler {
                 	if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
                 		logDir = warFile.getPath() + "/WEB-INF/logs/";
                 	} else {
-                		String serverConfigDir = System.getProperty("railo.server.config.dir");
+                		String serverConfigDir = System.getProperty("cfml.server.config.dir");
                 		if(serverConfigDir == null) {
                 			logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
                 		} else {
@@ -479,11 +485,14 @@ public class CommandLineHandler {
                 serverOptions.setTrayConfig(getFile(line.getOptionValue("trayconfig")));
             }
             
-            if (line.hasOption("railoserver")) {
-                serverOptions.setRailoConfigServerDir(line.getOptionValue("railoserver"));
+            if (line.hasOption("cfengine")) {
+            	serverOptions.setCFEngineName(line.getOptionValue("cfengine"));
             }
-            if (line.hasOption("railoweb")) {
-                serverOptions.setRailoConfigWebDir(line.getOptionValue("railoweb"));
+            if (line.hasOption("cfserverconf")) {
+                serverOptions.setCFMLServletConfigServerDir(line.getOptionValue("cfserverconf"));
+            }
+            if (line.hasOption("cfwebconf")) {
+                serverOptions.setCFMLServletConfigWebDir(line.getOptionValue("cfwebconf"));
             }
     	    if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {

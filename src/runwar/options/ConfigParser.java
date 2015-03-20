@@ -182,7 +182,7 @@ public class ConfigParser {
                     if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
                         logDir = warFile.getPath() + "/WEB-INF/logs/";
                     } else {
-                        String serverConfigDir = System.getProperty("railo.server.config.dir");
+                        String serverConfigDir = System.getProperty("cfml.server.config.dir");
                         if(serverConfigDir == null) {
                             logDir = new File(Server.getThisJarLocation().getParentFile(),"server/log/").getAbsolutePath();
                         } else {
@@ -225,11 +225,14 @@ public class ConfigParser {
                 serverOptions.setIconImage(serverConfig.getOptionValue("icon"));
             }
 
-            if (serverConfig.hasOption("railoserver")) {
-                serverOptions.setRailoConfigServerDir(serverConfig.getOptionValue("railoserver"));
+            if (serverConfig.hasOption("cfengine")) {
+            	serverOptions.setCFEngineName(serverConfig.getOptionValue("cfengine"));
             }
-            if (serverConfig.hasOption("railoweb")) {
-                serverOptions.setRailoConfigWebDir(serverConfig.getOptionValue("railoweb"));
+            if (serverConfig.hasOption("cfserverconf")) {
+                serverOptions.setCFMLServletConfigServerDir(serverConfig.getOptionValue("cfserverconf"));
+            }
+            if (serverConfig.hasOption("cfwebconf")) {
+                serverOptions.setCFMLServletConfigWebDir(serverConfig.getOptionValue("cfwebconf"));
             }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();

@@ -9,7 +9,7 @@ import runwar.logging.Logger;
 
 final class AgentInitialization {
 	private static final Pattern JAR_REGEX = Pattern
-			.compile(".*railo-inst[-.\\d]*.jar");
+			.compile(".*[railo|lucee]-inst[-.\\d]*.jar");
 
 	private static Logger log = Logger.getLogger("RunwarLogger");
 
@@ -100,10 +100,10 @@ final class AgentInitialization {
 			String locationPath) {
 		log.debug("Trying to load java agent from location of current class file");
 		File libDir = new File(locationPath).getParentFile();
-		File localJarFile = new File(libDir, "railo-inst.jar");
-
-		if (localJarFile.exists()) {
-			return localJarFile.getPath();
+		for(File file : libDir.listFiles()) {
+			if (JAR_REGEX.matcher(file.getPath()).matches()) {
+				return file.getAbsolutePath();
+			}	
 		}
 
 		File localMETAINFFile = new File(locationPath.replace("classes/",

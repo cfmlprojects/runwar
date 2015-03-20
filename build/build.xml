@@ -3,5 +3,8 @@
 	<loadproperties srcfile="build.properties" />
 	<import file="${cfdistro.build.file}" />
 	<import file="${basedir}/build-runwar.xml" />
+  
+  <target name="build" depends="runwar.jar">
+  </target>
 
 </project>
