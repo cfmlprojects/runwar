@@ -35,13 +35,22 @@ import runwar.util.TeeOutputStream;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
+import io.undertow.predicate.Predicates;
+import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.PredicateHandler;
+import io.undertow.server.handlers.cache.CacheHandler;
+import io.undertow.server.handlers.cache.DirectBufferCache;
+import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
+import io.undertow.util.MimeMappings;
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static io.undertow.servlet.Servlets.servlet;
@@ -226,7 +235,7 @@ public class Server {
 			initClassLoader(cp);
 		}
 
-		DeploymentInfo servletBuilder = deployment()
+		final DeploymentInfo servletBuilder = deployment()
                 .setContextPath( contextPath.equals("/") ? "" : contextPath )
                 .setDeploymentName(warPath);
 
@@ -328,9 +337,39 @@ public class Server {
         });
 		 */
 
+        // this handles mime types and adds a simple cache for static files
+		servletBuilder.addInitialHandlerChainWrapper(new HandlerWrapper() {
+	            @Override
+	            public HttpHandler wrap(final HttpHandler handler) {
+	              final ResourceHandler resourceHandler = new ResourceHandler(servletBuilder.getResourceManager());
+	                io.undertow.util.MimeMappings.Builder mimes = MimeMappings.builder();
+	                List<String> suffixList = new ArrayList<String>();
+	                // add font mime types not included by default
+	                mimes.addMapping("eot", "application/vnd.ms-fontobject");
+	                mimes.addMapping("otf", "font/opentype");
+	                mimes.addMapping("ttf", "application/x-font-ttf");
+	                mimes.addMapping("woff", "application/x-font-woff");
+	                suffixList.addAll(Arrays.asList(".eot",".otf",".ttf",".woff"));
+	                // add the default types and any added in web.xml files
+	                for(MimeMapping mime : servletBuilder.getMimeMappings()) {
+	                	log.debug("Adding mime-type: " + mime.getExtension() + " - " + mime.getMimeType());
+		                mimes.addMapping(mime.getExtension(), mime.getMimeType());
+	                	suffixList.add("."+mime.getExtension());
+	                }
+	                resourceHandler.setMimeMappings(mimes.build());
+	                String[] suffixes = new String[suffixList.size()];
+	                suffixes = suffixList.toArray(suffixes);
+	                // simple cacheHandler, someday maybe make this configurable
+	                final CacheHandler cacheHandler = new CacheHandler(new DirectBufferCache(1024, 10, 10480), resourceHandler);
+	                final PredicateHandler predicateHandler = new PredicateHandler(Predicates.suffixes(suffixes), cacheHandler, handler);
+	                return predicateHandler;
+	            }
+	        });
+
 		// this prevents us from having to use our own ResourceHandler (directory listing, welcome files, see below) and error handler for now
         servletBuilder.addServlet(new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
                 .addInitParam("directory-listing", Boolean.toString(serverOptions.isDirectoryListingEnabled())));
+
 		manager = defaultContainer().addDeployment(servletBuilder);
 		manager.deploy();
         HttpHandler servletHandler = manager.start();
@@ -372,7 +411,7 @@ public class Server {
 
         PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
                 .addPrefixPath(contextPath, servletHandler);
-
+        
         serverBuilder.setHandler(pathHandler);
 
 		try {

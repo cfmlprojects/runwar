@@ -28,14 +28,14 @@ final class AgentInitialization {
 				if (JAR_REGEX.matcher(file.getPath()).matches()) {
 					jarFilePath = file.getAbsolutePath();
 					break;
-				}	
+				}
 			}
 //			System.out.println("Found Agent Jar: " + jarFilePath);
 		} else {
 			jarFilePath = discoverPathToJarFile();
 		}
-		log.debug("Loading agent from:" + jarFilePath);
 		if(jarFilePath!=null && jarFilePath.length() > 0) {
+			log.debug("Loading agent from:" + jarFilePath);
 			return new AgentLoader(jarFilePath).loadAgent();			
 		} else {
 			log.warn("The agent loader was not found for auto-initialization");
