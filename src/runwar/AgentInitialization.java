@@ -9,7 +9,7 @@ import runwar.logging.Logger;
 
 final class AgentInitialization {
 	private static final Pattern JAR_REGEX = Pattern
-			.compile(".*[railo|lucee]-(inst|external.agent)+[-.\\d]*.jar");
+		.compile(".*[railo|lucee]-(inst|external.agent)+[-.\\d]*.jar");
 
 	private static Logger log = Logger.getLogger("RunwarLogger");
 
