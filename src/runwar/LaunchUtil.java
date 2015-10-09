@@ -55,8 +55,8 @@ public class LaunchUtil {
     private static final int KB = 1024;
 	public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] {
 			"cfml.cli.home",
-			"railo.server.config.dir",
-			"railo.web.config.dir",
+			"cfml.server.config.dir",
+			"cfml.web.config.dir",
 			"cfml.server.trayicon",
 			"cfml.server.dockicon"
 	}));
@@ -321,7 +321,7 @@ public class LaunchUtil {
 		}
 	}
 
-	static Image getIconImage(String iconImage) {
+	public static Image getIconImage(String iconImage) {
         Image image = null;
         if(iconImage != null && iconImage.length() != 0) {
             iconImage = iconImage.replaceAll("(^\")|(\"$)", "");

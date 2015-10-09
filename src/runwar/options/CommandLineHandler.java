@@ -245,16 +245,22 @@ public class CommandLineHandler {
                 .create("webxmlpath") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "railo-web-config" )
-                .withDescription( "full path to railo web config directory" )
-                .hasArg().withArgName("path")
-                .create("railoweb") );
+                .withLongOpt( "cfengine-name" )
+                .withDescription( "name of cfml engine, defaults to lucee" )
+                .hasArg().withArgName("name")
+                .create("cfengine") );
         
         options.addOption( OptionBuilder
-                .withLongOpt( "railo-server-config" )
-                .withDescription( "full path to railo server config directory" )
+        		.withLongOpt( "cfml-web-config" )
+        		.withDescription( "full path to cfml web context config directory" )
+        		.hasArg().withArgName("path")
+        		.create("cfwebconf") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "cfml-server-config" )
+                .withDescription( "full path to cfml server context config directory" )
                 .hasArg().withArgName("path")
-                .create("railoserver") );
+                .create("cfserverconf") );
         
         options.addOption( OptionBuilder.withArgName( "property=value" )
                 .withLongOpt( "sysprop" )
@@ -274,6 +280,18 @@ public class CommandLineHandler {
                 .withDescription( "enable directory browsing" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directoryindex") );
+        
+        options.addOption( OptionBuilder
+        		.withLongOpt( "cache-enabled" )
+        		.withDescription( "enable static asset cache" )
+        		.hasArg().withArgName("true|false").withType(Boolean.class)
+        		.create("cache") );
+        
+        options.addOption( OptionBuilder
+        		.withLongOpt( "custom-httpstatus-enabled" )
+        		.withDescription( "enable custom HTTP status code messages" )
+        		.hasArg().withArgName("true|false").withType(Boolean.class)
+        		.create("customstatus") );
         
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
@@ -436,7 +454,7 @@ public class CommandLineHandler {
                 	if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
                 		logDir = warFile.getPath() + "/WEB-INF/logs/";
                 	} else {
-                		String serverConfigDir = System.getProperty("railo.server.config.dir");
+                		String serverConfigDir = System.getProperty("cfml.server.config.dir");
                 		if(serverConfigDir == null) {
                 			logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
                 		} else {
@@ -479,13 +497,25 @@ public class CommandLineHandler {
                 serverOptions.setTrayConfig(getFile(line.getOptionValue("trayconfig")));
             }
             
-            if (line.hasOption("railoserver")) {
-                serverOptions.setRailoConfigServerDir(line.getOptionValue("railoserver"));
+            if (line.hasOption("cfengine")) {
+            	serverOptions.setCFEngineName(line.getOptionValue("cfengine"));
             }
-            if (line.hasOption("railoweb")) {
-                serverOptions.setRailoConfigWebDir(line.getOptionValue("railoweb"));
+            if (line.hasOption("cfserverconf")) {
+                serverOptions.setCFMLServletConfigServerDir(line.getOptionValue("cfserverconf"));
             }
-    	    if(serverOptions.getLoglevel().equals("DEBUG")) {
+            if (line.hasOption("cfwebconf")) {
+                serverOptions.setCFMLServletConfigWebDir(line.getOptionValue("cfwebconf"));
+            }
+            if (line.hasOption("directoryindex")) {
+            	serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue("directoryindex")));
+            }
+            if (line.hasOption("cache")) {
+            	serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue("cache")));
+            }
+            if (line.hasOption("customstatus")) {
+            	serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue("customstatus")));
+            }
+            if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {
     	    		log.debug(arg);
     	    		log.debug(arg.getValue());
@@ -497,6 +527,9 @@ public class CommandLineHandler {
             String msg = exp.getMessage();
             if(msg == null){
                 msg = "null : "+exp.getStackTrace()[0].toString();
+                if(exp.getStackTrace().length > 0) {
+                    msg += '\n' + exp.getStackTrace()[1].toString();
+                }
             }
             printUsage(msg,1);
         }

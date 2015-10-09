@@ -15,15 +15,17 @@ public class ServerOptions {
     private URL jarURL = null;
     private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig = null;
     private String iconImage = null;
-    private String cfmlengine = null;
-    private String railoConfigWebDir = null, railoConfigServerDir = null;
+    private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean directoryListingEnabled = true;
+    private boolean cacheEnabled = false;
     private String[] welcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
             "default.html", "default.htm" };
 	private File sslCertificate, sslKey, configFile;
 	private char[] sslKeyPass;
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
 	private String action;
+	private String cfengineName = "lucee";
+	private boolean customHTTPStatusEnabled = true;
 
 	public String getServerName() {
 	    return serverName;
@@ -243,19 +245,26 @@ public class ServerOptions {
         this.trayConfig = trayConfig;
         return this;
     }
-    public String getRailoConfigWebDir() {
-        return railoConfigWebDir;
+    public String getCFMLServletConfigWebDir() {
+        return cfmlServletConfigWebDir;
     }
-    public ServerOptions setRailoConfigWebDir(String railoConfigWebDir) {
-        this.railoConfigWebDir = railoConfigWebDir;
+    public ServerOptions setCFMLServletConfigWebDir(String cfmlServletConfigWebDir) {
+        this.cfmlServletConfigWebDir = cfmlServletConfigWebDir;
         return this;
     }
-    public String getRailoConfigServerDir() {
-        return railoConfigServerDir;
+    public String getCFMLServletConfigServerDir() {
+        return cfmlServletConfigServerDir;
     }
-    public ServerOptions setRailoConfigServerDir(String railoConfigServerDir) {
-        this.railoConfigServerDir = railoConfigServerDir;
+    public ServerOptions setCFMLServletConfigServerDir(String cfmlServletConfigServerDir) {
+        this.cfmlServletConfigServerDir = cfmlServletConfigServerDir;
         return this;
+    }
+    public boolean isCacheEnabled() {
+    	return cacheEnabled;
+    }
+    public ServerOptions setCacheEnabled(boolean cacheEnabled) {
+    	this.cacheEnabled = cacheEnabled;
+    	return this;
     }
     public boolean isDirectoryListingEnabled() {
         return directoryListingEnabled;
@@ -308,6 +317,21 @@ public class ServerOptions {
 	}
 	public String getAction() {
 		return this.action;
+	}
+	public ServerOptions setCFEngineName(String cfengineName) {
+		this.cfengineName = cfengineName;
+		return this;
+	}
+	public String getCFEngineName() {
+		return this.cfengineName ;
+	}
+
+	public ServerOptions setCustomHTTPStatusEnabled(boolean enabled) {
+		this.customHTTPStatusEnabled = enabled;
+		return this;
+	}
+	public boolean isCustomHTTPStatusEnabled() {
+		return this.customHTTPStatusEnabled;
 	}
 
 }

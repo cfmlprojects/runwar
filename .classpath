@@ -6,16 +6,17 @@
 	<classpathentry kind="lib" path="lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-el-api_3.0_spec-1.0.0.Beta1.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-jsp-api_2.3_spec-1.0.0.Beta1.jar"/>
-	<classpathentry kind="lib" path="lib/jboss-logging-3.1.4.GA.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-servlet-api_3.1_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-jsp-1.0.0.Beta27.jar"/>
 	<classpathentry kind="lib" path="lib/json-smart-mini-1.0.8.jar"/>
-	<classpathentry kind="lib" path="lib/xnio-nio-3.3.0.Final.jar"/>
-	<classpathentry kind="lib" path="lib/xnio-api-3.3.0.Final.jar"/>
-	<classpathentry kind="lib" path="lib/undertow-core-1.1.0.Final.jar"/>
-	<classpathentry kind="lib" path="lib/undertow-servlet-1.1.0.Final.jar"/>
-	<classpathentry kind="lib" path="lib/bcpkix-jdk14-1.51.jar"/>
-	<classpathentry kind="lib" path="lib/bcprov-jdk14-1.51.jar"/>
+	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-1.51.jar"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk15on-1.51.jar"/>
+	<classpathentry kind="lib" path="lib/jboss-logging-3.2.1.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-core-1.3.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-servlet-1.3.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/urlrewritefilter-4.0.4.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-api-3.3.2.Final.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-nio-3.3.2.Final.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

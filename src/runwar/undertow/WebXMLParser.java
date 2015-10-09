@@ -11,6 +11,7 @@ import org.w3c.dom.Document;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ListenerInfo;
+import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
 
 import java.util.EventListener;
@@ -315,6 +316,27 @@ public class WebXMLParser {
 						// add welcome page
 						info.addWelcomePage(pName);
 					}
+				}
+			}
+			// do mime types files
+			listOfElements = doc.getElementsByTagName("mime-mapping");
+			totalElements = listOfElements.getLength();
+			log.debugf("Total no of mime-mapping: %s", totalElements);
+			for (int i = 0; i < totalElements; i++) {
+				Node inNode = listOfElements.item(i);
+				if (inNode.getNodeType() == Node.ELEMENT_NODE) {
+					Element inElmnt = (Element) inNode;
+					NodeList inNmElmntLst = inElmnt.getElementsByTagName("extension");
+					Element inNmElmnt = (Element) inNmElmntLst.item(0);
+					NodeList inNm = inNmElmnt.getChildNodes();
+					String extention = (inNm.item(0)).getNodeValue().trim();
+					NodeList inValElmntLst = inElmnt.getElementsByTagName("mime-type");
+					Element inValElmnt = (Element) inValElmntLst.item(0);
+					NodeList inVal = inValElmnt.getChildNodes();
+					String mimeType = (inVal.item(0)).getNodeValue().trim();
+					log.debug("extension: " + extention + " mime-type: "+mimeType);
+					// add the type
+					info.addMimeMapping(new MimeMapping(extention,mimeType));
 				}
 			}
 			// do display name

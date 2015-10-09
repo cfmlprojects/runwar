@@ -9,7 +9,7 @@ import runwar.logging.Logger;
 
 final class AgentInitialization {
 	private static final Pattern JAR_REGEX = Pattern
-			.compile(".*railo-inst[-.\\d]*.jar");
+			.compile(".*[railo|lucee]-(inst|external.agent)+[-.\\d]*.jar");
 
 	private static Logger log = Logger.getLogger("RunwarLogger");
 
@@ -28,14 +28,14 @@ final class AgentInitialization {
 				if (JAR_REGEX.matcher(file.getPath()).matches()) {
 					jarFilePath = file.getAbsolutePath();
 					break;
-				}	
+				}
 			}
 //			System.out.println("Found Agent Jar: " + jarFilePath);
 		} else {
 			jarFilePath = discoverPathToJarFile();
 		}
-		log.debug("Loading agent from:" + jarFilePath);
 		if(jarFilePath!=null && jarFilePath.length() > 0) {
+			log.debug("Loading agent from:" + jarFilePath);
 			return new AgentLoader(jarFilePath).loadAgent();			
 		} else {
 			log.warn("The agent loader was not found for auto-initialization");
@@ -100,10 +100,10 @@ final class AgentInitialization {
 			String locationPath) {
 		log.debug("Trying to load java agent from location of current class file");
 		File libDir = new File(locationPath).getParentFile();
-		File localJarFile = new File(libDir, "railo-inst.jar");
-
-		if (localJarFile.exists()) {
-			return localJarFile.getPath();
+		for(File file : libDir.listFiles()) {
+			if (JAR_REGEX.matcher(file.getPath()).matches()) {
+				return file.getAbsolutePath();
+			}	
 		}
 
 		File localMETAINFFile = new File(locationPath.replace("classes/",
