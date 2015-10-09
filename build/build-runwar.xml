@@ -4,82 +4,66 @@
 	<mvn-repo id="repo.local" url="file://${cfdistro.basedir}/artifacts" />
 	<property name="clean" value="false" />
 
-	<macrodef name="runwar.initprops">
-		<sequential>
-			<dirname property="runwarbuild.basedir" file="${ant.file.runwar}" />
-			<property name="war.name" value="runwar" />
-			<property name="build.sysclasspath" value="last" />
-			
-			<property name="server.deploy.dir" value="${war.target.dir}/../"/>
-			<property name="server.log.dir" value="${log.dir}/"/>
-			<property name="server.port" value="8088"/>
-			<property name="server.port.stop" value="8079"/>
-			<property name="server.port.http" value="${server.port}"/>
-			<property name="server.port.ajp" value="8009"/>
-			<property name="server.ajp.enable" value="false"/>
-			<property name="server.url" value="http://127.0.0.1:${server.port.http}${war.contextpath}/index.cfm"/>
-			<property name="server.memory.max" value="256M"/>
-			<property name="server.host.max" value="256M"/>
-			<property name="server.jvm.args" value="" />
+  <macrodef name="runwar.initprops">
+    <sequential>
+      <dirname property="runwarbuild.basedir" file="${ant.file.runwar}" />
+      <property name="war.name" value="runwar" />
+      <property name="build.sysclasspath" value="last" />
 
-			<property name="runwar.war.path" location="${war.target.dir}" />
-			<property name="runwar.war.contextpath" value="${war.contextpath}" />
-			<property name="runwar.port" value="${server.port.http}" />
-			<property name="runwar.host" value="${server.host}" />
-			<property name="runwar.maxmemory" value="${server.memory.max}" />
-			<property name="runwar.log.dir" location="${server.log.dir}/" />
-			<property name="log.level" value="WARN" />
-			<property name="loglevel" value="${log.level}" />
-			<property name="runwar.log.level" value="${loglevel}" />
-			<property name="runwar.stop.socket" value="${server.port.stop}" />
-			<property name="runwar.cfml.dirlist" value="${src.dir}" />
-			<property name="open.url" value="${server.url}" />
-			<fix-url-slashes property="open.url" />
-			<property name="runner.temp.dir" value="${temp.dir}/runner" />
-			<property name="runner.jar" value="${runner.temp.dir}/${war.name}.jar" />
+      <property name="server.deploy.dir" value="${war.target.dir}/../" />
+      <property name="server.log.dir" value="${log.dir}/" />
+      <property name="server.port" value="8088" />
+      <property name="server.port.stop" value="8079" />
+      <property name="server.port.http" value="${server.port}" />
+      <property name="server.port.ajp" value="8009" />
+      <property name="server.ajp.enable" value="false" />
+      <property name="server.url" value="http://127.0.0.1:${server.port.http}${war.contextpath}/index.cfm" />
+      <property name="server.memory.max" value="256M" />
+      <property name="server.host.max" value="256M" />
+      <property name="server.jvm.args" value="" />
 
-			<property name="distro.name" value="${distro.name}" />
-			<property name="company.name" value="CFML Proponents" />
-			<property name="product.name.short" value="${distro.name}" />
-			<property name="product.name.long" value="${distro.name}" />
-			<property name="product.version" value="0.0.1.1" />
-			<property name="product.version.txt" value="0.0.1.1" />
-			<antcontrib:if>
-				<equals arg1="${default.cfengine}" arg2="acf" />
-				<then>
-					<path id="runwar.lib.path">
-						<fileset dir="${cfdistro.lib.dir}">
-							<include name="*.jar" />
-						</fileset>
-                                                <fileset dir="${runwar.lib.dir}">
-                                                        <include name="*.jar" />
-                                                </fileset>
-						<!--  only needed for fancy file servlets
-						<fileset dir="${war.target.dir}/WEB-INF/cfusion/lib">
-							<include name="*.jar" />
-						</fileset>
-						-->
-					</path>
-				</then>
-				<else>
-					<path id="runwar.lib.path">
-						<fileset dir="${cfdistro.lib.dir}">
-							<include name="*.jar" />
-						</fileset>
-                                                <fileset dir="${runwar.lib.dir}">
-                                                        <include name="*.jar" />
-                                                </fileset>
-						<!--  only needed for fancy file servlets
-						<fileset dir="${war.target.dir}/WEB-INF/lib">
-							<include name="*.jar" />
-						</fileset>
-						-->
-					</path>
-				</else>
-			</antcontrib:if>
+      <property name="runwar.war.path" location="${war.target.dir}" />
+      <property name="runwar.war.contextpath" value="${war.contextpath}" />
+      <property name="runwar.port" value="${server.port.http}" />
+      <property name="runwar.host" value="${server.host}" />
+      <property name="runwar.maxmemory" value="${server.memory.max}" />
+      <property name="runwar.log.dir" location="${server.log.dir}/" />
+      <property name="log.level" value="WARN" />
+      <property name="loglevel" value="${log.level}" />
+      <property name="runwar.log.level" value="${loglevel}" />
+      <property name="runwar.stop.socket" value="${server.port.stop}" />
+      <property name="runwar.cfml.dirlist" value="${src.dir}" />
+      <property name="open.url" value="${server.url}" />
+      <fix-url-slashes property="open.url" />
+      <property name="runner.temp.dir" value="${temp.dir}/runner" />
+      <property name="runner.jar" value="${runner.temp.dir}/${war.name}.jar" />
 
-		</sequential>
-	</macrodef>
+      <property name="distro.name" value="${distro.name}" />
+      <property name="company.name" value="CFML Proponents" />
+      <property name="product.name.short" value="${distro.name}" />
+      <property name="product.name.long" value="${distro.name}" />
+      <property name="product.version" value="0.0.1.1" />
+      <property name="product.version.txt" value="0.0.1.1" />
+      <antcontrib:if>
+        <equals arg1="${default.cfengine}" arg2="acf" />
+        <then>
+          <path id="runwar.lib.path">
+            <fileset dir="${runwar.lib.dir}">
+              <include name="*.jar" />
+            </fileset>
+          </path>
+        </then>
+        <else>
+          <path id="runwar.lib.path">
+            <fileset dir="${runwar.lib.dir}">
+              <include name="*.jar" />
+            </fileset>
+          </path>
+        </else>
+      </antcontrib:if>
+
+    </sequential>
+  </macrodef>
 	<runwar.initprops />
 
 	<target name="runwar.compile" depends="get.deps">
@@ -92,7 +76,6 @@
     	-->
 		<javac-ecj srcdir="${runwar.src.dir}/" destdir="${runwar.bin.dir}/runwar"
 			classpath="${toString:runwar.lib.path}" compliance="1.7"/>
-		    		
 	</target>
 
 	<target name="runwar.jar" depends="runwar.compile">
@@ -148,17 +131,17 @@
 		<dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.51" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
 		<dependency groupId="commons-cli" artifactId="commons-cli" version="1.2"
     		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo"/>
-    	<dependency groupId="io.undertow" artifactId="undertow-jsp" version="1.0.0.Beta27"
-    		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo">
-            <exclusions>
-                <exclusion groupId="io.undertow" artifactId="undertow-servlet" />
-                <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.1_spec" />
-                <exclusion groupId="io.undertow.jastow" artifactId="jastow" />
-            	<exclusion groupId="org.jboss.logging" artifactId="jboss-logging-processor" />
-                <exclusion groupId="org.jboss.spec.javax.servlet" artifactId="jboss-servlet-api_3.1_spec" />
-                <exclusion groupId="org.jboss.web" artifactId="jasper-jdt" />
-            </exclusions>
-    	</dependency>
+  	<dependency groupId="io.undertow" artifactId="undertow-jsp" version="1.0.0.Beta27"
+  		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo">
+          <exclusions>
+              <exclusion groupId="io.undertow" artifactId="undertow-servlet" />
+              <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.1_spec" />
+              <exclusion groupId="io.undertow.jastow" artifactId="jastow" />
+          	<exclusion groupId="org.jboss.logging" artifactId="jboss-logging-processor" />
+              <exclusion groupId="org.jboss.spec.javax.servlet" artifactId="jboss-servlet-api_3.1_spec" />
+              <exclusion groupId="org.jboss.web" artifactId="jasper-jdt" />
+          </exclusions>
+  	</dependency>
 
 		<dependency groupId="io.undertow" artifactId="undertow-servlet" version="${undertow.version}"
                 unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo">

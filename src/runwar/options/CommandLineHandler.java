@@ -281,6 +281,18 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directoryindex") );
         
+        options.addOption( OptionBuilder
+        		.withLongOpt( "cache-enabled" )
+        		.withDescription( "enable static asset cache" )
+        		.hasArg().withArgName("true|false").withType(Boolean.class)
+        		.create("cache") );
+        
+        options.addOption( OptionBuilder
+        		.withLongOpt( "custom-httpstatus-enabled" )
+        		.withDescription( "enable custom HTTP status code messages" )
+        		.hasArg().withArgName("true|false").withType(Boolean.class)
+        		.create("customstatus") );
+        
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
@@ -494,7 +506,16 @@ public class CommandLineHandler {
             if (line.hasOption("cfwebconf")) {
                 serverOptions.setCFMLServletConfigWebDir(line.getOptionValue("cfwebconf"));
             }
-    	    if(serverOptions.getLoglevel().equals("DEBUG")) {
+            if (line.hasOption("directoryindex")) {
+            	serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue("directoryindex")));
+            }
+            if (line.hasOption("cache")) {
+            	serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue("cache")));
+            }
+            if (line.hasOption("customstatus")) {
+            	serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue("customstatus")));
+            }
+            if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {
     	    		log.debug(arg);
     	    		log.debug(arg.getValue());
@@ -506,6 +527,9 @@ public class CommandLineHandler {
             String msg = exp.getMessage();
             if(msg == null){
                 msg = "null : "+exp.getStackTrace()[0].toString();
+                if(exp.getStackTrace().length > 0) {
+                    msg += '\n' + exp.getStackTrace()[1].toString();
+                }
             }
             printUsage(msg,1);
         }

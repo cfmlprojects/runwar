@@ -17,6 +17,7 @@ public class ServerOptions {
     private String iconImage = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean directoryListingEnabled = true;
+    private boolean cacheEnabled = false;
     private String[] welcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
             "default.html", "default.htm" };
 	private File sslCertificate, sslKey, configFile;
@@ -24,6 +25,7 @@ public class ServerOptions {
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
 	private String action;
 	private String cfengineName = "lucee";
+	private boolean customHTTPStatusEnabled = true;
 
 	public String getServerName() {
 	    return serverName;
@@ -257,6 +259,13 @@ public class ServerOptions {
         this.cfmlServletConfigServerDir = cfmlServletConfigServerDir;
         return this;
     }
+    public boolean isCacheEnabled() {
+    	return cacheEnabled;
+    }
+    public ServerOptions setCacheEnabled(boolean cacheEnabled) {
+    	this.cacheEnabled = cacheEnabled;
+    	return this;
+    }
     public boolean isDirectoryListingEnabled() {
         return directoryListingEnabled;
     }
@@ -315,6 +324,14 @@ public class ServerOptions {
 	}
 	public String getCFEngineName() {
 		return this.cfengineName ;
+	}
+
+	public ServerOptions setCustomHTTPStatusEnabled(boolean enabled) {
+		this.customHTTPStatusEnabled = enabled;
+		return this;
+	}
+	public boolean isCustomHTTPStatusEnabled() {
+		return this.customHTTPStatusEnabled;
 	}
 
 }

@@ -268,14 +268,14 @@ public class ConfigParser {
             ArrayList<String> options = new ArrayList<String>();
             while(keys.hasNext()) {
                 String key = keys.next();
-                options.add(jsonConfig.get(key)+"="+jsonConfig.get(key).toString());
+                options.add(key+"="+jsonConfig.get(key).toString());
             }
             return options;
         }
 
         public String getOptionValue(String key) {
             if(hasOption(key)){
-                jsonConfig.get(key).toString();                
+              return jsonConfig.get(key).toString();
             }
             return null;
         }
