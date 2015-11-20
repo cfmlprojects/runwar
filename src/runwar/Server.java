@@ -134,6 +134,7 @@ public class Server {
         String warPath = serverOptions.getWarPath();
         String loglevel = serverOptions.getLoglevel();
         char[] stoppassword = serverOptions.getStopPassword();
+        Long transferMinSize= serverOptions.getTransferMinSize();
 
 		if (serverOptions.isBackground()) {
 			serverState = ServerState.STARTING_BACKGROUND;
@@ -233,6 +234,7 @@ public class Server {
 			cp.addAll(getClassesList(new File(webinf,"/classes").getAbsolutePath()));
 			initClassLoader(cp);
 		}
+		log.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
 
 		final DeploymentInfo servletBuilder = deployment()
                 .setContextPath( contextPath.equals("/") ? "" : contextPath )
@@ -264,10 +266,10 @@ public class Server {
 	        }
 	        log.debug("cfml.webinf: " + webinfDir);
 
-//			servletBuilder.setResourceManager(new CFMLResourceManager(new File(homeDir,"server/"), 100, cfmlDirs));
+//			servletBuilder.setResourceManager(new CFMLResourceManager(new File(homeDir,"server/"), transferMinSize, cfmlDirs));
 			File internalCFMLServerRoot = new File(webinfDir);
 			internalCFMLServerRoot.mkdirs();
-			servletBuilder.setResourceManager(new MappedResourceManager(warFile, 100, cfmlDirs, internalCFMLServerRoot));
+			servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot));
 
 			if(webXmlFile != null){
 				log.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
@@ -320,7 +322,7 @@ public class Server {
 				throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
 			}
 			servletBuilder.setClassLoader(_classLoader);
-			servletBuilder.setResourceManager(new MappedResourceManager(warFile, 100, cfmlDirs, webinf));
+			servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
 	        LogSubverter.subvertJDKLoggers(loglevel);
 			WebXMLParser.parseWebXml(new File(webinf,"/web.xml"), servletBuilder);
 		} else {
@@ -330,7 +332,7 @@ public class Server {
 		servletBuilder.addInitialHandlerChainWrapper(new HandlerWrapper() {
             @Override
             public HttpHandler wrap(final HttpHandler handler) {
-                return resource(new FileResourceManager(new File(libDir,"server/WEB-INF"), 100))
+                return resource(new FileResourceManager(new File(libDir,"server/WEB-INF"), transferMinSize))
                         .setDirectoryListingEnabled(true);
             }
         });

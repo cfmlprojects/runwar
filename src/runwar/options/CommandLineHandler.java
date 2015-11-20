@@ -293,6 +293,18 @@ public class CommandLineHandler {
         		.hasArg().withArgName("true|false").withType(Boolean.class)
         		.create("customstatus") );
         
+        options.addOption( OptionBuilder
+                .withLongOpt( "transfer-min-size" )
+                .withDescription( "Minimun transfer file size to offload to OS. (100)\n" )
+                .hasArg().withArgName("transferminsize").withType(Long.class)
+                .create("transferminsize") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "sendfile-enabled" )
+                .withDescription( "enable sendfile" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("sendfile") );
+        
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
@@ -514,6 +526,12 @@ public class CommandLineHandler {
             }
             if (line.hasOption("customstatus")) {
             	serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue("customstatus")));
+            }
+            if (line.hasOption("transferminsize")) {
+                serverOptions.setTransferMinSize(Long.valueOf(line.getOptionValue("transferminsize")));
+            }
+            if (line.hasOption("sendfile")) {
+                serverOptions.setSendfileEnabled(Boolean.valueOf(line.getOptionValue("sendfile")));
             }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {
