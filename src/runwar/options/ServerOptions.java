@@ -26,6 +26,7 @@ public class ServerOptions {
 	private String action;
 	private String cfengineName = "lucee";
 	private boolean customHTTPStatusEnabled = true;
+	private Long transferMinSize = (long) 100;
 
 	public String getServerName() {
 	    return serverName;
@@ -325,7 +326,7 @@ public class ServerOptions {
 	public String getCFEngineName() {
 		return this.cfengineName ;
 	}
-
+ 
 	public ServerOptions setCustomHTTPStatusEnabled(boolean enabled) {
 		this.customHTTPStatusEnabled = enabled;
 		return this;
@@ -333,5 +334,20 @@ public class ServerOptions {
 	public boolean isCustomHTTPStatusEnabled() {
 		return this.customHTTPStatusEnabled;
 	}
+
+    public ServerOptions setSendfileEnabled(boolean enabled) {
+        if(!enabled) {
+            this.transferMinSize = Long.MAX_VALUE;
+        }
+        return this;
+    }
+    public ServerOptions setTransferMinSize(Long minSize) {
+        this.transferMinSize = minSize;
+        return this;
+    }
+
+    public Long getTransferMinSize() {
+        return this.transferMinSize;
+    }
 
 }
