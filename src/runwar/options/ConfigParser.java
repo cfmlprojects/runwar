@@ -234,6 +234,22 @@ public class ConfigParser {
             if (serverConfig.hasOption("cfwebconf")) {
                 serverOptions.setCFMLServletConfigWebDir(serverConfig.getOptionValue("cfwebconf"));
             }
+            if (serverConfig.hasOption("directoryindex")) {
+                serverOptions.setDirectoryListingEnabled(Boolean.valueOf(serverConfig.getOptionValue("directoryindex")));
+            }
+            if (serverConfig.hasOption("cache")) {
+                serverOptions.setCacheEnabled(Boolean.valueOf(serverConfig.getOptionValue("cache")));
+            }
+            if (serverConfig.hasOption("customstatus")) {
+                serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(serverConfig.getOptionValue("customstatus")));
+            }
+            if (serverConfig.hasOption("transferminsize")) {
+                serverOptions.setTransferMinSize(Long.valueOf(serverConfig.getOptionValue("transferminsize")));
+            }
+            if (serverConfig.hasOption("sendfile")) {
+                serverOptions.setSendfileEnabled(Boolean.valueOf(serverConfig.getOptionValue("sendfile")));
+            }
+
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();
                 while(optionsIterator.hasNext()) {
