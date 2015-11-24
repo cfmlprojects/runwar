@@ -282,13 +282,13 @@ public class CommandLineHandler {
                 .create("directoryindex") );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "cache-enabled" )
+        		.withLongOpt( "cache-enable" )
         		.withDescription( "enable static asset cache" )
         		.hasArg().withArgName("true|false").withType(Boolean.class)
         		.create("cache") );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "custom-httpstatus-enabled" )
+        		.withLongOpt( "custom-httpstatus-enable" )
         		.withDescription( "enable custom HTTP status code messages" )
         		.hasArg().withArgName("true|false").withType(Boolean.class)
         		.create("customstatus") );
@@ -300,7 +300,7 @@ public class CommandLineHandler {
                 .create("transferminsize") );
 
         options.addOption( OptionBuilder
-                .withLongOpt( "sendfile-enabled" )
+                .withLongOpt( "sendfile-enable" )
                 .withDescription( "enable sendfile" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("sendfile") );
