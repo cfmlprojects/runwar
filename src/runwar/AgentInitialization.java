@@ -9,7 +9,7 @@ import runwar.logging.Logger;
 
 final class AgentInitialization {
 	private static final Pattern JAR_REGEX = Pattern
-		.compile(".*[railo|lucee]-(inst|external.agent|5)+[-.\\d|SNAPSHOT]*.jar");
+		.compile(".*[railo|lucee]-(inst|external.agent)+[-.\\d]*.jar");
 
 	private static Logger log = Logger.getLogger("RunwarLogger");
 
@@ -38,9 +38,13 @@ final class AgentInitialization {
 			log.debug("Loading agent from:" + jarFilePath);
 			return new AgentLoader(jarFilePath).loadAgent();			
 		} else {
-			log.warn("The agent loader was not found for auto-initialization");
+		    log.warn("The agent loader was not found for auto-initialization");
+		    jarFilePath = discoverPathToJarFile();
+	        if(jarFilePath!=null && jarFilePath.length() > 0) {
+	            log.warn("Using internal lucee agent in " + jarFilePath);
+	            return new AgentLoader(jarFilePath).loadAgent();            
+	        }
 		}
-		return false;
 	}
 
 	private String discoverPathToJarFile() {

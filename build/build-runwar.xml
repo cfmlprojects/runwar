@@ -97,8 +97,8 @@
 			<manifest>
  				<attribute name="Main-Class" value="runwar.Start" />
 				<attribute name="Class-Path" value="./${runwar.jar}" />
-				<attribute name="Premain-Class" value="runwar.runtime.instrumentation.Agent"/>
-				<attribute name="Agent-Class" value="runwar.runtime.instrumentation.Agent"/>
+				<attribute name="Premain-Class" value="lucee.runtime.instrumentation.ExternalAgent"/>
+				<attribute name="Agent-Class" value="lucee.runtime.instrumentation.ExternalAgent"/>
 				<attribute name="Can-Redefine-Classes" value="true"/>
 				<attribute name="Can-Retransform-Classes" value="true"/>
 				<attribute name="Implementation-Version" value="${runwarbuild.version}"/>
