@@ -41,9 +41,10 @@ final class AgentInitialization {
 		    log.warn("The agent loader was not found for auto-initialization");
 		    jarFilePath = discoverPathToJarFile();
 	        if(jarFilePath!=null && jarFilePath.length() > 0) {
-	            log.warn("Using internal lucee agent in " + jarFilePath);
+	            log.debug("Loading internal lucee agent from " + jarFilePath);
 	            return new AgentLoader(jarFilePath).loadAgent();            
 	        }
+	        return false;
 		}
 	}
 
