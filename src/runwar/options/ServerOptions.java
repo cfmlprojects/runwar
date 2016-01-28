@@ -26,6 +26,7 @@ public class ServerOptions {
 	private String action;
 	private String cfengineName = "lucee";
 	private boolean customHTTPStatusEnabled = true;
+	private boolean gzipEnabled = false;
 	private Long transferMinSize = (long) 100;
 
 	public String getServerName() {
@@ -350,4 +351,11 @@ public class ServerOptions {
         return this.transferMinSize;
     }
 
+    public ServerOptions setGzipEnabled(boolean enabled) {
+        this.gzipEnabled = enabled;
+        return this;
+    }
+    public boolean isGzipEnabled() {
+        return this.gzipEnabled;
+    }
 }

@@ -305,6 +305,12 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("sendfile") );
         
+        options.addOption( OptionBuilder
+                .withLongOpt( "gzip-enable" )
+                .withDescription( "enable gzip" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("gzip") );
+        
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
@@ -532,6 +538,9 @@ public class CommandLineHandler {
             }
             if (line.hasOption("sendfile")) {
                 serverOptions.setSendfileEnabled(Boolean.valueOf(line.getOptionValue("sendfile")));
+            }
+            if (line.hasOption("gzip")) {
+                serverOptions.setGzipEnabled(Boolean.valueOf(line.getOptionValue("gzip")));
             }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {

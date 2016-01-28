@@ -249,6 +249,9 @@ public class ConfigParser {
             if (serverConfig.hasOption("sendfile")) {
                 serverOptions.setSendfileEnabled(Boolean.valueOf(serverConfig.getOptionValue("sendfile")));
             }
+            if (serverConfig.hasOption("gzip")) {
+                serverOptions.setGzipEnabled(Boolean.valueOf(serverConfig.getOptionValue("gzip")));
+            }
 
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();

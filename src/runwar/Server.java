@@ -38,10 +38,14 @@ import io.undertow.Undertow.Builder;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.PredicateHandler;
 import io.undertow.server.handlers.cache.CacheHandler;
 import io.undertow.server.handlers.cache.DirectBufferCache;
+import io.undertow.server.handlers.encoding.ContentEncodingRepository;
+import io.undertow.server.handlers.encoding.EncodingHandler;
+import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -49,6 +53,7 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
+import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
@@ -389,10 +394,28 @@ public class Server {
 			serverBuilder.addAjpListener(serverOptions.getAJPPort(), host);
 		}
 
-        PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
-                .addPrefixPath(contextPath, servletHandler);
-        
-        serverBuilder.setHandler(pathHandler);
+//        final PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
+//                .addPrefixPath(contextPath, servletHandler);
+
+        final PathHandler pathHandler = new PathHandler(Handlers.redirect(contextPath)) {
+            @Override
+            public void handleRequest(final HttpServerExchange exchange) throws Exception {
+                if (exchange.getRequestPath().endsWith(".svgz")) {
+                    exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
+                }
+                super.handleRequest(exchange);
+            }
+        };
+        pathHandler.addPrefixPath(contextPath, servletHandler);
+
+        if (serverOptions.isGzipEnabled()) {
+            final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
+                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size[5]")))
+                    .setNext(pathHandler);
+            serverBuilder.setHandler(handler);
+        } else {
+            serverBuilder.setHandler(pathHandler);
+        }
 
 		try {
 			PID = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
