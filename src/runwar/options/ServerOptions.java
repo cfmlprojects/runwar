@@ -28,6 +28,9 @@ public class ServerOptions {
 	private boolean customHTTPStatusEnabled = true;
 	private boolean gzipEnabled = false;
 	private Long transferMinSize = (long) 100;
+	private boolean mariadb4jEnabled = false;
+	private int mariadb4jPort = 13306;
+	private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
 
 	public String getServerName() {
 	    return serverName;
@@ -358,4 +361,41 @@ public class ServerOptions {
     public boolean isGzipEnabled() {
         return this.gzipEnabled;
     }
+
+    public ServerOptions setMariaDB4jEnabled(boolean enabled) {
+        this.mariadb4jEnabled = enabled;
+        return this;
+    }
+    public boolean isMariaDB4jEnabled() {
+        return this.mariadb4jEnabled;
+    }
+    public ServerOptions setMariaDB4jPort(int port) {
+        this.mariadb4jPort = port;
+        return this;
+    }
+    public int getMariaDB4jPort() {
+        return this.mariadb4jPort;
+    }
+    public ServerOptions setMariaDB4jBaseDir(File dir) {
+        this.mariadb4jBaseDir= dir;
+        return this;
+    }
+    public File getMariaDB4jBaseDir() {
+        return this.mariadb4jBaseDir;
+    }
+    public ServerOptions setMariaDB4jDataDir(File dir) {
+        this.mariadb4jDataDir= dir;
+        return this;
+    }
+    public File getMariaDB4jDataDir() {
+        return this.mariadb4jDataDir;
+    }
+    public ServerOptions setMariaDB4jImportSQLFile(File file) {
+        this.mariadb4jImportSQLFile= file;
+        return this;
+    }
+    public File getMariaDB4jImportSQLFile() {
+        return this.mariadb4jImportSQLFile;
+    }
+
 }

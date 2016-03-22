@@ -1,6 +1,7 @@
 package runwar.options;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -10,17 +11,18 @@ import runwar.Server;
 import runwar.logging.Logger;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
+import net.minidev.json.parser.ParseException;
 
 public class ConfigParser {
 
     private static Logger log = Logger.getLogger("RunwarLogger");
     private ServerOptions serverOptions;
 
-    public ConfigParser(){
-    }
-    
     public ConfigParser(File config){
         parseOptions(config);
+        if(serverOptions != null) {
+            serverOptions.setConfigFile(config);
+        }
     }
 
     public ServerOptions getServerOptions(){
@@ -28,11 +30,16 @@ public class ConfigParser {
     }
     
     private ServerOptions parseOptions(File config) {
-        JSONObject jsonConfig;
-        jsonConfig = (JSONObject) JSONValue.parse(LaunchUtil.readFile(config));
-        if(jsonConfig == null) {
-            log.error("Could not load server config");
-        } else {
+        JSONObject jsonConfig = null;
+        String configFilePath = "unknown";
+        try {
+            configFilePath = config.getCanonicalPath();
+            jsonConfig = (JSONObject) JSONValue.parseWithException(LaunchUtil.readFile(config));
+        } catch (ParseException | IOException e1) {
+            System.out.println("Could not load " + configFilePath + " : " + e1.getMessage());
+            throw new RuntimeException("Could not load " + configFilePath + " : " + e1.getMessage());
+        }
+        if(jsonConfig != null){
             serverOptions = new ServerOptions();
             JSONOption serverConfig = new JSONOption(jsonConfig);
             if (serverConfig.hasOption("help")) {
@@ -251,6 +258,21 @@ public class ConfigParser {
             }
             if (serverConfig.hasOption("gzip")) {
                 serverOptions.setGzipEnabled(Boolean.valueOf(serverConfig.getOptionValue("gzip")));
+            }
+            if (serverConfig.hasOption("mariadb4j")) {
+                serverOptions.setMariaDB4jEnabled(Boolean.valueOf(serverConfig.getOptionValue("mariadb4j")));
+            }
+            if (serverConfig.hasOption("mariadb4jport") && serverConfig.getOptionValue("mariadb4jport").length() > 0) {
+                serverOptions.setMariaDB4jPort(Integer.valueOf(serverConfig.getOptionValue("mariadb4jport")));
+            }
+            if (serverConfig.hasOption("mariadb4jbasedir") && serverConfig.getOptionValue("mariadb4jbasedir").length() > 0) {
+                serverOptions.setMariaDB4jBaseDir(new File(serverConfig.getOptionValue("mariadb4jbasedir")));
+            }
+            if (serverConfig.hasOption("mariadb4jdatadir") && serverConfig.getOptionValue("mariadb4jdatadir").length() > 0) {
+                serverOptions.setMariaDB4jDataDir(new File(serverConfig.getOptionValue("mariadb4jdatadir")));
+            }
+            if (serverConfig.hasOption("mariadb4jimport") && serverConfig.getOptionValue("mariadb4jimport").length() > 0) {
+                serverOptions.setMariaDB4jImportSQLFile(new File(serverConfig.getOptionValue("mariadb4jimport")));
             }
 
             if(serverOptions.getLoglevel().equals("DEBUG")) {

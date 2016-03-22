@@ -46,7 +46,7 @@ public class LogRequest {
             String uri = httpRequest.getRequestURI();
             String protocol = request.getProtocol();
             String logString = "*URI*:" + uri + " *REMOTEADDRESS*:" + remoteAddress + " *PROTOCOL*: " + protocol + " *METHOD*:" + httpRequest.getMethod() + " ";
-            Enumeration headerNames = httpRequest.getHeaderNames();
+            Enumeration<?> headerNames = httpRequest.getHeaderNames();
             while(headerNames.hasMoreElements()) {
               String headerName = (String)headerNames.nextElement();
               logString += headerName.toUpperCase() + ": ";

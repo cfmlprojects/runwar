@@ -3,6 +3,12 @@ package runwar.options;
 import java.io.File;
 import java.util.Comparator;
 
+//import static java.io.File.*;
+//import static java.util.Arrays.*;
+//
+//import joptsimple.OptionParser;
+//import joptsimple.OptionSet;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -25,13 +31,18 @@ public class CommandLineHandler {
     }
 
     public static ServerOptions parseArguments(String[] args) {
-    	ServerOptions serverOptions = new ServerOptions();
-    	parseArguments(args,serverOptions);
-    	return serverOptions;
+        ServerOptions serverOptions = new ServerOptions();
+        serverOptions = parseArguments(args, serverOptions);
+        return serverOptions;
     }
 
     @SuppressWarnings("static-access")
     public static ServerOptions parseArguments(String[] args, ServerOptions serverOptions) {
+//        parser = new OptionParser();
+//        parser.acceptsAll(asList("c","config")).withRequiredArg()
+//        .describedAs( "config file" )
+//        .ofType( File.class );
+
         parser = new PosixParser();
         options.addOption( OptionBuilder
                 .withLongOpt( "config" )
@@ -311,6 +322,36 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("gzip") );
         
+        options.addOption( OptionBuilder
+                .withLongOpt( "mariadb4j-enable" )
+                .withDescription( "enable MariaDB4j" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("mariadb4j") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "mariadb4j-port" )
+                .withDescription( "enable MariaDB4j" )
+                .hasArg().withArgName("port").withType(Number.class)
+                .create("mariadb4jport") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "mariadb4j-basedir" )
+                .withDescription( "base directory.  (temp/mariadb4j)" )
+                .hasArg().withArgName("path/to/base/dir")
+                .create("mariadb4jbasedir") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "mariadb4j-datadir" )
+                .withDescription( "data directory.  (temp/mariadb4j/data)" )
+                .hasArg().withArgName("path/to/data/dir")
+                .create("mariadb4jdatadir") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "mariadb4j-import" )
+                .withDescription( "SQL file to import." )
+                .hasArg().withArgName("path/to/sql/file")
+                .create("mariadb4jimport") );
+        
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
@@ -327,9 +368,8 @@ public class CommandLineHandler {
             }
             if (line.hasOption("c")) {
                 String config = line.getOptionValue("c");
+                log.debug("Loading config from file: " + getFile(config));
                 serverOptions = new ConfigParser(getFile(config)).getServerOptions();
-                serverOptions.setConfigFile(getFile(config));
-                return serverOptions;
             }
             
             if (line.hasOption("name")) {
@@ -511,7 +551,7 @@ public class CommandLineHandler {
                 serverOptions.setIconImage(line.getOptionValue("icon"));
             }
 
-            if (line.hasOption("trayconfig")) {
+            if (line.hasOption("trayconfig") && line.getOptionValue("trayconfig").length() > 0) {
                 serverOptions.setTrayConfig(getFile(line.getOptionValue("trayconfig")));
             }
             
@@ -542,6 +582,21 @@ public class CommandLineHandler {
             if (line.hasOption("gzip")) {
                 serverOptions.setGzipEnabled(Boolean.valueOf(line.getOptionValue("gzip")));
             }
+            if (line.hasOption("mariadb4j")) {
+                serverOptions.setMariaDB4jEnabled(Boolean.valueOf(line.getOptionValue("mariadb4j")));
+            }
+            if (line.hasOption("mariadb4jport") && line.getOptionValue("mariadb4jport").length() > 0) {
+                serverOptions.setMariaDB4jPort(Integer.valueOf(line.getOptionValue("mariadb4jport")));
+            }
+            if (line.hasOption("mariadb4jbasedir") && line.getOptionValue("mariadb4jbasedir").length() > 0) {
+                serverOptions.setMariaDB4jBaseDir(new File(line.getOptionValue("mariadb4jbasedir")));
+            }
+            if (line.hasOption("mariadb4jdatadir") && line.getOptionValue("mariadb4jdatadir").length() > 0) {
+                serverOptions.setMariaDB4jDataDir(new File(line.getOptionValue("mariadb4jdatadir")));
+            }
+            if (line.hasOption("mariadb4jimport") && line.getOptionValue("mariadb4jimport").length() > 0) {
+                serverOptions.setMariaDB4jImportSQLFile(new File(line.getOptionValue("mariadb4jimport")));
+            }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {
     	    		log.debug(arg);
@@ -551,12 +606,15 @@ public class CommandLineHandler {
             return serverOptions;
         }
         catch( Exception exp ) {
+            exp.printStackTrace();
             String msg = exp.getMessage();
             if(msg == null){
                 msg = "null : "+exp.getStackTrace()[0].toString();
                 if(exp.getStackTrace().length > 0) {
                     msg += '\n' + exp.getStackTrace()[1].toString();
                 }
+            } else {
+                msg = exp.getClass().getName() + " " + msg;
             }
             printUsage(msg,1);
         }
@@ -565,7 +623,7 @@ public class CommandLineHandler {
     
     static File getFile(String path) {
         File file = new File(path);
-        if(!file.exists()) {
+        if(!file.exists() || file == null) {
             throw new RuntimeException("File not found: " + path);
         }
     	return file;

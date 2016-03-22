@@ -32,3 +32,7 @@ should give you a list of available options, the basics being:
 java -jar runwar.jar -war path/to/war --port 8787 --dirs list/of,content/dirs --background false
 
 
+## License
+
+Source code for this project is licensed under the [MIT License (MIT)] (http://www.opensource.org/licenses/mit-license.php).
+

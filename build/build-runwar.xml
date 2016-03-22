@@ -64,134 +64,160 @@
 
     </sequential>
   </macrodef>
-	<runwar.initprops />
+  <runwar.initprops />
 
-	<target name="runwar.compile" depends="get.deps">
-		<runwar.initprops />
-		<delete dir="${runwar.bin.dir}/runwar/"/>
-		<mkdir dir="${runwar.bin.dir}/runwar/"/>
-		<!--
-		<javac srcdir="${runwar.src.dir}/runwar" destdir="${runwar.bin.dir}/runwar"
-    		classpathref="runwar.lib.path" compliance="1.7"/>
-    	-->
-		<javac-ecj srcdir="${runwar.src.dir}/" destdir="${runwar.bin.dir}/runwar"
-			classpath="${toString:runwar.lib.path}" compliance="1.7"/>
-	</target>
+  <target name="runwar.compile" depends="get.deps">
+    <runwar.initprops />
+    <delete dir="${dist.dir}" includes="*.jar" />
+    <delete dir="${runwar.bin.dir}/runwar/" />
+    <mkdir dir="${runwar.bin.dir}/runwar/" />
+    <!--
+      <javac srcdir="${runwar.src.dir}/runwar" destdir="${runwar.bin.dir}/runwar"
+      classpathref="runwar.lib.path" compliance="1.7"/>
+    -->
+    <javac-ecj srcdir="${runwar.src.dir}/" destdir="${runwar.bin.dir}/runwar" classpath="${toString:runwar.lib.path}"
+      compliance="1.7" />
+  </target>
 
-	<target name="runwar.jar" depends="runwar.compile">
-		<runwar.initprops />
-		<copy todir="${runwar.bin.dir}/runwar/runwar/">
-			<fileset dir="${runwar.src.dir}/runwar/" 
-			includes="runwar.keystore, runwar.truststore, icon.png, taskbar.json, urlrewrite.xml"/>
-		</copy>
-		<copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/version.properties">
-			<filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
-		</copy>
-		<copy todir="${runwar.bin.dir}/runwar/">
-			<fileset dir="${runwar.src.dir}/" includes="javax/**, META-INF/**"/>
-		</copy>
-		<jar destfile="${runwar.jar.file}" duplicate="preserve"
-         basedir="${runwar.bin.dir}/runwar/"
-         includes="**/*.class, **/*.png, **META-INF/services/*,**/runwar.*store, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.json, **/*.xml, javax/**"
-		 filesetmanifest="mergewithoutmain">
-			<manifest>
- 				<attribute name="Main-Class" value="runwar.Start" />
-				<attribute name="Class-Path" value="./${runwar.jar}" />
-				<attribute name="Premain-Class" value="lucee.runtime.instrumentation.ExternalAgent"/>
-				<attribute name="Agent-Class" value="lucee.runtime.instrumentation.ExternalAgent"/>
-				<attribute name="Can-Redefine-Classes" value="true"/>
-				<attribute name="Can-Retransform-Classes" value="true"/>
-				<attribute name="Implementation-Version" value="${runwarbuild.version}"/>
-			</manifest>
-			<zipgroupfileset dir="${runwar.lib.dir}"/>
-		</jar>
-	    <unzip src="${runwar.jar.file}" dest="${temp.dir}/jar" />
-	    <delete file="${runwar.jar.file}" />
-		<zip destfile="${runwar.jar.file}" update="false" level="9">
-	       	<fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA"/>
-	   	</zip>
-<!--
-		<property name="cfmlprojects.keystore" value="/tmp/keystore" />
- 		<signjar jar="${runwar.jar.file}" alias="cfmlprojects" force="true" tsaurl="http://tsa.starfieldtech.com" keystore="${cfmlprojects.keystore}" storepass="changeit" sigfile="BCKEY"/>
- -->
- 	</target>
+  <target name="runwar.jar" depends="runwar.compile">
+    <runwar.initprops />
+    <delete dir="${temp.dir}/jar"/>
+    <copy todir="${runwar.bin.dir}/runwar/runwar/">
+      <fileset dir="${runwar.src.dir}/runwar/" includes="runwar.keystore, runwar.truststore, icon.png, taskbar.json, urlrewrite.xml" />
+    </copy>
+    <copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/version.properties">
+      <filterchain>
+        <expandproperties />
+        <deletecharacters chars="\n" />
+        <trim />
+        <ignoreblank />
+      </filterchain>
+    </copy>
+    <copy todir="${runwar.bin.dir}/runwar/">
+      <fileset dir="${runwar.src.dir}/" includes="javax/**, META-INF/**" />
+    </copy>
+    <jar destfile="${runwar.jar.file}" duplicate="preserve" basedir="${runwar.bin.dir}/runwar/"
+      includes="**/*.class, **/*.png, **META-INF/services/*,**/runwar.*store, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.json, **/*.xml, javax/**"
+      filesetmanifest="mergewithoutmain">
+      <manifest>
+        <attribute name="Main-Class" value="runwar.Start" />
+        <attribute name="Class-Path" value="./${runwar.jar}" />
+        <attribute name="Premain-Class" value="lucee.runtime.instrumentation.ExternalAgent" />
+        <attribute name="Agent-Class" value="lucee.runtime.instrumentation.ExternalAgent" />
+        <attribute name="Can-Redefine-Classes" value="true" />
+        <attribute name="Can-Retransform-Classes" value="true" />
+        <attribute name="Implementation-Version" value="${runwarbuild.version}" />
+      </manifest>
+      <zipgroupfileset dir="${runwar.lib.dir}"/>
+    </jar>
+    <unzip src="${runwar.jar.file}" dest="${temp.dir}/jar" />
+    <delete dir="${temp.dir}/jar" includes="**/README*, **/*LICENSE*,**/*.SF,**/*.DSA,**/*.RSA" verbose="true"/>
+    <antcontrib:for param="file">
+      <path><fileset dir="${runwar.lib.dir}" includes="*.jar"/></path>
+      <sequential>
+        <local name="depjar"/>
+        <basename property="depjar" file="@{file}" suffix=".jar" />
+        <echo message="${depjar}"/>
+        <unzip src="@{file}" dest="${temp.dir}/jar/${depjar}">
+          <patternset includes="**/README*,**/*LICENSE*"/>
+          <mapper type="flatten"/>
+        </unzip>
+      </sequential>
+    </antcontrib:for>
+    <delete file="${runwar.jar.file}" />
+    <zip destfile="${runwar.jar.file}" update="false" level="9">
+      <fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA" />
+    </zip>
+    <!--
+      <property name="cfmlprojects.keystore" value="/tmp/keystore" />
+      <signjar jar="${runwar.jar.file}" alias="cfmlprojects" force="true" tsaurl="http://tsa.starfieldtech.com" keystore="${cfmlprojects.keystore}" 
+      storepass="changeit" sigfile="BCKEY"/>
+    -->
+  </target>
 
+  <target name="runwar.mvn" depends="runwar.jar">
+    <runwar.initprops />
+    <pom-and-deploy pomid="runwar.pom" packaging="jar" artifact="${runwar.jar.file}" groupId="org.cfmlprojects"
+      artifactId="runwar" version="${runwarbuild.version}" name="runwar" />
+  </target>
 
-	<target name="runwar.mvn" depends="runwar.jar">
-		<runwar.initprops />
-		 <pom-and-deploy pomid="runwar.pom" packaging="jar" artifact="${runwar.jar.file}"
-         groupId="org.cfmlprojects" artifactId="runwar" version="${runwarbuild.version}" name="runwar"/>
-	</target>
+  <target name="get.deps">
+    <delete dir="${runwar.lib.dir}" />
+    <mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
+    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar"
+      dest="${runwar.lib.dir}" />
+    <dependency groupId="org.tuckey" artifactId="urlrewritefilter" version="4.0.4" unzip="false" type="jar"
+      dest="${runwar.lib.dir}" />
+    <dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.51" unzip="false" type="jar"
+      dest="${runwar.lib.dir}" />
+    <!--  replace options with this eventually 
+    -->
+    <dependency groupId="net.sf.jopt-simple" artifactId="jopt-simple" version="5.0-beta-1" unzip="false" type="jar"
+      dest="${runwar.lib.dir}" />
+    <dependency groupId="commons-cli" artifactId="commons-cli" version="1.2" unzip="false" type="jar"
+      dest="${runwar.lib.dir}" repoId="jboss.repo" />
+    <dependency groupId="io.undertow" artifactId="undertow-jsp" version="1.0.0.Beta27" unzip="false" type="jar"
+      dest="${runwar.lib.dir}" repoId="jboss.repo">
+      <exclusions>
+        <exclusion groupId="io.undertow" artifactId="undertow-servlet" />
+        <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.1_spec" />
+        <exclusion groupId="io.undertow.jastow" artifactId="jastow" />
+        <exclusion groupId="org.jboss.logging" artifactId="jboss-logging-processor" />
+        <exclusion groupId="org.jboss.spec.javax.servlet" artifactId="jboss-servlet-api_3.1_spec" />
+        <exclusion groupId="org.jboss.web" artifactId="jasper-jdt" />
+      </exclusions>
+    </dependency>
 
-	<target name="get.deps">
-		<delete dir="${runwar.lib.dir}"/>
-		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
-		<dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
-		<dependency groupId="org.tuckey" artifactId="urlrewritefilter" version="4.0.4" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
-		<dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.51" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
-		<dependency groupId="commons-cli" artifactId="commons-cli" version="1.2"
-    		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo"/>
-  	<dependency groupId="io.undertow" artifactId="undertow-jsp" version="1.0.0.Beta27"
-  		unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo">
-          <exclusions>
-              <exclusion groupId="io.undertow" artifactId="undertow-servlet" />
-              <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.1_spec" />
-              <exclusion groupId="io.undertow.jastow" artifactId="jastow" />
-          	<exclusion groupId="org.jboss.logging" artifactId="jboss-logging-processor" />
-              <exclusion groupId="org.jboss.spec.javax.servlet" artifactId="jboss-servlet-api_3.1_spec" />
-              <exclusion groupId="org.jboss.web" artifactId="jasper-jdt" />
-          </exclusions>
-  	</dependency>
+    <dependency groupId="io.undertow" artifactId="undertow-servlet" version="${undertow.version}" unzip="false"
+      type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo">
+      <exclusions>
+        <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.2_spec" />
+      </exclusions>
+    </dependency>
+  </target>
 
-		<dependency groupId="io.undertow" artifactId="undertow-servlet" version="${undertow.version}"
-                unzip="false" type="jar" dest="${runwar.lib.dir}" repoId="jboss.repo">
-                <exclusions>
-                        <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.2_spec" />
-                </exclusions>
-        </dependency>
-	</target>
+  <target name="runembedded.jar" description="creates an jar with the WAR embedded">
+    <antcontrib:if>
+      <equals arg1="${build.type}" arg2="prod" />
+      <then />
+      <else>
+        <input message="Maybe you should be using build.type=prod?  Mappings won't be copied into war..." />
+      </else>
+    </antcontrib:if>
+    <property name="runembedded.jar.file" value="${dist.dir}/embedded/${war.name}.jar" />
+    <delete dir="${dist.dir}/${war.name}.war" />
+    <antcontrib:runtarget target="build" />
+    <antcontrib:runtarget target="jar.war" />
+    <delete dir="${dist.dir}/embedded" />
+    <mkdir dir="${dist.dir}/embedded" />
+    <echo file="${dist.dir}/embedded/runwar.properties" message="war.name=${war.name}" />
+    <jar destfile="${runembedded.jar.file}" filesetmanifest="mergewithoutmain">
+      <manifest>
+        <attribute name="Main-Class" value="runwar.RunEmbeddedWar" />
+        <attribute name="Class-Path" value="./${runwar.jar}" />
+      </manifest>
+      <zipfileset src="${runwar.jar.file}" />
+      <fileset file="${dist.dir}/${war.name}.war" />
+      <fileset dir="${dist.dir}/embedded/" />
+      <zipfileset src="${runwar.jar.file}" />
+    </jar>
+  </target>
 
-	<target name="runembedded.jar" description="creates an jar with the WAR embedded">
-		<antcontrib:if>
-			<equals arg1="${build.type}" arg2="prod" />
-			<then/>
-			<else><input message="Maybe you should be using build.type=prod?  Mappings won't be copied into war..."/></else>
-		</antcontrib:if>
-		<property name="runembedded.jar.file" value="${dist.dir}/embedded/${war.name}.jar"/>
-		<delete dir="${dist.dir}/${war.name}.war"/>
-		<antcontrib:runtarget target="build" />
-		<antcontrib:runtarget target="jar.war" />
-		<delete dir="${dist.dir}/embedded"/>
-		<mkdir dir="${dist.dir}/embedded"/>
-		<echo file="${dist.dir}/embedded/runwar.properties" message="war.name=${war.name}"/>
-		<jar destfile="${runembedded.jar.file}" filesetmanifest="mergewithoutmain">
-			<manifest>
-				<attribute name="Main-Class" value="runwar.RunEmbeddedWar" />
-				<attribute name="Class-Path" value="./${runwar.jar}" />
-			</manifest>
-			<zipfileset src="${runwar.jar.file}" />
-			<fileset file="${dist.dir}/${war.name}.war" />
-			<fileset dir="${dist.dir}/embedded/" />
-			<zipfileset src="${runwar.jar.file}" />
-		</jar>
-	</target>
-	
-	
-	<target name="if.toolong.echo" if="toolong">
-		<loadfile property="errlog"
-		      srcFile="${runwar.log.dir}/runner.log.txt" failonerror="false"/>
-		<echo message="${errlog}" />
-	</target>
+  <target name="if.toolong.echo" if="toolong">
+    <loadfile property="errlog" srcFile="${runwar.log.dir}/runner.log.txt" failonerror="false" />
+    <echo message="${errlog}" />
+  </target>
 
-	<target name="runwar.install" description="creates start script">
-		<antcontrib:propertyregex property="war.contextpath" input="${war.contextpath}" regexp="^/?([^/]+)" select="/\1" global="false"  override="yes" />
-		<echo message="starting runwar (${server.jvm.args})"/>
-		<property name="runwar.dir" location="${war.target.dir}/WEB-INF/" />
-		<mkdir dir="${runwar.dir}" />
-		<copy todir="${runwar.dir}">
-			<fileset file="${runwar.jar.file}"/>
-		</copy>
-		<echo file="${dist.dir}/${distro.name}.sh"><![CDATA[#start script
+  <target name="runwar.install" description="creates start script">
+    <antcontrib:propertyregex property="war.contextpath" input="${war.contextpath}" regexp="^/?([^/]+)"
+      select="/\1" global="false" override="yes" />
+    <echo message="starting runwar (${server.jvm.args})" />
+    <property name="runwar.dir" location="${war.target.dir}/WEB-INF/" />
+    <mkdir dir="${runwar.dir}" />
+    <copy todir="${runwar.dir}">
+      <fileset file="${runwar.jar.file}" />
+    </copy>
+    <echo file="${dist.dir}/${distro.name}.sh"><![CDATA[#start script
 if test -n "${JAVA_HOME}"; then
 if test -z "${JAVA_EXE}"; then
 JAVA_EXE=$JAVA_HOME/bin/java
@@ -204,352 +230,165 @@ fi
 cd $(dirname $0)
 exec $JAVA_EXE ${server.jvm.args} -cp ${war.name}.war/WEB-INF/${runwar.jar} -jar ${war.name}.war/WEB-INF/${runwar.jar} ${war.name}.war -war ${war.contextpath} -host ${runwar.host} -port ${runwar.port} -stop-port ${runwar.stop.socket} -logdir ${runwar.log.dir} -cfml-dirs ${runwar.cfml.dirlist} -background false]]>
 </echo>
-		<chmod file="${dist.dir}/${distro.name}.sh" perm="ugo+rx"/>
-	</target>
-	
-	<target name="runwar.start.fg" description="starts server in foreground">
-		<runwar.initprops />
-		<antcontrib:var name="background" value="false" />
-		<antcontrib:runtarget target="runwar.start" />
-	</target>
+    <chmod file="${dist.dir}/${distro.name}.sh" perm="ugo+rx"/>
+  </target>
 
-	<target name="runwar.start" description="starts server">
-		<runwar.initprops />
-		<echoproperties prefix="runwar"/>
-		<property name="background" value="true" />
-		<property name="runwar.background" value="${background}" />
-		<property name="runwar.openbrowser" value="false" />
-		<property name="runwar.keeprequestlog" value="false" />
-		<mkdir dir="${runwar.log.dir}" />
-		<ant-set-log-level level="2" />
-		<echo message="starting runner (host: ${runwar.host} port: ${runwar.port} server.jvm.args : ${server.jvm.args})"/>
-		<sequential>
-			<path id="cfdistro.libs.path">
-				<fileset dir="${cfdistro.lib.dir}">
-					<include name="*.jar" />
-				</fileset>
-			</path>
-			<condition property="osxJVMargs" value="-Dcom.apple.mrj.application.apple.menu.about.name=${distro.name} -Dcom.apple.mrj.application.growbox.intrudes=false -Dapple.laf.useScreenMenuBar=true -Dfile.encoding=UTF-8 -Xdock:name=${distro.name}" else="">
-			    <os family="mac"/>
-			</condition>
-			
-  			<java jar="${runwar.jar.file}" fork="true" spawn="false" maxmemory="${runwar.maxmemory}" failonerror="false" resultproperty="runwarstatus">
-				<jvmarg line="${server.jvm.args}"/>
-  				<!--
-  				<sysproperty key="java.library.path" path=""/>
-  				-->
-				<arg value="-war" /><arg value="${runwar.war.path}" />
-				<arg value="-context" /><arg value="${runwar.war.contextpath}" />
-				<arg value="-host" /><arg value="${runwar.host}" />
-				<arg value="-port" /><arg value="${runwar.port}" />
-				<arg value="-stop-port" /><arg value="${runwar.stop.socket}" />
-				<arg value="-enable-ajp" /><arg value="${server.ajp.enable}" />
-				<arg value="-ajp-port" /><arg value="${server.port.ajp}" />
-				<arg value="-log-dir" /><arg value="${runwar.log.dir}" />
-				<arg value="-loglevel" /><arg value="${runwar.log.level}" />
-				<arg value="-dirs" /><arg value="${runwar.cfml.dirlist}" />
-				<arg value="-background" /><arg value="${background}" />
-				<arg value="-requestlog" /><arg value="${runwar.keeprequestlog}" />
-				<arg value="-open-browser" /><arg value="${runwar.openbrowser}" />
-				<arg value="-open-url" /><arg value="${open.url}" />
-				<arg value="-processname" /><arg value="${distro.name}" />
-				<jvmarg line="${osxJVMargs}" />
-				<!--
-				<jvmarg value="-Xdebug"/>
-				-->
-			</java>
-			<antcontrib:if>
-				<not><equals arg1="0" arg2="${runwarstatus}"/></not>
-				<then>
-					<fail message="could not start runner" />
-				</then>
-			</antcontrib:if>
-			<antcontrib:if>
-				<and>
-				<equals arg1="${background}" arg2="true" />
-				<not><equals arg1="${runwar.port}" arg2="0" /></not>
-				</and>
-				<then>
-					<echo message="waiting for runner"/>
-					<sleep seconds="7" />
-					<waitfor maxwait="51" maxwaitunit="second" checkevery="3" checkeveryunit="second" timeoutproperty="toolong">
-						<and>
-							<socket server="${runwar.host}" port="${runwar.port}" />
-							<!--
-							<http url="http://127.0.0.1:${runwar.port}/" />
-							<http url="http://127.0.0.1:${runwar.port}/${runwar.war.contextpath}build.cfc" />
-							-->
-						</and>
-					</waitfor>
-					<antcontrib:runtarget target="if.toolong.echo" />
-					<echo message="stop server with target: runwar.stop"/>
-				</then>
-				<!-- <else><echo message="${runwarou}" /></else> -->
-			</antcontrib:if>
-			<antcontrib:var name="runwarou" unset="true" />
-			<loadfile property="runwarou" srcfile="${runwar.log.dir}/server.out.txt" />
-			<antcontrib:propertyregex property="runwar.pid" input="${runwarou}" regexp="Server is up.*PID:([^\s]+)?.*" select="\1" global="false" override="yes" />
-			<antcontrib:propertyregex property="runwar.port" input="${runwarou}" regexp="Server is up.*http-port:([^\s]+)?.*" select="\1" global="false" override="yes" />
-			<antcontrib:propertyregex property="runwar.stop.socket" input="${runwarou}" regexp="Server is up.*stop-port:([^\s]+)?.*" select="\1" global="false" override="yes" />
-			<echoproperties prefix="runwar."></echoproperties>
-			<echo message="${runwarou}"/>
-			<antcontrib:var name="server.port.http" value="${runwar.port}" />
-			<antcontrib:var name="runwarou" unset="true" />
-		</sequential>
-	</target>
-	
-	<target name="runwar.stop" description="stops server">
-		<runwar.initprops />
-		<echo message="stopping runner (using stop listener on port ${runwar.stop.socket})."/>
-		<antcontrib:trycatch property="foo" reference="bar">
-			<try>
-			<java classname="runwar.Stop" classpathref="runwar.lib.path">
-				<arg value="${runwar.stop.socket}" />
-			</java>
-			</try>
-			<catch>
-				<fail message="Could not stop the server. Might not have been running." />
-			</catch>
-		</antcontrib:trycatch>			
-		<echo message="peace out bro!"/>
-	</target>
+  <target name="runwar.start.fg" description="starts server in foreground">
+    <runwar.initprops />
+    <antcontrib:var name="background" value="false" />
+    <antcontrib:runtarget target="runwar.start" />
+  </target>
 
-	<target name="server.openUrl" description="launches a browser pointing at ${open.url}">
-		<runwar.initprops />
-		<open-url url="${open.url}" />			
-	</target>
+  <target name="runwar.start" description="starts server">
+    <runwar.initprops />
+    <echoproperties prefix="runwar" />
+    <property name="background" value="true" />
+    <property name="runwar.background" value="${background}" />
+    <property name="runwar.openbrowser" value="false" />
+    <property name="runwar.keeprequestlog" value="false" />
+    <mkdir dir="${runwar.log.dir}" />
+    <ant-set-log-level level="2" />
+    <echo message="starting runner (host: ${runwar.host} port: ${runwar.port} server.jvm.args : ${server.jvm.args})" />
+    <sequential>
+      <path id="cfdistro.libs.path">
+        <fileset dir="${cfdistro.lib.dir}">
+          <include name="*.jar" />
+        </fileset>
+      </path>
+      <condition property="osxJVMargs"
+        value="-Dcom.apple.mrj.application.apple.menu.about.name=${distro.name} -Dcom.apple.mrj.application.growbox.intrudes=false -Dapple.laf.useScreenMenuBar=true -Dfile.encoding=UTF-8 -Xdock:name=${distro.name}"
+        else="">
+        <os family="mac" />
+      </condition>
 
-	<target name="build.war.runner" description="creates an runnable jar with the WAR embedded">
-		<delete file="${war.target.dir}"/>
-		<antcontrib:runtarget target="build.war.src" />
-		<antcontrib:var name="runwar.port" value="10192" />
-		<antcontrib:var name="runwar.stop.socket" value="10191" />
-		<antcontrib:runtarget target="runwar.start.stop" />
-		<antcontrib:runtarget target="jar.war" />
-		<fix-url-slashes property="open.url" />
-		<requires-ext resource="${ext.dir}/ant-lib" />
-		<requires-ext resource="${ext.dir}/launch4j" />
-		<requires-ext resource="${ext.dir}/izpack" />
-		<copy file="${runwar.jar.file}" tofile="${runner.jar}" overwrite="true" />
-		<copy file="${war.target.dir}" todir="${runner.temp.dir}" />
-		<!--
-		<copy todir="${runner.temp.dir}/${war.name}.war">
-			<fileset dir="${war.target.dir}" />
-		 </copy>
-		 -->
-		<javac srcdir="${runwar.src.dir}/runwar" includes="RunEmbeddedWar.java,BrowserOpener.java" destdir="${runner.temp.dir}" classpathref="build.lib.path" />
-		<echo file="${runner.temp.dir}/runwar.properties" message="war.name=${war.name}${line.separator}open.url=${open.url}${line.separator}runwar.port=${runwar.port}" />
-		<jar jarfile="${runner.jar}" basedir="${runner.temp.dir}" excludes="*.jar,*.ra" update="true">
-			<manifest>
-				<attribute name="Main-Class" value="runwar.RunEmbeddedWar" />
-			</manifest>
-		</jar>
-<!--
-		<taskdef name="pack200" classname="com.sun.tools.apache.ant.pack200.Pack200Task" classpathref="build.lib.path"/>		
- <echo file="${runner.jar}.conf" append="false">
-com.sun.java.util.jar.pack.verbose=0
-com.sun.java.util.jar.pack.package.majver=150
-com.sun.java.util.jar.pack.package.minver=7
-pack.effort=9
-pack.segment.limit=-1
- </echo>
-		 <pack200 configfile="${runner.jar}.conf" src="${runner.jar}" destfile="${runner.jar}.tmp1.jar" repack="true"/>
-		 <signjar jar="${runner.jar}.tmp1.jar" alias="${alias}" storepass="${password}" keystore="${keystore}"/>
-		 <pack200 stripdebug="true" configfile="${runner.jar}.conf" src="${runner.jar}.tmp1.jar" destfile="${runner.jar}.tmp2.jar" repack="true"/>
-		 <signjar jar="${runner.jar}.tmp2.jar" alias="${alias}" storepass="${password}" keystore="${keystore}"/>
-		 <pack200 stripdebug="true" configfile="${runner.jar}.conf" gzipoutput="true" src="${runner.jar}.tmp2.jar" destfile="${runner.jar}.pack.gz"/>
-		 <delete quiet="true" file="${runner.jar}.tmp1.jar"/>
-		 <delete quiet="true" file="${runner.jar}.tmp2.jar"/>
-		 <delete quiet="true" file="${runner.jar}.conf"/>
--->
-		<antcontrib:runtarget target="wrappers" />
+      <java jar="${runwar.jar.file}" fork="true" spawn="false" maxmemory="${runwar.maxmemory}" failonerror="false"
+        resultproperty="runwarstatus">
+        <jvmarg line="${server.jvm.args}" />
+        <!--
+          <sysproperty key="java.library.path" path=""/>
+        -->
+        <arg value="-war" />
+        <arg value="${runwar.war.path}" />
+        <arg value="-context" />
+        <arg value="${runwar.war.contextpath}" />
+        <arg value="-host" />
+        <arg value="${runwar.host}" />
+        <arg value="-port" />
+        <arg value="${runwar.port}" />
+        <arg value="-stop-port" />
+        <arg value="${runwar.stop.socket}" />
+        <arg value="-enable-ajp" />
+        <arg value="${server.ajp.enable}" />
+        <arg value="-ajp-port" />
+        <arg value="${server.port.ajp}" />
+        <arg value="-log-dir" />
+        <arg value="${runwar.log.dir}" />
+        <arg value="-loglevel" />
+        <arg value="${runwar.log.level}" />
+        <arg value="-dirs" />
+        <arg value="${runwar.cfml.dirlist}" />
+        <arg value="-background" />
+        <arg value="${background}" />
+        <arg value="-requestlog" />
+        <arg value="${runwar.keeprequestlog}" />
+        <arg value="-open-browser" />
+        <arg value="${runwar.openbrowser}" />
+        <arg value="-open-url" />
+        <arg value="${open.url}" />
+        <arg value="-processname" />
+        <arg value="${distro.name}" />
+        <jvmarg line="${osxJVMargs}" />
+        <!--
+          <jvmarg value="-Xdebug"/>
+        -->
+      </java>
+      <antcontrib:if>
+        <not>
+          <equals arg1="0" arg2="${runwarstatus}" />
+        </not>
+        <then>
+          <fail message="could not start runner" />
+        </then>
+      </antcontrib:if>
+      <antcontrib:if>
+        <and>
+          <equals arg1="${background}" arg2="true" />
+          <not>
+            <equals arg1="${runwar.port}" arg2="0" />
+          </not>
+        </and>
+        <then>
+          <echo message="waiting for runner" />
+          <sleep seconds="7" />
+          <waitfor maxwait="51" maxwaitunit="second" checkevery="3" checkeveryunit="second" timeoutproperty="toolong">
+            <and>
+              <socket server="${runwar.host}" port="${runwar.port}" />
+              <!--
+                <http url="http://127.0.0.1:${runwar.port}/" />
+                <http url="http://127.0.0.1:${runwar.port}/${runwar.war.contextpath}build.cfc" />
+              -->
+            </and>
+          </waitfor>
+          <antcontrib:runtarget target="if.toolong.echo" />
+          <echo message="stop server with target: runwar.stop" />
+        </then>
+        <!-- <else><echo message="${runwarou}" /></else> -->
+      </antcontrib:if>
+      <antcontrib:var name="runwarou" unset="true" />
+      <loadfile property="runwarou" srcfile="${runwar.log.dir}/server.out.txt" />
+      <antcontrib:propertyregex property="runwar.pid" input="${runwarou}" regexp="Server is up.*PID:([^\s]+)?.*"
+        select="\1" global="false" override="yes" />
+      <antcontrib:propertyregex property="runwar.port" input="${runwarou}"
+        regexp="Server is up.*http-port:([^\s]+)?.*" select="\1" global="false" override="yes" />
+      <antcontrib:propertyregex property="runwar.stop.socket" input="${runwarou}"
+        regexp="Server is up.*stop-port:([^\s]+)?.*" select="\1" global="false" override="yes" />
+      <echoproperties prefix="runwar."></echoproperties>
+      <echo message="${runwarou}" />
+      <antcontrib:var name="server.port.http" value="${runwar.port}" />
+      <antcontrib:var name="runwarou" unset="true" />
+    </sequential>
+  </target>
 
-		<move file="${runner.jar}" todir="${dist.dir}" />
-		<delete dir="${runner.temp.dir}" />
-	</target>
+  <target name="runwar.stop" description="stops server">
+    <runwar.initprops />
+    <echo message="stopping runner (using stop listener on port ${runwar.stop.socket})." />
+    <antcontrib:trycatch property="foo" reference="bar">
+      <try>
+        <java classname="runwar.Stop" classpathref="runwar.lib.path">
+          <arg value="${runwar.stop.socket}" />
+        </java>
+      </try>
+      <catch>
+        <fail message="Could not stop the server. Might not have been running." />
+      </catch>
+    </antcontrib:trycatch>
+    <echo message="peace out bro!" />
+  </target>
 
-	<target name="wrappers">
-		<jar2exe jar="${runner.jar}" exe="${dist.dir}/${distro.name}.exe" icon="${ext.dir}/installer/install/application.ico" />
-		<property name="runner.jar.abs" location="${runner.jar}" />
-		<jar2sh jar="${runner.jar.abs}" output="${dist.dir}/${war.name}"/>
-		<jar2app jar="${runner.jar}" appdir="${dist.dir}" icon="${cfdistro.basedir}/ext/izpack/dmg/icons/icon.icns" />
-	    <if>
-	        <equals arg1="${os.family}" arg2="mac"/>
-	        <then>
-	    		<app2dmg app="${dist.dir}/${war.name}.app" appname="${war.name}.app" dmg="${dist.dir}/${war.name}.dmg" icon="${cfdistro.basedir}/ext/izpack/dmg/icons/icon.icns" />
-	        </then>
-	    </if>
-	</target>
+  <target name="server.openUrl" description="launches a browser pointing at ${open.url}">
+    <runwar.initprops />
+    <open-url url="${open.url}" />
+  </target>
 
-	<macrodef name="jar2sh">
-		<attribute name="jar" />
-		<attribute name="output" />
-		<sequential>
-			<tar destfile="${dist.dir}/install.tar"
-			     basedir="${runner.temp.dir}"
-			     includes="${war.name}.jar"
-			/>
-			<gzip destfile="${dist.dir}/install.tar.gz" src="${dist.dir}/install.tar"/>
-		  <echo file="${dist.dir}/install.sh" >SKIP=`awk '/^__ARCHIVE_FOLLOWS__/ { print NR + 1; exit 0; }' $0`
-tail -n +$SKIP $0 | tar xzv
-java -jar ${war.name}.jar
-exit 0
-__ARCHIVE_FOLLOWS__
-</echo>
-		  <concat destfile="${dist.dir}/install.sh" append="true">
-		    <filelist dir="${dist.dir}" files="install.tar.gz"/>
-		  </concat>
-			
-		</sequential>
-	</macrodef>
-	
-	<macrodef name="open-url">
-		<attribute name="url" />
-		<sequential>
-			<java classname="runwar.BrowserOpener" classpathref="runwar.lib.path" failonerror="true" fork="true">
-				<arg value="@{url}" />
-			</java>			
-		</sequential>
-	</macrodef>	
+  <target name="runwar.start.stop" description="starts and then stops the server for some odd reason.  generation of stuff maybe?">
+    <parallel>
+      <sequential>
+        <antcall target="runwar.start" />
+        <sleep seconds="5" />
+        <antcall target="runwar.stop" />
+      </sequential>
+    </parallel>
+  </target>
 
-	<macrodef name="jar2exe">
-		<attribute name="jar" />
-		<attribute name="exe" />
-		<attribute name="icon" />
-		<attribute name="stayalive" default="true" />
-		<attribute name="headerType" default="gui" />
-		<attribute name="customProcName" default="true" />
-		<attribute name="mutexName" default="java.runner" />
-		
-		<sequential>
-			<requires-ext resource="${ext.dir}/launch4j" />
-			<taskdef name="launch4j" classname="net.sf.launch4j.ant.Launch4jTask"
-			    classpath="${cfdistro.basedir}/ext/launch4j/launch4j.jar:${cfdistro.basedir}/ext/launch4j/lib/xstream.jar" />
-			<echo message="EXE Type: @{headerType} for @{jar}"/>
-			<chmod dir="${cfdistro.basedir}/ext/launch4j/bin/" perm="ugo+rx" includes="*"/>
-			<antcontrib:if>
-				<equals arg1="@{headerType}" arg2="console" />
-				<then>
-					<launch4j>
-						<config headerType="console"  outFile="@{exe}" jar="@{jar}" 
-							errTitle="Error initializing" chdir="." icon="@{icon}" customProcName="@{customProcName}">
-							<!-- <singleInstance mutexName="@{mutexName}" /> -->
-							<jre path="./jre/" minVersion="1.6.0" />
-						</config>
-					</launch4j>
-				</then>
-				<else>
-					<launch4j>
-						<config dontWrapJar="false" headerType="@{headerType}" outFile="@{exe}" jar="@{jar}" errTitle="Install Error" cmdLine="" chdir="." downloadUrl="http://java.com/download" supportUrl="" customProcName="@{customProcName}" stayAlive="@{stayalive}" icon="@{icon}">
-							<var>-Dappdir=&quot;&quot; </var>
-							<jre path="./jre/" minVersion="1.6.0" />
-							<versionInfo fileVersion="${product.version}" txtFileVersion="${product.version.txt}" fileDescription="${product.name.short} Windows Install" copyright="2009" productVersion="${product.version}" txtProductVersion="${product.version.txt}" productName="${product.name.short}" companyName="${company.name}" internalName="${war.name}.jar" originalFilename="${war.name}.exe" />
-							<messages startupErr="An error occurred while starting the application." bundledJreErr="This application was configured to use a bundled Java Runtime Environment but the runtime is missing or corrupted." jreVersionErr="This application requires a Java Runtime Environment.\nAt least version" launcherErr="The registry refers to a nonexistent Java Runtime Environment installation or the runtime is corrupted." instanceAlreadyExistsMsg="An application instance is already running." />
-						</config>
-					</launch4j>
-				</else>
-			</antcontrib:if>
-		</sequential>
-	</macrodef>	
-
-	<macrodef name="jar2app">
-		<attribute name="jar" />
-		<attribute name="appdir" />
-		<attribute name="icon" />
-		<sequential>
-			<property name="jarbundler.jar" location="${cfdistro.basedir}/ext/izpack/dmg/lib/jarbundler-2.1.0.jar" />
-			<property name="antfarm.jar" location="${cfdistro.basedir}/ext/izpack/dmg/lib/antfarm.jar" />
-			<taskdef name="jarbundler"
-	             classpath="${jarbundler.jar}" 
-	             classname="net.sourceforge.jarbundler.JarBundler"/>
-
-			<jarbundler dir="@{appdir}" verbose="true" showPlist="false"
-	                name="${product.name.short}"
-	                shortname="${product.name.short}"
-	                signature="${product.name.short}"
-	                stubfile="${war.name}"
-				      jar="@{jar}"
-				      mainclass="runwar.RunEmbeddedWar"
-				      icon="@{icon}"
-	                jvmversion="1.5+"
-	                version="${product.version}"
-	                infostring="${product.name.short}, ${copyright}"
-	                build="${product.version}" bundleid="runwar.RunEmbeddedWar" >
-
-				<!-- Adjust the look, feel and behavior
-	      <javaproperty name="apple.laf.useScreenMenuBar" value="true"/>
-	      <javaproperty name="apple.awt.brushMetal" value="true"/>
-	      <javaproperty name="apple.awt.showGrowBox" value="false"/>
-	       -->
-
-				<!-- Associate document types with this application
-				<documenttype name="CFML document"
-	                    extensions="cfm cfc cfml" 
-							        ostypes="TEXT sEXT ttro" 
-	                    iconFile="icons/${ant.project.name}.icns"
-	                    role="Editor"/>
-
-				<documenttype name="CFEclipseCall properties file"
-	                    extensions="eclipsecall" 
-							        ostypes="TEXT sEXT ttro" 
-	                    iconFile="icons/${ant.project.name}.icns"
-	                    role="Editor"/>
-				 -->
-
-				<!-- Just proving we can included these files.  Might use them in About boxes
-	      <resourcefilelist dir=".." files="LICENSE.TXT"/>
-	       -->
-
-				<!-- Copy the HelpBook JNI library 
-	      <javafilelist dir="${basedir}/build" files="libHelpBookJNI.jnilib"/>
-	       -->
-
-
-				<!-- Copy the HelpBooks to the language specific folders            -->
-				<!--  English will use the foldername and book name from the Bundle -->
-				<!--  German or 'de' will use the custom folder name and book name  -->
-
-				<!-- 
-	      <HelpBook locale="English">
-	      	<fileset dir="HelpBook/English" />
-	      	<fileset dir="HelpBook/common" />
-	      </HelpBook>
-	   
-	      <helpbook foldername="Hilfebuch" name="Hallo Welt Hilfe" locale="German">
-	      	<fileset dir="HelpBook/German" />
-	      	<fileset dir="HelpBook/common" />
-	      </helpbook>
-
-	      <helpbook name="Hjälp" locale="sv">
-	      	<fileset dir="HelpBook/Swedish" />
-	      	<fileset dir="HelpBook/common" />
-	      </helpbook>
-	-->
-
-
-			</jarbundler>
-		</sequential>
-	</macrodef>	
-	
-	<target name="runwar.start.stop" description="starts and then stops the server for some odd reason.  generation of stuff maybe?">
-		<parallel>
-			<sequential>
-				<antcall target="runwar.start"/>
-				<sleep seconds="5" />
-				<antcall target="runwar.stop"/>
-			</sequential>
-		</parallel>
-	</target>
-
-	<target name="runwar.stop.start" description="stops and then starts the server for some odd reason.  generation of stuff maybe?">
-		<parallel>
-			<sequential>
-				<antcall target="runwar.stop"/>
-				<sleep seconds="5" />
-				<antcall target="runwar.start"/>
-			</sequential>
-		</parallel>
-	</target>
+  <target name="runwar.stop.start" description="stops and then starts the server for some odd reason.  generation of stuff maybe?">
+    <parallel>
+      <sequential>
+        <antcall target="runwar.stop" />
+        <sleep seconds="5" />
+        <antcall target="runwar.start" />
+      </sequential>
+    </parallel>
+  </target>
 
 
 </project>
