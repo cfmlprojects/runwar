@@ -513,6 +513,7 @@ public class LaunchUtil {
                     fileOutStream.close();
                     f.delete();
                 }
+                fileOutStream.close();
             }
             
         } catch (Exception exc) {
@@ -663,6 +664,15 @@ public class LaunchUtil {
             count = input.read(buffer);
         }
         return answer;
+    }
+
+    public static void deleteRecursive(File f) throws IOException {
+        if (f.isDirectory()) {
+          for (File c : f.listFiles())
+              deleteRecursive(c);
+        }
+        if (!f.delete())
+            System.err.println("Could not delete file: " + f.getAbsolutePath());
     }
 
     public static class ExtFilter implements FilenameFilter {

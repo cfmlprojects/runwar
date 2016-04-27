@@ -22,7 +22,7 @@ public class Logger {
     public void debug(String string, Exception e) {
         log(org.jboss.logging.Logger.Level.DEBUG, string, e);
     }
-    public void debugf(String format, Object object) {
+    public void debugf(String format, Object... object) {
         logf(org.jboss.logging.Logger.Level.DEBUG,format,object);
     }
     public void debugLazy(Object message) {
@@ -109,7 +109,7 @@ public class Logger {
         }
     }
     
-    private static void logf(org.jboss.logging.Logger.Level level, String format, Object object) {
+    private static void logf(org.jboss.logging.Logger.Level level, String format, Object... object) {
         if(!loggingIsInitialized)
             initLogging();
         

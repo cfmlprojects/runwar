@@ -55,6 +55,7 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
+import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
 import static io.undertow.servlet.Servlets.defaultContainer;
@@ -79,6 +80,7 @@ public class Server {
     private static URLClassLoader _classLoader;
 
     private String serverName = "default";
+    private File tempWarDir = null;
     public static final String bar = "******************************************************************************";
     
     public Server() {
@@ -191,17 +193,13 @@ public class Server {
             warFile = Files.createTempDirectory(warname).toFile();
             log.debug("Exploding compressed WAR to " + warFile.getAbsolutePath());
             LaunchUtil.unzipResource(zipResource, warFile, false);
+            warFile.deleteOnExit();
+            warPath = warFile.getAbsolutePath();
+            tempWarDir  = warFile;
         }
 
         new AgentInitialization().loadAgentFromLocalJarFile(new File(warFile, "/WEB-INF/lib/"));
 
-        // hack to prevent . being picked up as the system path (jacob.x.dll)
-        if (System.getProperty("java.library.path") == null) {
-            System.setProperty("java.library.path", getThisJarLocation().getPath());
-        } else {
-            System.setProperty("java.library.path",
-                    getThisJarLocation().getPath() + ":" + System.getProperty("java.library.path"));
-        }
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
         if( iconPNG != null && iconPNG.length() > 0) {
@@ -239,10 +237,17 @@ public class Server {
         System.out.println(startingtext);
         //System.out.println("background: " + background);
         System.out.println(bar);
+        final Thread mainThread = Thread.currentThread();
+        addShutDownHook();
         portNumber = getPortOrErrorOut(portNumber, host);
         socketNumber = getPortOrErrorOut(socketNumber, host);
-
+        String cfmlServletConfigWebDir = serverOptions.getCFMLServletConfigWebDir();
+        String cfmlServletConfigServerDir = serverOptions.getCFMLServletConfigServerDir();
+        File webXmlFile = serverOptions.getWebXmlFile();
         File webinf = new File(warFile, "WEB-INF");
+        if (webXmlFile != null && new File(webXmlFile.getParentFile(), "lib").exists()) {
+            webinf = webXmlFile.getParentFile();
+        }
         String libDirs = serverOptions.getLibDirs();
         URL jarURL = serverOptions.getJarURL();
         if (warFile.isDirectory() && webinf.exists()) {
@@ -262,22 +267,56 @@ public class Server {
             }
             initClassLoader(cp);
         }
+        mariadb4jManager = new MariaDB4jManager(_classLoader);
+
         log.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
 
         final DeploymentInfo servletBuilder = deployment()
                 .setContextPath(contextPath.equals("/") ? "" : contextPath)
+                .setTempDir(new File(System.getProperty("java.io.tmpdir")))
                 .setDeploymentName(warPath);
 
         if (!warFile.exists()) {
             throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
         }
-        if (System.getProperty("coldfusion.home") == null)
-            System.setProperty("coldfusion.home", warFile.getAbsolutePath());
 
-        String cfmlServletConfigWebDir = serverOptions.getCFMLServletConfigWebDir();
-        String cfmlServletConfigServerDir = serverOptions.getCFMLServletConfigServerDir();
-        File webXmlFile = serverOptions.getWebXmlFile();
-        mariadb4jManager = new MariaDB4jManager(_classLoader);
+        // hack to prevent . being picked up as the system path (jacob.x.dll)
+        if (System.getProperty("java.library.path") == null) {
+            if (webXmlFile != null) {
+                System.setProperty("java.library.path", getThisJarLocation().getPath() 
+                        + ':' + new File(webXmlFile.getParentFile(), "lib").getPath());
+            } else {
+                System.setProperty("java.library.path", getThisJarLocation().getPath() 
+                        + ':' + new File(warFile, "/WEB-INF/lib/").getPath());
+            }
+        } else {
+            System.setProperty("java.library.path",
+                    getThisJarLocation().getPath() + ":" + System.getProperty("java.library.path"));
+        }
+        log.debug("java.library.path:" + System.getProperty("java.library.path"));
+
+        if (System.getProperty("coldfusion.home") == null) {
+            String cfusionDir = new File(webinf,"cfusion").getAbsolutePath();
+            if (webXmlFile != null) {
+                cfusionDir = new File(webXmlFile.getParentFile(),"cfusion").getAbsolutePath();
+            }
+            log.debug("Setting coldfusion home:" + cfusionDir);
+            System.setProperty("coldfusion.home", cfusionDir);
+            System.setProperty("coldfusion.rootDir", cfusionDir);
+//            System.setProperty("javax.servlet.context.tempdir", cfusionDir + "/../cfclasses");
+            System.setProperty("coldfusion.libPath", cfusionDir + "/lib");
+            System.setProperty("flex.dir", new File(webinf,"cfform").getAbsolutePath());
+            System.setProperty("coldfusion.jsafe.defaultalgo", "FIPS186Random");
+            System.setProperty("coldfusion.classPath", cfusionDir + "/lib/updates/," + cfusionDir + "/lib/,"
+                    + cfusionDir + "/lib/axis2,"+ cfusionDir + "/gateway/lib/,"+ cfusionDir + "/../cfform/jars,"
+                    + cfusionDir + "/../flex/jars,"+ cfusionDir + "/lib/oosdk/lib,"+ cfusionDir + "/lib/oosdk/classes");
+            System.setProperty("java.awt.headless", "true");
+            System.setProperty("java.security.policy", cfusionDir + "/lib/coldfusion.policy");
+            System.setProperty("java.security.auth.policy", cfusionDir + "/lib/neo_jaas.policy");
+            System.setProperty("java.nixlibrary.path", cfusionDir + "/lib");
+            System.setProperty("java.library.path", cfusionDir + "/lib");
+        }
+
         if(warFile.isDirectory() && !webinf.exists()) {
             if (cfmlServletConfigWebDir == null) {
                 File webConfigDirFile = new File(getThisJarLocation().getParentFile(), "engine/cfml/server/cfml-web/");
@@ -381,6 +420,7 @@ public class Server {
             .addInitParam("directory-listing", Boolean.toString(serverOptions.isDirectoryListingEnabled())));
 
         manager = defaultContainer().addDeployment(servletBuilder);
+
         manager.deploy();
         HttpHandler servletHandler = manager.start();
         log.debug("started servlet deployment manager");
@@ -458,7 +498,7 @@ public class Server {
         if (serverOptions.isKeepRequestLog()) {
             log.error("request log currently unsupported");
         }
-
+        
         // start the stop monitor thread
         undertow = serverBuilder.build();
         Thread monitor = new MonitorThread(stoppassword);
@@ -490,11 +530,18 @@ public class Server {
 
         undertow.start();
 
+    
+    }
+
+    private void addShutDownHook() {
         final Thread mainThread = Thread.currentThread();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 try {
                     stopServer();
+                    if(tempWarDir != null) {
+                        LaunchUtil.deleteRecursive(tempWarDir);
+                    }
                     mainThread.join();
                 } catch ( Exception e) {
                     // TODO Auto-generated catch block
@@ -502,22 +549,26 @@ public class Server {
                 }
             }
         });
-
-    
+        log.debug("Added shutdown hook");
     }
 
     public void stopServer() {
         int exitCode = 0;
         try{
+            System.out.println();
             System.out.println(bar);
             System.out.println("*** stopping server");
             if (serverOptions.isMariaDB4jEnabled()) {
                 mariadb4jManager.stop();
             }
+            try {
+                manager.undeploy();
+                undertow.stop();
+                Thread.sleep(1000);
+            } catch (Exception notRunning) {
+                System.out.println("*** server did not appear to be running");
+            }
             System.out.println(bar);
-            manager.undeploy();
-            undertow.stop();
-            Thread.sleep(1000);
             serverState = ServerState.STOPPED;
         } catch (Exception e) {
             e.printStackTrace();

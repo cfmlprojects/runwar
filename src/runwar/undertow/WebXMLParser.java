@@ -39,6 +39,7 @@ public class WebXMLParser {
 	 */
 	@SuppressWarnings("unchecked")
 	public static void parseWebXml(File webxml, DeploymentInfo info) {
+	    String webinfPath = webxml.getParentFile().getPath();
 		if (!webxml.exists() || !webxml.canRead()) {
 			log.error("Error reading web.xml! exists:"+webxml.exists()+"readable:"+webxml.canRead());
 		}
@@ -74,6 +75,8 @@ public class WebXMLParser {
 					Element lstNmElmnt = (Element) lstNmElmntLst.item(0);
 					NodeList lstNm = lstNmElmnt.getChildNodes();
 					String pValue = (lstNm.item(0)).getNodeValue().trim();
+					// replace any /WEB-INF paths with the real path
+					pValue = pValue.replaceAll(".?/WEB-INF", webinfPath);
 					trace("context param value: %s", pValue);
 					info.addServletContextAttribute(pName, pValue);
 					info.addInitParameter(pName, pValue);
@@ -251,6 +254,7 @@ public class WebXMLParser {
 							Element inValElmnt = (Element) inValElmntLst.item(0);
 							NodeList inVal = inValElmnt.getChildNodes();
 							String inValue = (inVal.item(0)).getNodeValue().trim();
+							inValue = inValue.replaceAll(".?/WEB-INF", webinfPath);
 							trace("Param value: %s", inValue);
 							// add the param
 							servlet.addInitParam(inName, inValue);

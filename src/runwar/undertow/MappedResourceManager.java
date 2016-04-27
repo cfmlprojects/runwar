@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 
 import runwar.logging.Logger;
-
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.Resource;
@@ -52,21 +51,25 @@ public class MappedResourceManager extends FileResourceManager {
     }
 
     public Resource getResource(String path) {
-//        log.trace("* requested:" + path);
+        //log.debug("* requested:" + path);
         File reqFile = null;
         try {
-            if (WEBINF != null && path.startsWith("/WEB-INF")) {
-                if (path.equals("/WEB-INF")) {
+            if (WEBINF != null && (path.startsWith("/WEB-INF") || path.startsWith("./WEB-INF"))) {
+                if (path.equals("/WEB-INF") || path.equals("./WEB-INF")) {
                     reqFile = WEBINF;
                 }
-                reqFile = new File(WEBINF, path.replace("/WEB-INF",""));
+                reqFile = new File(WEBINF, path.replaceAll(".+WEB-INF",""));
+            } else if (path.startsWith(WEBINF.getPath())) {
+                reqFile = new File(WEBINF, path.replace(WEBINF.getPath(),""));
+            } else if (path.startsWith("/CFIDE")) {
+                reqFile = new File(WEBINF.getParentFile(), path);
             } else if (!path.startsWith("/WEB-INF")) {
                 reqFile = new File(getBase(), path);
                 if (!reqFile.exists()) {
                     for (int x = 0; x < cfmlDirs.length; x++) {
                         String absPath = cfmlDirsFiles[x].getCanonicalPath();
                         reqFile = new File(cfmlDirsFiles[x], path.replace(absPath, ""));
-//                        log.tracef("checking:%s = %s",absPath,reqFile.getAbsolutePath());
+//                        log.debugf("checking:%s = %s",absPath,reqFile.getAbsolutePath());
                         if (reqFile.exists()) {
                             break;
                         }
@@ -74,10 +77,10 @@ public class MappedResourceManager extends FileResourceManager {
                 }
             }
             if(reqFile!=null && reqFile.exists()) {
-//                log.tracef("path mapped to:%s", reqFile.getAbsolutePath());
+//                log.debugf("path mapped to:%s", reqFile.getAbsolutePath());
                 return new FileResource(reqFile, this, path);
             } else {
-//                log.tracef("no mapped resoruce for:%s",path);
+//                log.debugf("no mapped resoruce for:%s",path);
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {
@@ -87,5 +90,4 @@ public class MappedResourceManager extends FileResourceManager {
         }
         return null;
     }
-
 }

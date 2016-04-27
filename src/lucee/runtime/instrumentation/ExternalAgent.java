@@ -17,10 +17,10 @@ public class ExternalAgent {
 	  private static void setInstrumentation(Instrumentation inst) {
 			if(inst!=null) {
 				try{
-					System.out.println("start set instrumentation");
-					System.out.println(Thread.currentThread().getContextClassLoader().getClass().getName());
-					System.out.println(ClassLoader.getSystemClassLoader().getClass().getName());
-					System.out.println(new ExternalAgent().getClass().getClassLoader().getClass().getName());
+//					System.out.println("start set instrumentation");
+//					System.out.println(Thread.currentThread().getContextClassLoader().getClass().getName());
+//					System.out.println(ClassLoader.getSystemClassLoader().getClass().getName());
+//					System.out.println(new ExternalAgent().getClass().getClassLoader().getClass().getName());
 					
 					instrumentation=inst;
 				}

@@ -376,19 +376,16 @@ public class CommandLineHandler {
                 serverOptions.setServerName(line.getOptionValue("name"));
             }
 
-            if (line.hasOption("loglevel")) {
-                serverOptions.setLoglevel(line.getOptionValue("loglevel"));
-            }
-
             if (line.hasOption("debug")) {
                 Boolean debug= Boolean.valueOf(line.getOptionValue("debug"));
                 serverOptions.setDebug(debug);
                 if(debug)serverOptions.setLoglevel("DEBUG");
-                if(line.hasOption("loglevel")) {
-                    System.out.println("Warning:  debug overrides loglevel (both are specified, setting level to DEBUG)");
-                }
             }
 
+            if (line.hasOption("level")) {
+                serverOptions.setLoglevel(line.getOptionValue("level"));
+            }
+            
             if (line.hasOption("background")) {
                 serverOptions.setBackground(Boolean.valueOf(line.getOptionValue("background")));
             }
