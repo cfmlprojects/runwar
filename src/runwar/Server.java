@@ -310,7 +310,6 @@ public class Server {
             System.setProperty("coldfusion.classPath", cfusionDir + "/lib/updates/," + cfusionDir + "/lib/,"
                     + cfusionDir + "/lib/axis2,"+ cfusionDir + "/gateway/lib/,"+ cfusionDir + "/../cfform/jars,"
                     + cfusionDir + "/../flex/jars,"+ cfusionDir + "/lib/oosdk/lib,"+ cfusionDir + "/lib/oosdk/classes");
-            System.setProperty("java.awt.headless", "true");
             System.setProperty("java.security.policy", cfusionDir + "/lib/coldfusion.policy");
             System.setProperty("java.security.auth.policy", cfusionDir + "/lib/neo_jaas.policy");
             System.setProperty("java.nixlibrary.path", cfusionDir + "/lib");

@@ -47,7 +47,6 @@ public class WebXMLParser {
 		    if (File.separatorChar=='\\') {
 		        webinfPath = webinfPath.replace("\\", "\\\\");
 		    }
-		    System.out.println("============================" + webinfPath);
 		    trace("parsing %s",webxml.getCanonicalPath());
 			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();

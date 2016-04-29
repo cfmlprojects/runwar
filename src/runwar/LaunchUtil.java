@@ -331,7 +331,7 @@ public class LaunchUtil {
             }
 
         } else {
-            // System Tray is not supported
+            log.warn("System Tray is not supported");
         }
     }
 
