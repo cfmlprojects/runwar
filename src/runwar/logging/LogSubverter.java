@@ -34,13 +34,15 @@ public class LogSubverter {
     
     public static void subvertJDKLoggers(String level) {
         System.setProperty("java.util.logging.ConsoleHandler.formatter", "java.util.logging.SimpleFormatter");
-        System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %3$s %5$s%6$s%n");
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %3$s %5$s%6$s%n%n");
         java.util.logging.ConsoleHandler chandler = new java.util.logging.ConsoleHandler();
-        java.util.logging.Level LEVEL = null;
+        java.util.logging.Level LEVEL = JDKLevel.WARN;
         if(level.trim().toUpperCase().equals("TRACE"))
             LEVEL = JDKLevel.TRACE;
         if(level.trim().toUpperCase().equals("WARN"))
             LEVEL = JDKLevel.WARN;
+        if(level.trim().toUpperCase().equals("INFO"))
+            LEVEL = JDKLevel.INFO;
         if(level.trim().toUpperCase().equals("DEBUG"))
             LEVEL = JDKLevel.DEBUG;
         if(level.trim().toUpperCase().equals("ERROR"))

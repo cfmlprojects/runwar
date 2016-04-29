@@ -39,11 +39,15 @@ public class WebXMLParser {
 	 */
 	@SuppressWarnings("unchecked")
 	public static void parseWebXml(File webxml, DeploymentInfo info) {
-	    String webinfPath = webxml.getParentFile().getPath();
 		if (!webxml.exists() || !webxml.canRead()) {
 			log.error("Error reading web.xml! exists:"+webxml.exists()+"readable:"+webxml.canRead());
 		}
 		try {
+		    String webinfPath = webxml.getParentFile().getCanonicalPath();
+		    if (File.separatorChar=='\\') {
+		        webinfPath = webinfPath.replace("\\", "\\\\");
+		    }
+		    System.out.println("============================" + webinfPath);
 		    trace("parsing %s",webxml.getCanonicalPath());
 			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();

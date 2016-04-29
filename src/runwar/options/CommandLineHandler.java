@@ -382,14 +382,14 @@ public class CommandLineHandler {
                 if(debug)serverOptions.setLoglevel("DEBUG");
             }
 
-            if (line.hasOption("level")) {
+            if (line.hasOption("level") && line.getOptionValue("level").length() > 0) {
                 serverOptions.setLoglevel(line.getOptionValue("level"));
             }
             
             if (line.hasOption("background")) {
                 serverOptions.setBackground(Boolean.valueOf(line.getOptionValue("background")));
             }
-            if (line.hasOption("libdirs")) {
+            if (line.hasOption("libdirs") && line.getOptionValue("libdirs").length() > 0) {
                 String[] list = line.getOptionValue("libdirs").split(",");
                 for (String path : list) {
                     File lib = new File(path);
@@ -398,7 +398,7 @@ public class CommandLineHandler {
                 }               
                 serverOptions.setLibDirs(line.getOptionValue("libdirs"));
             }
-            if (line.hasOption("welcomefiles")) {
+            if (line.hasOption("welcomefiles") && line.getOptionValue("welcomefiles").length() > 0) {
                 serverOptions.setWelcomeFiles(line.getOptionValue("welcomefiles").split(","));
             }
 

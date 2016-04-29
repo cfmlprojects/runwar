@@ -168,6 +168,9 @@ public class Logger {
         if(Server.getServerOptions() != null) {
         	logLevel = org.jboss.logging.Logger.Level.valueOf(Server.getServerOptions().getLoglevel());
         	loggingIsInitialized = true;
+        	if(logLevel == null) {
+                logLevel = org.jboss.logging.Logger.Level.valueOf("WARN");
+        	}
         	LogSubverter.subvertLoggers(logLevel.toString());
         	for(HashMap<String, Object> lm : lazyMessages) {
         		org.jboss.logging.Logger.Level level = (org.jboss.logging.Logger.Level)lm.get("level");
