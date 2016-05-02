@@ -1,8 +1,8 @@
 #! /bin/bash
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 cd $DIR/build
-export ANT_HOME=$DIR/build/cfdistro/ant
-CFDISTRO_ZIP=$DIR/build/cfdistro.zip
+export ANT_HOME=$HOME/cfdistro/ant
+CFDISTRO_ZIP=$HOME/cfdistro.zip
 JRE_ZIP=$DIR/build/jre.zip
 JRE_DIR="$DIR/jre"
 if [ "$HTTP_CLIENT" = "" ]; then
