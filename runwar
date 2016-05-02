@@ -1,10 +1,10 @@
 #! /bin/bash
-reldir=`dirname $0`
-cd $reldir/build
-ANTCMD="/bin/sh $HOME/cfdistro/ant/bin/ant -nouserlib -f build.xml"
-export ANT_HOME=$HOME/cfdistro/ant
-CFDISTRO_ZIP=$HOME/cfdistro/cfdistro.zip
-
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+cd $DIR/build
+export ANT_HOME=$DIR/build/cfdistro/ant
+CFDISTRO_ZIP=$DIR/build/cfdistro.zip
+JRE_ZIP=$DIR/build/jre.zip
+JRE_DIR="$DIR/jre"
 if [ "$HTTP_CLIENT" = "" ]; then
     if type -p curl >/dev/null 2>&1; then
         if [ "$https_proxy" != "" ]; then
@@ -15,39 +15,68 @@ if [ "$HTTP_CLIENT" = "" ]; then
         HTTP_CLIENT="wget -O"
     fi
 fi
+
+function md5_for {
+  if builtin command -v md5 > /dev/null; then
+    md5 -q $1
+  elif builtin command -v md5sum > /dev/null ; then
+    md5sum $1 | awk '{print $1}'
+  else
+    echo "Neither md5 nor md5sum were found in the PATH"
+    exit 1
+  fi
+}
+
+function get_file_to {
+    destFile=$1
+    sourceURL=$2
+    $HTTP_CLIENT "$destFile" "$sourceURL"
+    if [ $? != 0 ]; then
+        echo "Failed to download $sourceURL"
+        echo "If you have an old version of libssl you may not have the correct"
+        echo "certificate authority. Either upgrade or set HTTP_CLIENT to insecure:"
+        echo "  export HTTP_CLIENT=\"wget --no-check-certificate -O\" # or"
+        echo "  export HTTP_CLIENT=\"curl --insecure -f -L -o"
+        rm $destFile 2> /dev/null
+        exit 1
+    fi
+} 
+function get_zip_to {
+    zipFile=$1
+    zipURL=$2
+    destDir=$3
+    get_file_to "$zipFile" "$zipURL"
+    get_file_to "$zipFile.md5" "$zipURL.md5"
+    md5=`cat $zipFile.md5`
+    calculated_md5=`md5_for $zipFile`
+    case "$calculated_md5" in
+      "$md5" )
+        echo "md5 ok"
+        unzip "$zipFile" -d "$destDir";;
+    esac
+    rm $zipFile 2> /dev/null
+    rm $zipFile.md5 2> /dev/null
+} 
+
 if [ ! -d "$ANT_HOME" ]; then
-        export ANT_HOME=/opt/cfdistro/ant
-        ANTCMD="/bin/sh /opt/cfdistro/ant/bin/ant -nouserlib -f build.xml"
+    export ANT_HOME=/opt/cfdistro/ant
 fi
 if [ ! -d "$ANT_HOME" ]; then
+    export ANT_HOME=$DIR/build/cfdistro/ant
     if [ -r "$CFDISTRO_ZIP" ]; then
       echo "The zip was already saved to $CFDISTRO_ZIP."
       echo "If you wish to re-download, delete it."
       exit 1
     fi
     echo "Downloading cfdistro now..."
-    CFDISTRO_DIR=`dirname "$CFDISTRO_ZIP"`
+    CFDISTRO_DIR="$DIR/build/cfdistro"
     mkdir -p "$CFDISTRO_DIR"
     CFDISTRO_URL="http://cfmlprojects.org/artifacts/cfdistro/latest/cfdistro.zip"
-    $HTTP_CLIENT "$CFDISTRO_ZIP" "$CFDISTRO_URL"
-    if [ $? != 0 ]; then
-        echo "Failed to download $CFDISTRO_URL"
-        echo "If you have an old version of libssl you may not have the correct"
-        echo "certificate authority. Either upgrade or set HTTP_CLIENT to insecure:"
-        echo "  export HTTP_CLIENT=\"wget --no-check-certificate -O\" # or"
-        echo "  export HTTP_CLIENT=\"curl --insecure -f -L -o"
-        rm $CFDISTRO_ZIP 2> /dev/null
-        exit 1
-    fi
-	unzip "$CFDISTRO_ZIP" -d "$CFDISTRO_DIR"
+    get_zip_to $CFDISTRO_ZIP $CFDISTRO_URL $CFDISTRO_DIR
 fi
-if [ -z "$JAVA_HOME" ] ; then
-   if [ -x ${HOME}/cfdistro/jre/bin/java ] ; then
-	   export JAVA_HOME="${HOME}/cfdistro/jre/"
-   fi
-fi
+ANTCMD="/bin/sh $ANT_HOME/bin/ant -nouserlib -f build.xml"
 if [ -z "$1" ]; then
-echo "runwar control script"
+echo "releng control script"
 OPTIONS="start stop help list-targets update exit"
 select opt in $OPTIONS; do
 if [ "$opt" = "start" ]; then
@@ -57,7 +86,7 @@ elif [ "$opt" = "stop" ]; then
 	$ANTCMD server.stop
 	exit
 elif [ "$opt" = "help" ]; then
-	echo "usage (skips this prompt): runwar [start|stop|{target}]"
+	echo "usage (skips this prompt): releng [start|stop|{target}]"
 elif [ "$opt" = "list-targets" ]; then
 	$ANTCMD help
 elif [ "$opt" = "update" ]; then
@@ -75,8 +104,50 @@ parameters=""
 shift
 for var in "$@"
 do
-    parameters="$parameters -D$var"
+   var1=${var%\=*}
+   var2=${var#*\=}
+   if [ "$var1" = "java.home" -o "$var1" = "JAVA_HOME" -o "$var1" = "java_home" ]; then
+     JAVA_HOME=$var2
+     echo set JAVA_HOME to $JAVA_HOME
+     export JAVA_HOME
+   fi
+   parameters="$parameters -D$var"
 done
+
+if type -p java  > /dev/null 2>&1; then
+#    echo found java executable in PATH
+    _java=java
+elif [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/java" ]];  then
+#    echo found java executable in JAVA_HOME     
+    _java="$JAVA_HOME/bin/java"
+else
+  if [[ -n "$JRE_DIR" ]] && [[ -x "$JRE_DIR/bin/java" ]];  then
+    _java="$JRE_DIR/bin/java"
+    JAVA_HOME=$JRE_DIR
+    export JAVA_HOME
+  fi
+fi
+
+if [[ ! "$_java" ]]; then
+ read -n 1 -r -p "JAVA_HOME not set.  Would you like to download a JRE? [Y/n]" response
+ response=${response,,} # tolower
+ if [[ $response =~ ^(yes|y| ) ]] | [ -z $response ]; then
+      if [ `getconf LONG_BIT` = "64" ]
+        then
+            bittype=64
+        else
+            bittype=32
+      fi
+      os="linux"
+      case "$OSTYPE" in
+        darwin*)  os="darwin" ;; 
+      esac
+      JRE_URL="http://cfmlprojects.org/artifacts/oracle/jre/latest-$os$bittype.zip"
+      get_zip_to $JRE_ZIP $JRE_URL $JRE_DIR
+      _java="$JRE_DIR/bin/java"
+      JAVA_HOME=$JRE_DIR
+      export JAVA_HOME
+    fi
+fi
+
 $ANTCMD $target -Dbasedir=. $parameters
-
-
