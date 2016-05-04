@@ -1,6 +1,7 @@
 package runwar;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -55,7 +56,6 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
-import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
 import static io.undertow.servlet.Servlets.defaultContainer;
@@ -80,7 +80,7 @@ public class Server {
     private static URLClassLoader _classLoader;
 
     private String serverName = "default";
-    private File tempWarDir = null;
+    private File tempWarDir, statusFile = null;
     public static final String bar = "******************************************************************************";
     
     public Server() {
@@ -145,13 +145,16 @@ public class Server {
         String contextPath = serverOptions.getContextPath();
         String host = serverOptions.getHost();
         File warFile = serverOptions.getWarFile();
+        if (serverOptions.getStatusFile() != null) {
+            statusFile = serverOptions.getStatusFile();
+        }
         String warPath = serverOptions.getWarPath();
         String loglevel = serverOptions.getLoglevel();
         char[] stoppassword = serverOptions.getStopPassword();
         Long transferMinSize= serverOptions.getTransferMinSize();
 
         if (serverOptions.isBackground()) {
-            serverState = ServerState.STARTING_BACKGROUND;
+            setServerState(ServerState.STARTING_BACKGROUND);
             // this will eventually system.exit();
             List<String> argarray = new ArrayList<String>();
             for (String arg : args) {
@@ -166,7 +169,7 @@ public class Server {
             int launchTimeout = serverOptions.getLaunchTimeout();
             LaunchUtil.relaunchAsBackgroundProcess(launchTimeout, argarray.toArray(new String[argarray.size()]),
                     processName);
-            serverState = ServerState.STARTED_BACKGROUND;
+            setServerState(ServerState.STARTED_BACKGROUND);
             // just in case
             Thread.sleep(200);
             System.exit(0);
@@ -237,7 +240,6 @@ public class Server {
         System.out.println(startingtext);
         //System.out.println("background: " + background);
         System.out.println(bar);
-        final Thread mainThread = Thread.currentThread();
         addShutDownHook();
         portNumber = getPortOrErrorOut(portNumber, host);
         socketNumber = getPortOrErrorOut(socketNumber, host);
@@ -514,7 +516,7 @@ public class Server {
         String msg = "Server is up - http-port:" + portNumber + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         log.debug(msg);
         System.out.println(msg);
-        serverState = ServerState.STARTED;
+        setServerState(ServerState.STARTED);
 
         if (serverOptions.isMariaDB4jEnabled()) {
             try {
@@ -528,8 +530,6 @@ public class Server {
         }
 
         undertow.start();
-
-    
     }
 
     private void addShutDownHook() {
@@ -568,10 +568,10 @@ public class Server {
                 System.out.println("*** server did not appear to be running");
             }
             System.out.println(bar);
-            serverState = ServerState.STOPPED;
+            setServerState(ServerState.STOPPED);
         } catch (Exception e) {
             e.printStackTrace();
-            serverState = ServerState.UNKNOWN;
+            setServerState(ServerState.UNKNOWN);
             log.error(e);
             exitCode = 1;
         }
@@ -867,6 +867,20 @@ public class Server {
 
     public static ServerOptions getServerOptions() {
         return serverOptions;
+    }
+
+    private void setServerState(String state) {
+        serverState = state;
+        if (statusFile != null) {
+            try {
+                PrintWriter writer;
+                writer = new PrintWriter(statusFile);
+                writer.print(state);
+                writer.close();
+            } catch (FileNotFoundException e) {
+                log.error(e.getMessage());
+            }
+        }
     }
 
     public String getServerState() {

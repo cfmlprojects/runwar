@@ -13,7 +13,7 @@ public class ServerOptions {
     private String pidFile, openbrowserURL, cfmlDirs, libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
-    private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig = null;
+    private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig, statusFile = null;
     private String iconImage = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean directoryListingEnabled = true;
@@ -248,6 +248,13 @@ public class ServerOptions {
     }
     public ServerOptions setTrayConfig(File trayConfig) {
         this.trayConfig = trayConfig;
+        return this;
+    }
+    public File getStatusFile() {
+        return statusFile;
+    }
+    public ServerOptions setStatusFile(File statusFile) {
+        this.statusFile = statusFile;
         return this;
     }
     public String getCFMLServletConfigWebDir() {

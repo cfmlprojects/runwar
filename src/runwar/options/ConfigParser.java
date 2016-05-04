@@ -228,6 +228,10 @@ public class ConfigParser {
                 serverOptions.setTrayConfig(getFile(serverConfig.getOptionValue("trayconfig")));
             }
 
+            if (serverConfig.hasOption("statusfile")) {
+                serverOptions.setStatusFile(getFile(serverConfig.getOptionValue("statusfile")));
+            }
+            
             if (serverConfig.hasOption("icon")) {
                 serverOptions.setIconImage(serverConfig.getOptionValue("icon"));
             }

@@ -250,6 +250,12 @@ public class CommandLineHandler {
                 .create("trayconfig") );
         
         options.addOption( OptionBuilder
+                .withLongOpt( "status-file" )
+                .withDescription( "status file (started/stopped) path" )
+                .hasArg().withArgName("path")
+                .create("statusfile") );
+        
+        options.addOption( OptionBuilder
                 .withLongOpt( "web-xml-path" )
                 .withDescription( "full path to default web.xml file for configuring the server" )
                 .hasArg().withArgName("path")
@@ -550,6 +556,10 @@ public class CommandLineHandler {
 
             if (line.hasOption("trayconfig") && line.getOptionValue("trayconfig").length() > 0) {
                 serverOptions.setTrayConfig(getFile(line.getOptionValue("trayconfig")));
+            }
+            
+            if (line.hasOption("statusfile") && line.getOptionValue("statusfile").length() > 0) {
+                serverOptions.setStatusFile(getFile(line.getOptionValue("statusfile")));
             }
             
             if (line.hasOption("cfengine")) {
