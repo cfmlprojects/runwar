@@ -2,3 +2,4 @@
 /dist
 /lib
 /build/temp
+/tests/resource/war

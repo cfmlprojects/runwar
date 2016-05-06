@@ -27,6 +27,8 @@ import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -77,7 +79,35 @@ public class LaunchUtil {
         // if(debug)System.out.println("Java: "+javaPath);
         return exe;
     }
-
+    
+    public static File getJarDir(Class<?> aclass) {
+        URL url;
+        String extURL;
+        try {
+            url = aclass.getProtectionDomain().getCodeSource().getLocation();
+        } catch (SecurityException ex) {
+            url = aclass.getResource(aclass.getSimpleName() + ".class");
+        }
+        extURL = url.toExternalForm();
+        if (extURL.endsWith(".jar"))   // from getCodeSource
+            extURL = extURL.substring(0, extURL.lastIndexOf("/"));
+        else {  // from getResource
+            String suffix = "/"+(aclass.getName()).replace(".", "/")+".class";
+            extURL = extURL.replace(suffix, "");
+            if (extURL.startsWith("jar:") && extURL.endsWith(".jar!"))
+                extURL = extURL.substring(4, extURL.lastIndexOf("/"));
+        }
+        try {
+            url = new URL(extURL);
+        } catch (MalformedURLException mux) {
+        }
+        try {
+            return new File(url.toURI());
+        } catch(URISyntaxException ex) {
+            return new File(url.getPath());
+        }
+    }
+    
     public static void launch(List<String> cmdarray, int timeout) throws IOException, InterruptedException {
         // byte[] buffer = new byte[1024];
 

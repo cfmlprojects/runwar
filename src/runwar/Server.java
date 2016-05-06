@@ -17,6 +17,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -174,6 +175,26 @@ public class Server {
             Thread.sleep(200);
             System.exit(0);
         }
+        
+        // if the war is archived, unpack it to system temp
+        if(warFile.exists() && !warFile.isDirectory()) {
+            URL zipResource = warFile.toURI().toURL();
+            String warDir = warFile.getName().toLowerCase().replace(".war", "");
+            warFile = new File(warFile.getParentFile(), warDir);
+            if(!warFile.exists()) {
+                warFile.mkdir();
+                log.debug("Exploding compressed WAR to " + warFile.getAbsolutePath());
+                LaunchUtil.unzipResource(zipResource, warFile, false);
+            } else {
+                log.debug("Using already exploded WAR in " + warFile.getAbsolutePath());
+            }
+            warPath = warFile.getAbsolutePath();
+            if(serverOptions.getWarFile().getAbsolutePath().equals(serverOptions.getCfmlDirs())) {
+                serverOptions.setCfmlDirs(warFile.getAbsolutePath());
+            }
+            tempWarDir  = warFile;
+        }
+
         tee = null;
         if (serverOptions.getLogDir() != null) {
             File logDirectory = serverOptions.getLogDir();
@@ -189,18 +210,6 @@ public class Server {
             }
         }
         
-        // if the war is archived, unpack it to system temp
-        if(warFile.exists() && !warFile.isDirectory()) {
-            URL zipResource = warFile.toURI().toURL();
-            String warname = warFile.getName();
-            warFile = Files.createTempDirectory(warname).toFile();
-            log.debug("Exploding compressed WAR to " + warFile.getAbsolutePath());
-            LaunchUtil.unzipResource(zipResource, warFile, false);
-            warFile.deleteOnExit();
-            warPath = warFile.getAbsolutePath();
-            tempWarDir  = warFile;
-        }
-
         new AgentInitialization().loadAgentFromLocalJarFile(new File(warFile, "/WEB-INF/lib/"));
 
         String osName = System.getProperties().getProperty("os.name");
@@ -539,9 +548,9 @@ public class Server {
             public void run() {
                 try {
                     stopServer();
-                    if(tempWarDir != null) {
-                        LaunchUtil.deleteRecursive(tempWarDir);
-                    }
+//                    if(tempWarDir != null) {
+//                        LaunchUtil.deleteRecursive(tempWarDir);
+//                    }
                     mainThread.join();
                 } catch ( Exception e) {
                     // TODO Auto-generated catch block
@@ -652,7 +661,7 @@ public class Server {
     }
     
     public static File getThisJarLocation() {
-        return new File(Server.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile();
+        return LaunchUtil.getJarDir(Server.class);
     }
 
     public String getPID() {
