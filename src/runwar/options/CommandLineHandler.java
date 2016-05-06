@@ -502,6 +502,9 @@ public class CommandLineHandler {
             }
             if (line.hasOption("urlrewritefile")) {
                 serverOptions.setURLRewriteFile(getFile(line.getOptionValue("urlrewritefile")));
+                if(!line.hasOption("urlrewriteenable")) {
+                    serverOptions.setEnableURLRewrite(true);
+                }
             }
             if (line.hasOption("urlrewriteenable")) {
                 serverOptions.setEnableURLRewrite(Boolean.valueOf(line.getOptionValue("urlrewriteenable")));

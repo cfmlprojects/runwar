@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.security.*;
 import java.util.regex.*;
+import java.nio.file.Paths;
 
 import runwar.logging.Logger;
 
@@ -88,15 +89,19 @@ final class AgentInitialization {
 			return null;
 		}
 
-		URL location = codeSource.getLocation();
-		String locationPath = location.getPath();
-		String jarFilePath;
-
-		if (locationPath.endsWith(".jar")) {
-			jarFilePath = findLocalJarOrZipFileFromLocationOfCurrentClassFile(locationPath);
-		} else {
-			jarFilePath = findJarFileContainingCurrentClass(location);
-		}
+		URI location;
+		String jarFilePath = "";
+        try {
+            location = codeSource.getLocation().toURI();
+            String locationPath = Paths.get(location).toString();
+            if (locationPath.endsWith(".jar")) {
+                jarFilePath = findLocalJarOrZipFileFromLocationOfCurrentClassFile(locationPath);
+            } else {
+                jarFilePath = findJarFileContainingCurrentClass(location);
+            }
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
 
 		return jarFilePath;
 	}
@@ -117,23 +122,15 @@ final class AgentInitialization {
 		return localMETAINFFile.getPath();
 	}
 
-	private String findJarFileContainingCurrentClass(URL location) {
-		// URI is used to deal with spaces and non-ASCII characters.
-		URI jarFileURI;
-		try {
-			jarFileURI = location.toURI();
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-
+	private String findJarFileContainingCurrentClass(URI location) {
 		// Certain environments (JBoss) use something other than "file:", which
 		// is not accepted by File.
-		if (!"file".equals(jarFileURI.getScheme())) {
-			String locationPath = location.toExternalForm();
+		if (!"file".equals(location.getScheme())) {
+			String locationPath = Paths.get(location).toString();
 			int p = locationPath.indexOf(':');
 			return locationPath.substring(p + 2);
 		}
 
-		return new File(jarFileURI).getPath();
+		return Paths.get(location).toString();
 	}
 }

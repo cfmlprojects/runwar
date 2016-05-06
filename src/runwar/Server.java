@@ -384,7 +384,6 @@ public class Server {
                                 .addInitParam(cfengine+"-web-directory",cfmlServletConfigWebDir)
                                 .addMapping("/rest/*")
                                 .setLoadOnStartup(2));
-                configureURLRewrite(servletBuilder, webinfDir);
             }
         } else if(webinf.exists()) {
             log.debug("found WEB-INF: " + webinf.getAbsolutePath());
@@ -407,6 +406,8 @@ public class Server {
             }
         });
         */
+
+        configureURLRewrite(servletBuilder, webinf.getPath());
 
         if (serverOptions.isCacheEnabled()) {
             addCacheHandler(servletBuilder);

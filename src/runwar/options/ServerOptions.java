@@ -331,7 +331,13 @@ public class ServerOptions {
 		return this.action;
 	}
 	public ServerOptions setCFEngineName(String cfengineName) {
-		this.cfengineName = cfengineName;
+	    if(cfengineName.toLowerCase().equals("lucee") 
+	            || cfengineName.toLowerCase().equals("adobe")
+	            || cfengineName.toLowerCase().equals("railo")) {
+	        this.cfengineName = cfengineName.toLowerCase();
+	    } else {
+	        throw new RuntimeException("Unknown engine type: " + cfengineName + ", must be one of: lucee, adobe, railo");
+	    }
 		return this;
 	}
 	public String getCFEngineName() {

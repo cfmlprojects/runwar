@@ -176,6 +176,12 @@
     </dependency>
   </target>
 
+  <target name="runwar.test" depends="runwar.jar">
+    <property name="tests.dir" location="../tests" />
+      <dependency groupId="com.adobe" artifactId="coldfusion" version="2016.0.0.297996" unzip="false"
+      type="war" dest="${tests.dir}/resource/adobe" />
+  </target>
+
   <target name="runembedded.jar" description="creates an jar with the WAR embedded">
     <antcontrib:if>
       <equals arg1="${build.type}" arg2="prod" />
