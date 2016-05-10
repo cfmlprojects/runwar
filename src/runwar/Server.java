@@ -16,8 +16,6 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -81,7 +79,7 @@ public class Server {
     private static URLClassLoader _classLoader;
 
     private String serverName = "default";
-    private File tempWarDir, statusFile = null;
+    private File statusFile = null;
     public static final String bar = "******************************************************************************";
     
     public Server() {
@@ -192,7 +190,6 @@ public class Server {
             if(serverOptions.getWarFile().getAbsolutePath().equals(serverOptions.getCfmlDirs())) {
                 serverOptions.setCfmlDirs(warFile.getAbsolutePath());
             }
-            tempWarDir  = warFile;
         }
 
         tee = null;
@@ -340,13 +337,15 @@ public class Server {
             log.debug("cfml.server.config.dir: " + cfmlServletConfigServerDir);
             String webinfDir = System.getProperty("cfml.webinf");
             if (webinfDir == null) {
-                webinfDir = new File(cfmlServletConfigWebDir, "WEB-INF/").getPath();
+                webinf = new File(cfmlServletConfigWebDir, "WEB-INF/");
+            } else {
+                webinf = new File(webinfDir);
             }
-            log.debug("cfml.webinf: " + webinfDir);
+            log.debug("cfml.webinf: " + webinf.getPath());
 
             // servletBuilder.setResourceManager(new CFMLResourceManager(new
             // File(homeDir,"server/"), transferMinSize, cfmlDirs));
-            File internalCFMLServerRoot = new File(webinfDir);
+            File internalCFMLServerRoot = webinf;
             internalCFMLServerRoot.mkdirs();
             servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot));
 
@@ -416,7 +415,7 @@ public class Server {
         });
         */
 
-        configureURLRewrite(servletBuilder, webinf.getPath());
+        configureURLRewrite(servletBuilder, webinf);
 
         if (serverOptions.isCacheEnabled()) {
             addCacheHandler(servletBuilder);
@@ -598,7 +597,7 @@ public class Server {
 
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void configureURLRewrite(DeploymentInfo servletBuilder, String webInfDir) throws ClassNotFoundException, IOException {
+    private void configureURLRewrite(DeploymentInfo servletBuilder, File webInfDir) throws ClassNotFoundException, IOException {
         if(serverOptions.isEnableURLRewrite()) {
             log.debug("enabling URL rewriting");
             Class rewriteFilter;
@@ -613,8 +612,8 @@ public class Server {
                     log.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
                 } else {
                     String rewriteFileName = "urlrewrite.xml";
-                    LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir + "/"+rewriteFileName));
-                    log.debug("Copying URL rewrite file to WEB-INF: " + webInfDir + "/"+rewriteFileName);
+                    LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir, rewriteFileName));
+                    log.debug("Copying URL rewrite file " + serverOptions.getURLRewriteFile().getPath() + " to WEB-INF: " + webInfDir.getPath() + "/"+rewriteFileName);
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
             }
