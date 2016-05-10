@@ -333,7 +333,8 @@ public class ServerOptions {
 	public ServerOptions setCFEngineName(String cfengineName) {
 	    if(cfengineName.toLowerCase().equals("lucee") 
 	            || cfengineName.toLowerCase().equals("adobe")
-	            || cfengineName.toLowerCase().equals("railo")) {
+	            || cfengineName.toLowerCase().equals("railo")
+	            || cfengineName.toLowerCase().equals("")) {
 	        this.cfengineName = cfengineName.toLowerCase();
 	    } else {
 	        throw new RuntimeException("Unknown engine type: " + cfengineName + ", must be one of: lucee, adobe, railo");
