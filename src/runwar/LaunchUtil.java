@@ -60,7 +60,6 @@ public class LaunchUtil {
     private static TrayIcon trayIcon;
     private static Logger log = Logger.getLogger("RunwarLogger");
     private static boolean relaunching;
-    private static Server hookedServer;
     private static final int KB = 1024;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
@@ -269,7 +268,6 @@ public class LaunchUtil {
     }
 
     public static void hookTray(Server server) {
-        hookedServer = server;
         ServerOptions serverOptions = Server.getServerOptions();
         String iconImage = serverOptions.getIconImage();
         String host = serverOptions.getHost();
@@ -529,12 +527,12 @@ public class LaunchUtil {
             while ((je = jis.getNextJarEntry()) != null) {
                 java.io.File f = new java.io.File(libDir.toString() + java.io.File.separator + je.getName());
                 if (je.isDirectory()) {
-                    f.mkdir();
+                    f.mkdirs();
                     continue;
                 }
                 File parentDir = new File(f.getParent());
                 if (!parentDir.exists()) {
-                    parentDir.mkdir();
+                    parentDir.mkdirs();
                 }
                 FileOutputStream fileOutStream = new FileOutputStream(f);
                 writeStreamTo(jis, fileOutStream, 8 * KB);
