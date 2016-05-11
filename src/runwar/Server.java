@@ -92,15 +92,19 @@ public class Server {
     }
     
     protected void initClassLoader(List<URL> _classpath) {
-        if (_classLoader == null && _classpath != null && _classpath.size() > 0) {
+        if (_classLoader == null) {
             log.debug("Loading classes from lib dir");
-            log.debugf("classpath: %s",_classpath);
-//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
-//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
-          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
-//          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-//          Thread.currentThread().setContextClassLoader(_classLoader);
+            if( _classpath != null && _classpath.size() > 0) {
+                log.debugf("classpath: %s",_classpath);
+//              _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
+//              _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
+//              _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
+                _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
+//              _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
+//              Thread.currentThread().setContextClassLoader(_classLoader);
+            } else {
+                _classLoader = new URLClassLoader(null);
+            }
         }
     }
     
@@ -262,19 +266,21 @@ public class Server {
             libDirs = webinf.getAbsolutePath() + "/lib";
             log.info("Using existing WEB-INF/lib of: " + libDirs);
         }
+
+        List<URL> cp = new ArrayList<URL>();
         if (libDirs != null || jarURL != null) {
-            List<URL> cp = new ArrayList<URL>();
             if (libDirs != null)
                 cp.addAll(getJarList(libDirs));
             if (jarURL != null)
                 cp.add(jarURL);
-            cp.addAll(getClassesList(new File(webinf, "/classes").getAbsolutePath()));
-            if(serverOptions.getMariaDB4jImportSQLFile() != null){
-                System.out.println("ADDN"+serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
-                cp.add(serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
-            }
-            initClassLoader(cp);
         }
+        if(serverOptions.getMariaDB4jImportSQLFile() != null){
+            System.out.println("ADDN"+serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
+            cp.add(serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
+        }
+        cp.addAll(getClassesList(new File(webinf, "/classes")));
+        initClassLoader(cp);
+        
         mariadb4jManager = new MariaDB4jManager(_classLoader);
 
         log.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
@@ -707,20 +713,20 @@ public class Server {
         return classpath;
     }
 
-    private List<URL> getClassesList(String classesDir) throws IOException {
+    private List<URL> getClassesList(File classesDir) throws IOException {
         List<URL> classpath = new ArrayList<URL>();
         if (classesDir == null)
             return classpath;
-        File file = new File(classesDir);
-        if (file.exists() && file.isDirectory()) {
-            for (File item : file.listFiles()) {
-                if (!item.isDirectory()) {
-                    URL url = item.toURI().toURL();
-                    classpath.add(url);
+        if (classesDir.exists() && classesDir.isDirectory()) {
+            URL url = classesDir.toURI().toURL();
+            classpath.add(url);
+            for (File item : classesDir.listFiles()) {
+                if (item.isDirectory()) {
+                    classpath.addAll(getClassesList(item));
                 }
             }
         } else {
-            log.debug("WEB-INF classes directory (" + file.getAbsolutePath() + ") does not exist");
+            log.debug("WEB-INF classes directory (" + classesDir.getAbsolutePath() + ") does not exist");
         }
         return classpath;
     }
