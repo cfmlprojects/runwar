@@ -480,7 +480,10 @@ public class CommandLineHandler {
                 .setEnableAJP(true).setAJPPort(((Number)line.getParsedOptionValue("ajpport")).intValue());
             }
             if (line.hasOption("sslport")) {
-            	serverOptions.setEnableHTTP(false).setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue("sslport")).intValue());
+                if(!line.hasOption("httpenable")) {
+                    serverOptions.setEnableHTTP(false);
+                }
+            	serverOptions.setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue("sslport")).intValue());
             }
             if (line.hasOption("sslcert")) {
             	serverOptions.setSSLCertificate(getFile(line.getOptionValue("sslcert")));
@@ -495,10 +498,13 @@ public class CommandLineHandler {
             	serverOptions.setSSLKeyPass(line.getOptionValue("sslkeypass").toCharArray());
             }
             if (line.hasOption("enablessl")) {
-                serverOptions.setEnableHTTP(false).setEnableSSL(Boolean.valueOf(line.getOptionValue("enablessl")));
+                if(!line.hasOption("httpenable")) {
+                    serverOptions.setEnableHTTP(false);
+                }
+                serverOptions.setEnableSSL(Boolean.valueOf(line.getOptionValue("enablessl")));
             }
-            if (line.hasOption("enablehttp")) {
-            	serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue("enablehttp")));
+            if (line.hasOption("httpenable")) {
+            	serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue("httpenable")));
             }
             if (line.hasOption("urlrewritefile")) {
                 serverOptions.setURLRewriteFile(getFile(line.getOptionValue("urlrewritefile")));
