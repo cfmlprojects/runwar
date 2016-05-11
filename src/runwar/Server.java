@@ -94,17 +94,15 @@ public class Server {
     protected void initClassLoader(List<URL> _classpath) {
         if (_classLoader == null) {
             log.debug("Loading classes from lib dir");
-            if( _classpath != null && _classpath.size() > 0) {
-                log.debugf("classpath: %s",_classpath);
-//              _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
-//              _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-//              _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
-                _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
-//              _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-//              Thread.currentThread().setContextClassLoader(_classLoader);
-            } else {
-                _classLoader = new URLClassLoader(null);
-            }
+            _classpath.add(getClass().getResource("/bcpkix-jdk15on.jar"));
+            _classpath.add(getClass().getResource("/bcprov-jdk15on.jar"));
+            log.debugf("classpath: %s",_classpath);
+//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
+//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
+//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
+            _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
+//          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
+//          Thread.currentThread().setContextClassLoader(_classLoader);
         }
     }
     
@@ -856,18 +854,25 @@ public class Server {
     class OpenBrowserTask extends TimerTask {
         public void run() {
             int portNumber = serverOptions.getPortNumber();
+            String protocol = "http";
             String host = serverOptions.getHost();
             String openbrowserURL = serverOptions.getOpenbrowserURL();
-            System.out.println("Waiting upto 35 seconds for " + host + ":" + portNumber + "...");
+            int timeout = serverOptions.getLaunchTimeout();
             if (openbrowserURL == null || openbrowserURL.length() == 0) {
                 openbrowserURL = "http://" + host + ":" + portNumber;
             }
+            if(serverOptions.isEnableSSL()) {
+                portNumber = serverOptions.getSSLPort();
+                protocol = "https";
+                openbrowserURL = openbrowserURL.replace("http:", "https:");
+            }
+            if (!openbrowserURL.startsWith("http")) {
+                openbrowserURL = (!openbrowserURL.startsWith("/")) ? "/" + openbrowserURL : openbrowserURL;
+                openbrowserURL = protocol + "://" + host + ":" + portNumber + openbrowserURL;
+            }
+            System.out.println("Waiting up to " + (timeout/1000) + " seconds for " + host + ":" + portNumber + "...");
             try {
-                if (serverCameUp(35000, 3000, InetAddress.getByName(host), portNumber)) {
-                    if (!openbrowserURL.startsWith("http")) {
-                        openbrowserURL = (!openbrowserURL.startsWith("/")) ? "/" + openbrowserURL : openbrowserURL;
-                        openbrowserURL = "http://" + host + ":" + portNumber + openbrowserURL;
-                    }
+                if (serverCameUp(timeout, 3000, InetAddress.getByName(host), portNumber)) {
                     System.out.println("Opening browser to..." + openbrowserURL);
                     BrowserOpener.openURL(openbrowserURL.trim());
                 } else {

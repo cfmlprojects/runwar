@@ -108,7 +108,7 @@
         <attribute name="Can-Retransform-Classes" value="true" />
         <attribute name="Implementation-Version" value="${runwarbuild.version}" />
       </manifest>
-      <zipgroupfileset dir="${runwar.lib.dir}"/>
+      <zipgroupfileset dir="${runwar.lib.dir}" excludes="bcpki*,bcprov*"/>
     </jar>
     <unzip src="${runwar.jar.file}" dest="${temp.dir}/jar" />
     <delete dir="${temp.dir}/jar" includes="**/README*, **/*LICENSE*,**/*.SF,**/*.DSA,**/*.RSA" verbose="true"/>
@@ -125,6 +125,10 @@
       </sequential>
     </antcontrib:for>
     <delete file="${runwar.jar.file}" />
+    <copy todir="${temp.dir}/jar">
+      <mapper type="regexp" from="(.*)-[^-]*(\.jar)" to="\1\2" />
+      <fileset dir="${runwar.lib.dir}/" includes="bcpki*,bcprov*" />
+    </copy>
     <zip destfile="${runwar.jar.file}" update="false" level="9">
       <fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA" />
     </zip>
@@ -132,7 +136,7 @@
     <antcontrib:if>
       <not><equals arg1="${cfmlprojects.keystore}" arg2="" /></not>
       <then>
-        <signjar jar="${runwar.jar.file}" alias="sign" force="true" tsaurl="http://tsa.starfieldtech.com" keystore="${cfmlprojects.keystore}" 
+        <signjar jar="${runwar.jar.file}" alias="cfmlprojects" force="true" tsaurl="http://tsa.starfieldtech.com" keystore="${cfmlprojects.keystore}" 
         storepass="changeit"/>
       </then>
     </antcontrib:if>
