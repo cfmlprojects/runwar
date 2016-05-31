@@ -79,7 +79,8 @@ public class WebXMLParser {
 					NodeList lstNm = lstNmElmnt.getChildNodes();
 					String pValue = (lstNm.item(0)).getNodeValue().trim();
 					// replace any /WEB-INF paths with the real path
-					pValue = pValue.replaceAll(".?/WEB-INF", webinfPath);
+					// this was for adobe CF, which is just nuts... undoing for now
+					//pValue = pValue.replaceAll(".?/WEB-INF", webinfPath);
 					trace("context param value: %s", pValue);
 					info.addServletContextAttribute(pName, pValue);
 					info.addInitParameter(pName, pValue);

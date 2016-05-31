@@ -497,11 +497,11 @@ public class CommandLineHandler {
             if (line.hasOption("sslkeypass")) {
             	serverOptions.setSSLKeyPass(line.getOptionValue("sslkeypass").toCharArray());
             }
-            if (line.hasOption("enablessl")) {
+            if (line.hasOption("sslenable")) {
                 if(!line.hasOption("httpenable")) {
                     serverOptions.setEnableHTTP(false);
                 }
-                serverOptions.setEnableSSL(Boolean.valueOf(line.getOptionValue("enablessl")));
+                serverOptions.setEnableSSL(Boolean.valueOf(line.getOptionValue("sslenable")));
             }
             if (line.hasOption("httpenable")) {
             	serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue("httpenable")));

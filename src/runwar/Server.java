@@ -94,15 +94,17 @@ public class Server {
     protected void initClassLoader(List<URL> _classpath) {
         if (_classLoader == null) {
             log.debug("Loading classes from lib dir");
-            _classpath.add(getClass().getResource("/bcpkix-jdk15on.jar"));
-            _classpath.add(getClass().getResource("/bcprov-jdk15on.jar"));
+            if( _classpath != null && _classpath.size() > 0) {
             log.debugf("classpath: %s",_classpath);
-//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
-//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-//          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
-            _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
-//          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-//          Thread.currentThread().setContextClassLoader(_classLoader);
+    //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
+    //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
+    //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
+                _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
+    //          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
+    //          Thread.currentThread().setContextClassLoader(_classLoader);
+            } else {
+                _classLoader = new URLClassLoader(null);
+            }
         }
     }
     

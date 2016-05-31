@@ -108,7 +108,7 @@
         <attribute name="Can-Retransform-Classes" value="true" />
         <attribute name="Implementation-Version" value="${runwarbuild.version}" />
       </manifest>
-      <zipgroupfileset dir="${runwar.lib.dir}" excludes="bcpki*,bcprov*"/>
+      <zipgroupfileset dir="${runwar.lib.dir}"/>
     </jar>
     <unzip src="${runwar.jar.file}" dest="${temp.dir}/jar" />
     <delete dir="${temp.dir}/jar" includes="**/README*, **/*LICENSE*,**/*.SF,**/*.DSA,**/*.RSA" verbose="true"/>
@@ -125,10 +125,6 @@
       </sequential>
     </antcontrib:for>
     <delete file="${runwar.jar.file}" />
-    <copy todir="${temp.dir}/jar">
-      <mapper type="regexp" from="(.*)-[^-]*(\.jar)" to="\1\2" />
-      <fileset dir="${runwar.lib.dir}/" includes="bcpki*,bcprov*" />
-    </copy>
     <zip destfile="${runwar.jar.file}" update="false" level="9">
       <fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA" />
     </zip>
