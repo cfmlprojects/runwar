@@ -49,6 +49,10 @@ import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.session.InMemorySessionManager;
+import io.undertow.server.session.SessionAttachmentHandler;
+import io.undertow.server.session.SessionCookieConfig;
+import io.undertow.server.session.SessionManager;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
@@ -489,6 +493,13 @@ public class Server {
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
 
+//        SessionManager sessionManager = new InMemorySessionManager("SESSION_MANAGER");
+//        SessionCookieConfig sessionConfig = new SessionCookieConfig();
+//        SessionAttachmentHandler sessionAttachmentHandler = new SessionAttachmentHandler(sessionManager, sessionConfig);
+//        // set as next handler your root handler
+//        sessionAttachmentHandler.setNext(pathHandler);
+
+        
         if (serverOptions.isGzipEnabled()) {
             final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size[5]")))

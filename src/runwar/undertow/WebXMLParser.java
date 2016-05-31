@@ -189,6 +189,7 @@ public class WebXMLParser {
 								NodeList dstNmElmntLst = fstElmnt.getElementsByTagName("dispatcher");
 								
 								if ( dstNmElmntLst == null || dstNmElmntLst.getLength() == 0 ){
+									trace("Request FilterURL Mapping: " + pName + " is %s", pValue);
 									info.addFilterUrlMapping( pName, pValue, DispatcherType.valueOf( "REQUEST") );
 								} else {
 									int totalDispatchers = dstNmElmntLst.getLength();
@@ -197,8 +198,18 @@ public class WebXMLParser {
 										NodeList dstNm = dstNmElmnt.getChildNodes();
 										String dValue = (dstNm.item(0)).getNodeValue().trim();
 										info.addFilterUrlMapping( pName, pValue, DispatcherType.valueOf( dValue ) );
+										trace("FilterURL: %s", pName);
+										trace("FilterURL: %s", pValue);
 									}
-								}							
+								}
+							}
+							lstNmElmntLst = fstElmnt.getElementsByTagName("servlet-name");
+							if (lstNmElmntLst != null && lstNmElmntLst.item(0) != null) {
+								Element inNmElmnt = (Element) lstNmElmntLst.item(0);
+								NodeList inNm = inNmElmnt.getChildNodes();
+								String pValue = (inNm.item(0)).getNodeValue().trim();
+								info.addFilterServletNameMapping(pName, pValue, DispatcherType.valueOf("REQUEST"));
+								trace("Filter Servlet: " + pName + " for %s", pValue);
 							}
 						} else {
 							log.warnf("No servlet found for %s", pName);
