@@ -16,6 +16,8 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,10 +51,6 @@ import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.resource.ResourceHandler;
-import io.undertow.server.session.InMemorySessionManager;
-import io.undertow.server.session.SessionAttachmentHandler;
-import io.undertow.server.session.SessionCookieConfig;
-import io.undertow.server.session.SessionManager;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
@@ -64,6 +62,7 @@ import io.undertow.util.MimeMappings;
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static io.undertow.servlet.Servlets.servlet;
+import static java.nio.file.StandardCopyOption.*;
 
 public class Server {
 
@@ -205,8 +204,12 @@ public class Server {
             File logDirectory = serverOptions.getLogDir();
             logDirectory.mkdir();
             if (logDirectory.exists()) {
+                if(Files.size(Paths.get(logDirectory + "/server.out.txt")) > 10 * 1024 * 1024) {
+                    log.info("Log was large " + logDirectory + "/server.out.txt");
+                    Files.move(Paths.get(logDirectory + "/server.out.txt"), Paths.get(logDirectory + "/server.out.bak"), REPLACE_EXISTING);
+                }
                 log.info("Logging to " + logDirectory + "/server.out.txt");
-                tee = new TeeOutputStream(System.out, new FileOutputStream(logDirectory + "/server.out.txt"));
+                tee = new TeeOutputStream(System.out, new FileOutputStream(logDirectory + "/server.out.txt", true));
                 PrintStream newOut = new PrintStream(tee, true);
                 System.setOut(newOut);
                 System.setErr(newOut);
