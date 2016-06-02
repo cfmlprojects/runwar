@@ -203,18 +203,21 @@ public class Server {
         if (serverOptions.getLogDir() != null) {
             File logDirectory = serverOptions.getLogDir();
             logDirectory.mkdir();
+            File outLog = new File(logDirectory,"server.out.txt");
             if (logDirectory.exists()) {
-                if(Files.size(Paths.get(logDirectory + "/server.out.txt")) > 10 * 1024 * 1024) {
-                    log.info("Log was large " + logDirectory + "/server.out.txt");
-                    Files.move(Paths.get(logDirectory + "/server.out.txt"), Paths.get(logDirectory + "/server.out.bak"), REPLACE_EXISTING);
+                if(outLog.exists()) {
+                    if(Files.size(Paths.get(outLog.getPath())) > 10 * 1024 * 1024) {
+                        log.info("Log is over 10MB, moving " + outLog.getPath() + " to " + outLog.getPath() + ".bak");
+                        Files.move(Paths.get(outLog.getPath()), Paths.get(outLog.getPath()+".bak"), REPLACE_EXISTING);
+                    }
                 }
-                log.info("Logging to " + logDirectory + "/server.out.txt");
-                tee = new TeeOutputStream(System.out, new FileOutputStream(logDirectory + "/server.out.txt", true));
+                log.info("Logging to " + outLog.getPath());
+                tee = new TeeOutputStream(System.out, new FileOutputStream(outLog.getPath(), outLog.exists()));
                 PrintStream newOut = new PrintStream(tee, true);
                 System.setOut(newOut);
                 System.setErr(newOut);
             } else {
-                log.error("Could not create log: " + logDirectory + "/server.out.txt");
+                log.error("Could not create log: " + outLog.getPath());
             }
         }
         
