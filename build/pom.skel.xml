@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.cfmlprojects</groupId>
+  <artifactId>runwar</artifactId>
+  <version>${runwarbuild.mvn.version}</version>
+  <packaging>jar</packaging>
+  <name>RunWAR</name>
+  <description>Run WARs with ease</description>
+  <url>http://github.com/cfmlprojects/runwar</url>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>Denny Valliant</name>
+      <email>valliantster@gmail.com</email>
+      <organization>cfmlprojects</organization>
+      <organizationUrl>http://cfmlprojects.org</organizationUrl>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:git@github.com:cfmlprojects/runwar.git</connection>
+    <developerConnection>scm:git:git@github.com:cfmlprojects/runwar.git</developerConnection>
+    <url>git@github.com:cfmlprojects/runwar.git</url>
+  </scm>
+</project>
