@@ -1,10 +1,10 @@
 #RunWAR
 
 RunWAR is a web server targeted at running CFML applications, with some added 
-features for Railo (configurable web/admin context locations, and opening the
-Railo admin web page from the taskbar).
+features for Lucee (configurable web/admin context locations, and opening the
+Lucee admin web page from the taskbar).
 
-It has a small memory footprint (2.5M on disk, ~5M min heap), while leveraging
+It has a small memory footprint (7.5M on disk, ~5M min heap), while leveraging
 enterprise grade server technology-- and the inner workings are simple.
 
 It mainly provides a separation of your WAR from your project, without having 
@@ -29,7 +29,11 @@ performant, and configurabuhble in a lovely fashion.
 So, yeah, that's mostly it.  Running "java -jar runwar-${version}.jar"
 should give you a list of available options, the basics being:
 
-java -jar runwar.jar -war path/to/war --port 8787 --dirs list/of,content/dirs --background false
+`java -jar runwar.jar -war "path/to/war" --background false`
+
+or
+
+`java -jar runwar.jar -war "path/to/war" --port 8787 --dirs "virtualdir=/path/to/dir,virtualdir2=/path/to/dir2" --background false`
 
 
 ## License

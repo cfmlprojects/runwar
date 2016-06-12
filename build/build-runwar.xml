@@ -129,6 +129,7 @@
       <fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA" />
     </zip>
     <property name="cfmlprojects.keystore" value="" />
+<!--     
     <antcontrib:if>
       <not><equals arg1="${cfmlprojects.keystore}" arg2="" /></not>
       <then>
@@ -136,12 +137,89 @@
         storepass="changeit"/>
       </then>
     </antcontrib:if>
+-->
   </target>
 
-  <target name="runwar.mvn" depends="runwar.jar">
+  <target name="runwar.javadoc">
+    <property name="javadoc.dir" value="${dist.dir}/javadoc" />
+    <property name="javadoc.linksource" value="true" />
+    <echo>*************************************</echo>
+    <echo>***** Generating JavaDoc ******</echo>
+    <echo>*************************************</echo>
+    <echo>JavaDoc dir: ${javadoc.dir}</echo>
+    <delete dir="${javadoc.dir}" />
+    <javadoc packagenames="runwar.*"
+          access="public"
+          sourcepath="${runwar.src.dir}"
+          excludepackagenames="sun.*"
+          additionalparam="-Xdoclint:none"
+          destdir="${javadoc.dir}"
+          author="true"
+          version="true"
+          use="true"
+          maxmemory="512m"
+          linksource="true"
+          classpathref="runwar.lib.path"
+          windowtitle="RunWAR API">
+      <doctitle><![CDATA[RunWAR API Reference (${runwarbuild.version})]]></doctitle>
+      <bottom><![CDATA[]]></bottom>
+      <link href="http://docs.oracle.com/javase/7/docs/api/"/>
+    </javadoc>
+    <zip destfile="${dist.dir}/runwar-${runwarbuild.version}-javadoc.jar" update="false">
+      <fileset dir="${javadoc.dir}" />
+    </zip>
+  </target>
+
+  <target name="runwar.mvn" depends="runwar.jar,runwar.javadoc">
     <runwar.initprops />
-    <pom-and-deploy pomid="runwar.pom" packaging="jar" artifact="${runwar.jar.file}" groupId="org.cfmlprojects"
-      artifactId="runwar" version="${runwarbuild.version}" name="runwar" />
+    <antcontrib:if>
+      <equals arg1="${mvn.type}" arg2="snapshot" />
+      <then>
+        <property name="runwarbuild.mvn.version" value="${runwarbuild.version}-SNAPSHOT" />
+      </then>
+    </antcontrib:if>
+    <property name="runwarbuild.mvn.version" value="${runwarbuild.version}" />
+
+    <zip destfile="${dist.dir}/runwar-${runwarbuild.version}-sources.jar">
+      <fileset dir="${runwar.src.dir}" />
+    </zip>
+    <copy file="pom.skel.xml" tofile="${dist.dir}/pom.xml" overwrite="true">
+      <filterchain><expandproperties /></filterchain>
+    </copy>
+
+    <pom-and-deploy pomid="runwar.pom" file="${dist.dir}/pom.xml" artifact="${runwar.jar.file}"  packaging="jar" groupId="org.cfmlprojects"
+      artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="snapshot">
+      <attachments>
+        <attach file="${dist.dir}/runwar-${runwarbuild.version}-javadoc.jar" classifier="javadoc"/>
+        <attach file="${dist.dir}/runwar-${runwarbuild.version}-sources.jar" classifier="sources"/>
+      </attachments>
+    </pom-and-deploy>
+  </target>
+
+   <target name="runwar.mvn.central" depends="runwar.mvn">
+    <runwar.initprops />
+    <property name="sonatype.cfmlprojects.user" value="" />
+    <property name="sonatype.cfmlprojects.pass" value="" />
+    <property name="gpg.cfmlprojects.secring" value="" />
+    <property name="gpg.cfmlprojects.pubring" value="" />
+    <property name="gpg.cfmlprojects.signkeyid" value="" />
+    <property name="gpg.cfmlprojects.pass" value="" />
+    
+    <pom-gpgsign-and-deploy repoId="sonatype.repo" pomid="runwar.c.pom" file="${dist.dir}/pom.xml" artifact="${runwar.jar.file}"  packaging="jar" groupId="org.cfmlprojects"
+      artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="${mvn.type}"
+      repoUser="${sonatype.cfmlprojects.user}" repoPassword="${sonatype.cfmlprojects.pass}" repoUrl="${sonatype.repo.url}"
+      secring="${gpg.cfmlprojects.secring}" pubring="${gpg.cfmlprojects.pubring}" keyid="${gpg.cfmlprojects.signkeyid}" keypass="${gpg.cfmlprojects.pass}"
+      dir="${dist.dir}">
+      <attachments>
+        <attach file="${dist.dir}/pom.xml.asc" type="pom.asc"/>
+        <attach file="${dist.dir}/runwar-${runwarbuild.version}.jar.asc" type="jar.asc"/>
+        <attach file="${dist.dir}/runwar-${runwarbuild.version}-javadoc.jar" classifier="javadoc"/>
+        <attach file="${dist.dir}/runwar-${runwarbuild.version}-javadoc.jar.asc" classifier="javadoc" type="jar.asc"/>
+        <attach file="${dist.dir}/runwar-${runwarbuild.version}-sources.jar" classifier="sources"/>
+        <attach file="${dist.dir}/runwar-${runwarbuild.version}-sources.jar.asc" classifier="sources" type="jar.asc"/>
+      </attachments>
+    </pom-gpgsign-and-deploy>
+
   </target>
 
   <target name="get.deps">
