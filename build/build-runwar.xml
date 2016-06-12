@@ -148,11 +148,20 @@
     <echo>*************************************</echo>
     <echo>JavaDoc dir: ${javadoc.dir}</echo>
     <delete dir="${javadoc.dir}" />
+    <script language="javascript"><![CDATA[
+    var version = parseInt(project.getProperty("ant.java.version").replace('.',''))
+      print(version);
+    if(version > 17) {
+      project.setProperty('javadoc.lint', '-Xdoclint:none');
+    } else {
+      project.setProperty('javadoc.lint', '');
+    }
+    ]]></script>
     <javadoc packagenames="runwar.*"
           access="public"
           sourcepath="${runwar.src.dir}"
           excludepackagenames="sun.*"
-          additionalparam="-Xdoclint:none"
+          additionalparam="${javadoc.lint}"
           destdir="${javadoc.dir}"
           author="true"
           version="true"
