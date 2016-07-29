@@ -2,11 +2,12 @@ package runwar;
 
 import java.awt.AWTException;
 import java.awt.Image;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
-import java.awt.SystemTray;
 import java.awt.Toolkit;
-import java.awt.TrayIcon;
+
+import dorkbox.systemTray.MenuEntry;
+import dorkbox.systemTray.SystemTray;
+import dorkbox.systemTray.SystemTrayMenuAction;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -57,10 +58,10 @@ import runwar.options.ServerOptions;
 
 public class LaunchUtil {
 
-    private static TrayIcon trayIcon;
     private static Logger log = Logger.getLogger("RunwarLogger");
     private static boolean relaunching;
     private static final int KB = 1024;
+    private static SystemTray systemTray;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
 
@@ -78,7 +79,7 @@ public class LaunchUtil {
         // if(debug)System.out.println("Java: "+javaPath);
         return exe;
     }
-    
+
     public static File getJarDir(Class<?> aclass) {
         URL url;
         String extURL;
@@ -106,7 +107,7 @@ public class LaunchUtil {
             return new File(url.getPath());
         }
     }
-    
+
     public static void launch(List<String> cmdarray, int timeout) throws IOException, InterruptedException {
         // byte[] buffer = new byte[1024];
 
@@ -268,6 +269,12 @@ public class LaunchUtil {
     }
 
     public static void hookTray(Server server) {
+        systemTray = SystemTray.getSystemTray();
+        if ( systemTray == null) {
+            log.warn("System Tray is not supported");
+            return;
+        }
+
         ServerOptions serverOptions = Server.getServerOptions();
         String iconImage = serverOptions.getIconImage();
         String host = serverOptions.getHost();
@@ -276,98 +283,47 @@ public class LaunchUtil {
         String processName = serverOptions.getProcessName();
         String PID = server.getPID();
 
-        if (SystemTray.isSupported()) {
-            Image image = getIconImage(iconImage);
-            MouseListener mouseListener = new MouseListener() {
-                public void mouseClicked(MouseEvent e) {
-                }
+        setIconImage(iconImage);
+        systemTray.setStatus( processName + " server on " + host + ":" + portNumber + " PID:" + PID );
 
-                public void mouseEntered(MouseEvent e) {
-                }
+        JSONArray menuItems;
 
-                public void mouseExited(MouseEvent e) {
-                }
+        final String defaultMenu = "["
+                + "{label:\"Stop Server (${runwar.processName})\", action:\"stopserver\"}"
+                + ",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
+                + "]";
 
-                public void mousePressed(MouseEvent e) {
-                }
-
-                public void mouseReleased(MouseEvent e) {
-                }
-            };
-
-            trayIcon = new TrayIcon(image, processName + " server on " + host + ":" + portNumber + " PID:" + PID);
-
-            PopupMenu popup = new PopupMenu();
-            MenuItem item = null;
-            JSONArray menuItems;
-
-            final String defaultMenu = "["
-                    + "{label:\"Stop Server (${runwar.processName})\", action:\"stopserver\"}"
-                    + ",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
-                    + "]";
-
-            if (serverOptions.getTrayConfig() != null) {
-                menuItems = (JSONArray) JSONValue.parse(readFile(serverOptions.getTrayConfig()));
-            } else {
-                menuItems = (JSONArray) JSONValue.parse(getResourceAsString("runwar/taskbar.json"));
-            }
-            if (menuItems == null) {
-                log.error("Could not load taskbar properties");
-                menuItems = (JSONArray) JSONValue.parse(defaultMenu);
-            }
-            for (Object ob : menuItems) {
-                JSONObject itemInfo = (JSONObject) ob;
-                String label = replaceMenuTokens(itemInfo.get("label").toString(), processName, host, portNumber,
-                        stopSocket);
-                String action = itemInfo.get("action").toString();
-                item = new MenuItem(label);
-                if (action.toLowerCase().equals("stopserver")) {
-                    item.addActionListener(new ExitActionListener());
-                } else if (action.toLowerCase().equals("openbrowser")) {
-                    String url = replaceMenuTokens(itemInfo.get("url").toString(), processName, host, portNumber,
-                            stopSocket);
-                    item.addActionListener(new OpenBrowserActionListener(url));
-                } else {
-                    log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
-                }
-                popup.add(item);
-            }
-
-            // MenuItem item = new MenuItem("Stop Server (" + processName +
-            // ")");
-            // item.addActionListener(new
-            // ExitActionListener(trayIcon,host,stopSocket));
-            // popup.add(item);
-            // item = new MenuItem("Open Browser");
-            // item.addActionListener(new
-            // OpenBrowserActionListener(trayIcon,"http://"+host+":"+portNumber
-            // + "/"));
-            // popup.add(item);
-            // item = new MenuItem("Open Admin");
-            // item.addActionListener(new
-            // OpenBrowserActionListener(trayIcon,railoAdminURL));
-            // popup.add(item);
-
-            trayIcon.setPopupMenu(popup);
-            trayIcon.setImageAutoSize(true);
-            trayIcon.addMouseListener(mouseListener);
-
-            try {
-                SystemTray.getSystemTray().add(trayIcon);
-            } catch (AWTException e) {
-                System.err.println("TrayIcon could not be added.");
-            }
-
+        if (serverOptions.getTrayConfig() != null) {
+            menuItems = (JSONArray) JSONValue.parse(readFile(serverOptions.getTrayConfig()));
         } else {
-            log.warn("System Tray is not supported");
+            menuItems = (JSONArray) JSONValue.parse(getResourceAsString("runwar/taskbar.json"));
+        }
+        if (menuItems == null) {
+            log.error("Could not load taskbar properties");
+            menuItems = (JSONArray) JSONValue.parse(defaultMenu);
+        }
+
+        for (Object ob : menuItems) {
+            JSONObject itemInfo = (JSONObject) ob;
+            String label = replaceMenuTokens(itemInfo.get("label").toString(), processName, host, portNumber, stopSocket);
+            String action = itemInfo.get("action").toString();
+
+            if (action.toLowerCase().equals("stopserver")) {
+                systemTray.addMenuEntry(label, new ExitAction());
+            } else if (action.toLowerCase().equals("openbrowser")) {
+                String url = replaceMenuTokens( itemInfo.get("url").toString(), processName, host, portNumber, stopSocket );
+                systemTray.addMenuEntry(label, new OpenBrowserAction(url));
+            } else {
+                log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
+            }
         }
     }
 
     public static void unhookTray() {
-        if (SystemTray.isSupported() && trayIcon != null) {
+        if (systemTray != null) {
             try {
                 log.debug("Removing tray icon");
-                SystemTray.getSystemTray().remove(trayIcon);
+                systemTray.shutdown();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -420,6 +376,43 @@ public class LaunchUtil {
         return image;
     }
 
+    public static void setIconImage(String iconImage) {
+        if (iconImage != null && iconImage.length() != 0) {
+            iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
+            log.debug("trying to load icon: " + iconImage);
+            if (iconImage.contains("!")) {
+                String[] zip = iconImage.split("!");
+                try {
+                    ZipFile zipFile = new ZipFile(zip[0]);
+                    ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
+                    systemTray.setIcon( zipFile.getInputStream(zipEntry) );
+                    zipFile.close();
+                    log.debug("loaded image from archive: " + zip[0] + zip[1]);
+                    return;
+                } catch (IOException e2) {
+                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
+                }
+            } else if (new File(iconImage).exists()) {
+                systemTray.setIcon( iconImage );
+                return;
+            } else {
+                log.debug("trying parent loader for image: " + iconImage);
+                URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
+                if (imageURL == null) {
+                    log.debug("trying loader for image: " + iconImage);
+                    imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
+                }
+                if (imageURL != null) {
+                    log.debug("Trying getImage for: " + imageURL);
+                    systemTray.setIcon( imageURL );
+                    return;
+                }
+            }
+        }
+        // if bad image, use default
+        systemTray.setIcon( Start.class.getResource("/runwar/icon.png") );
+    }
+
     private static String replaceMenuTokens(String label, String processName, String host, int portNumber,
             int stopSocket) {
         label = label.replaceAll("\\$\\{runwar.port\\}", Integer.toString(portNumber))
@@ -428,32 +421,33 @@ public class LaunchUtil {
         return label;
     }
 
-    private static class OpenBrowserActionListener implements ActionListener {
+    private static class OpenBrowserAction implements SystemTrayMenuAction {
         private String url;
 
-        public OpenBrowserActionListener(String url) {
+        public OpenBrowserAction(String url) {
             this.url = url;
         }
 
         @Override
-        public void actionPerformed(ActionEvent e) {
-            trayIcon.displayMessage("Browser", "Opening browser", TrayIcon.MessageType.INFO);
+        public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
+            // trayIcon.displayMessage("Browser", "Opening browser", TrayIcon.MessageType.INFO);
             openURL(url);
         }
     }
 
-    private static class ExitActionListener implements ActionListener {
+    private static class ExitAction implements SystemTrayMenuAction {
 
-        public ExitActionListener() {
+        public ExitAction() {
         }
 
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
             try {
                 System.out.println("Exiting...");
+                systemTray.shutdown();
                 System.exit(0);
             } catch (Exception e1) {
-                trayIcon.displayMessage("Error", e1.getMessage(), TrayIcon.MessageType.INFO);
+                // trayIcon.displayMessage("Error", e1.getMessage(), TrayIcon.MessageType.INFO);
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e2) {
@@ -519,7 +513,7 @@ public class LaunchUtil {
         Timer timer = new Timer();
         PrintDot task = new PrintDot();
         timer.schedule(task, 0, 2000);
-        
+
         try {
             BufferedInputStream bis = new BufferedInputStream(resource.openStream());
             JarInputStream jis = new JarInputStream(bis);
@@ -543,15 +537,15 @@ public class LaunchUtil {
                 }
                 fileOutStream.close();
             }
-            
+
         } catch (Exception exc) {
             task.cancel();
             exc.printStackTrace();
         }
         task.cancel();
-        
+
     }
-    
+
     public static void cleanUpUnpacked(File libDir) {
         if (libDir.exists() && libDir.listFiles(new ExtFilter(".gz")).length > 0) {
             for (File gz : libDir.listFiles(new ExtFilter(".gz"))) {
