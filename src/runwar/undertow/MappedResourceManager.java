@@ -74,7 +74,7 @@ public class MappedResourceManager extends FileResourceManager {
                 if (!reqFile.exists()) {
                     reqFile = getAliasedFile(aliasMap, path);
                 }
-                if (reqFile != null) {
+                if (reqFile == null) {
                     for (int x = 0; x < cfmlDirsFiles.length; x++) {
                         String absPath = cfmlDirsFiles[x].getCanonicalPath();
                         reqFile = new File(cfmlDirsFiles[x], path.replace(absPath, ""));

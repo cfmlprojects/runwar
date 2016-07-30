@@ -120,7 +120,7 @@ public class SSLUtil {
         String defaultalias = "serverkey";
         PrivateKey ff;
         KeyStore ks = KeyStore.getInstance("JKS", "SUN");
-        ks.load( null , passphrase);
+        ks.load( null , STORE_PASSWORD);
         try {
         	// try the pks8 java format first
         	ff = loadPKCS8PrivateKey(keyfile);
