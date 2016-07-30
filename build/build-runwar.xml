@@ -129,11 +129,11 @@
       <fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA" />
     </zip>
     <property name="cfmlprojects.keystore" value="" />
-<!--     
+<!--
     <antcontrib:if>
       <not><equals arg1="${cfmlprojects.keystore}" arg2="" /></not>
       <then>
-        <signjar jar="${runwar.jar.file}" alias="cfmlprojects" force="true" tsaurl="http://tsa.starfieldtech.com" keystore="${cfmlprojects.keystore}" 
+        <signjar jar="${runwar.jar.file}" alias="cfmlprojects" force="true" tsaurl="http://tsa.starfieldtech.com" keystore="${cfmlprojects.keystore}"
         storepass="changeit"/>
       </then>
     </antcontrib:if>
@@ -204,7 +204,7 @@
     <property name="gpg.cfmlprojects.pubring" value="" />
     <property name="gpg.cfmlprojects.signkeyid" value="" />
     <property name="gpg.cfmlprojects.pass" value="" />
-    
+
     <pom-gpgsign-and-deploy repoId="sonatype.repo" pomid="runwar.c.pom" file="${dist.dir}/pom.xml" artifact="${runwar.jar.file}"  packaging="jar" groupId="org.cfmlprojects"
       artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="${mvn.type}"
       repoUser="${sonatype.cfmlprojects.user}" repoPassword="${sonatype.cfmlprojects.pass}" repoUrl="${sonatype.repo.url}"
@@ -231,7 +231,7 @@
       dest="${runwar.lib.dir}" />
     <dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.51" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
-    <!--  replace options with this eventually 
+    <!--  replace options with this eventually
     -->
     <dependency groupId="net.sf.jopt-simple" artifactId="jopt-simple" version="5.0-beta-1" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
@@ -255,6 +255,8 @@
         <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.2_spec" />
       </exclusions>
     </dependency>
+
+    <dependency groupId="com.dorkbox" artifactId="SystemTray" version="2.20" unzip="false" type="jar" dest="${runwar.lib.dir}" />
   </target>
 
   <target name="runwar.test" depends="runwar.jar">
