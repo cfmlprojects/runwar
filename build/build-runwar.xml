@@ -127,6 +127,7 @@
     <delete file="${runwar.jar.file}" />
     <zip destfile="${runwar.jar.file}" update="false" level="9">
       <fileset dir="${temp.dir}/jar" excludes="**/META-INF/*.SF,**/META-INF/*.DSA,**/META-INF/*.RSA" />
+      <fileset dir="${src.dir}" includes="resources/**" />
     </zip>
     <property name="cfmlprojects.keystore" value="" />
 <!--
@@ -257,6 +258,7 @@
     </dependency>
 
     <dependency groupId="com.dorkbox" artifactId="SystemTray" version="2.20" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+    <dependency groupId="com.dorkbox" artifactId="Notify" version="2.14" unzip="false" type="jar" dest="${runwar.lib.dir}" />
   </target>
 
   <target name="runwar.test" depends="runwar.jar">

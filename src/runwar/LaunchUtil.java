@@ -7,11 +7,10 @@ import java.awt.Toolkit;
 import dorkbox.systemTray.MenuEntry;
 import dorkbox.systemTray.SystemTray;
 import dorkbox.systemTray.SystemTrayMenuAction;
+import dorkbox.util.ActionHandler;
+import dorkbox.notify.Notify;
+import dorkbox.notify.Pos;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -62,6 +61,7 @@ public class LaunchUtil {
     private static boolean relaunching;
     private static final int KB = 1024;
     private static SystemTray systemTray;
+    private static Notify notify;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
 
@@ -430,7 +430,7 @@ public class LaunchUtil {
 
         @Override
         public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
-            // trayIcon.displayMessage("Browser", "Opening browser", TrayIcon.MessageType.INFO);
+            displayMessage("Info", "Opening browser");
             openURL(url);
         }
     }
@@ -447,13 +447,44 @@ public class LaunchUtil {
                 systemTray.shutdown();
                 System.exit(0);
             } catch (Exception e1) {
-                // trayIcon.displayMessage("Error", e1.getMessage(), TrayIcon.MessageType.INFO);
+                displayMessage("Error", e1.getMessage());
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e2) {
                 }
                 System.exit(1);
             }
+        }
+    }
+
+    public static void displayMessage(String title, String text) {
+        try{
+            Class arl = Server.class.getClassLoader().loadClass("dorkbox.util.swing.ActiveRenderLoop");
+            arl.getClass().getName();
+            notify = Notify
+            .create()
+            .title(title)
+            .text(text)
+            .hideAfter(50000).position(Pos.TOP_RIGHT)
+            // .setScreen(0)
+            .darkStyle().shake(1300, 4)
+            // .shake(1300, 10)
+            // .hideCloseButton()
+            .onAction(new ActionHandler<Notify>() {
+                @Override
+                public void handle(final Notify arg0) {
+                    System.out.println("Notification clicked on!");
+                }
+            });
+            if(title.equals("Error")) {
+                notify.showError();
+            } else if (title.equals("Warning")) {
+                notify.showWarning();
+            } else {
+                notify.showInformation();
+            }
+        } catch (java.lang.ClassNotFoundException e) {
+            System.out.println(text);
         }
     }
 
