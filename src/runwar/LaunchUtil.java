@@ -385,7 +385,7 @@ public class LaunchUtil {
                 try {
                     ZipFile zipFile = new ZipFile(zip[0]);
                     ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
-                    systemTray.setIcon( zipFile.getInputStream(zipEntry) );
+                    systemTray.setIcon( "runwar", zipFile.getInputStream(zipEntry) );
                     zipFile.close();
                     log.debug("loaded image from archive: " + zip[0] + zip[1]);
                     return;
