@@ -1,6 +1,5 @@
 package runwar;
 
-import java.awt.AWTException;
 import java.awt.Image;
 import java.awt.Toolkit;
 
@@ -183,7 +182,7 @@ public class LaunchUtil {
         }
     }
 
-    public static void relaunchAsBackgroundProcess(int timeout, String[] args, String processName) {
+    public static void relaunchAsBackgroundProcess(int timeout, String[] args, List<String> jvmArgs, String processName) {
         try {
             if (relaunching)
                 return;
@@ -194,8 +193,8 @@ public class LaunchUtil {
             decodedPath = new File(decodedPath).getPath();
             List<String> cmdarray = new ArrayList<String>();
             cmdarray.add(getJreExecutable().toString());
-            List<String> currentVMArgs = getCurrentVMArgs();
-            for (String arg : currentVMArgs) {
+            List<String> VMArgs = jvmArgs != null ? jvmArgs : getCurrentVMArgs();
+            for (String arg : VMArgs) {
                 cmdarray.add(arg);
             }
             cmdarray.add("-jar");
@@ -269,6 +268,9 @@ public class LaunchUtil {
     }
 
     public static void hookTray(Server server) {
+//        SystemTray.COMPATIBILITY_MODE = true;
+//        SystemTray.FORCE_GTK2 = true;
+////        System.setProperty("SWT_GTK3", "0");
         systemTray = SystemTray.getSystemTray();
         if ( systemTray == null) {
             log.warn("System Tray is not supported");
@@ -459,7 +461,7 @@ public class LaunchUtil {
 
     public static void displayMessage(String title, String text) {
         try{
-            Class arl = Server.class.getClassLoader().loadClass("dorkbox.util.swing.ActiveRenderLoop");
+            Class<?> arl = Server.class.getClassLoader().loadClass("dorkbox.util.swing.ActiveRenderLoop");
             arl.getClass().getName();
             notify = Notify
             .create()

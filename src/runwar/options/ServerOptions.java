@@ -3,6 +3,7 @@ package runwar.options;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 
 public class ServerOptions {
 	private String serverName = "default", processName = "RunWAR", loglevel = "WARN";
@@ -31,7 +32,8 @@ public class ServerOptions {
 	private boolean mariadb4jEnabled = false;
 	private int mariadb4jPort = 13306;
 	private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
-
+	private List<String> jvmArgs = null;
+	
 	public String getServerName() {
 	    return serverName;
 	}
@@ -410,6 +412,14 @@ public class ServerOptions {
     }
     public File getMariaDB4jImportSQLFile() {
         return this.mariadb4jImportSQLFile;
+    }
+
+    public ServerOptions setJVMArgs(List<String> args) {
+        this.jvmArgs = args;
+        return this;
+    }
+    public List<String> getJVMArgs() {
+        return this.jvmArgs;
     }
 
 }

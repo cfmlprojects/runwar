@@ -174,7 +174,7 @@ public class Server {
             argarray.add("false");
             int launchTimeout = serverOptions.getLaunchTimeout();
             LaunchUtil.relaunchAsBackgroundProcess(launchTimeout, argarray.toArray(new String[argarray.size()]),
-                    processName);
+                    serverOptions.getJVMArgs(), processName);
             setServerState(ServerState.STARTED_BACKGROUND);
             // just in case
             Thread.sleep(200);

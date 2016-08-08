@@ -1,6 +1,7 @@
 package runwar.options;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Comparator;
 
 //import static java.io.File.*;
@@ -8,6 +9,8 @@ import java.util.Comparator;
 //
 //import joptsimple.OptionParser;
 //import joptsimple.OptionSet;
+
+import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -358,6 +361,12 @@ public class CommandLineHandler {
                 .hasArg().withArgName("path/to/sql/file")
                 .create("mariadb4jimport") );
         
+        options.addOption( OptionBuilder
+                .withLongOpt( "jvm-args" )
+                .withDescription( "JVM arguments for background process." )
+                .hasArg().withArgName("option=value,option=value")
+                .create("jvmargs") );
+        
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
@@ -612,6 +621,14 @@ public class CommandLineHandler {
             }
             if (line.hasOption("mariadb4jimport") && line.getOptionValue("mariadb4jimport").length() > 0) {
                 serverOptions.setMariaDB4jImportSQLFile(new File(line.getOptionValue("mariadb4jimport")));
+            }
+            if (line.hasOption("jvmargs") && line.getOptionValue("jvmargs").length() > 0) {
+                List<String> jvmArgs = new ArrayList<String>();
+                String[] jvmArgArray = line.getOptionValue("jvmargs").split(";");
+                for(String arg : jvmArgArray) {
+                    jvmArgs.add(arg);
+                }
+                serverOptions.setJVMArgs(jvmArgs);
             }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {
