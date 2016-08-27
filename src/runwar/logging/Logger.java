@@ -41,6 +41,9 @@ public class Logger {
     public void tracef(String format, Object object) {
         logf(org.jboss.logging.Logger.Level.TRACE,format,object);
     }
+    public void tracef(String format, Object... object) {
+        logf(org.jboss.logging.Logger.Level.TRACE,format,object);
+    }
     
     public void error(Object object) {
         log(org.jboss.logging.Logger.Level.ERROR, object);

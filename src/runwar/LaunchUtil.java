@@ -269,7 +269,7 @@ public class LaunchUtil {
 
     public static void hookTray(Server server) {
 //        SystemTray.COMPATIBILITY_MODE = true;
-//        SystemTray.FORCE_GTK2 = true;
+        SystemTray.FORCE_GTK2 = true;
 ////        System.setProperty("SWT_GTK3", "0");
         systemTray = SystemTray.getSystemTray();
         if ( systemTray == null) {

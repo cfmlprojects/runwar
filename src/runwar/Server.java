@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -50,6 +51,8 @@ import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
+import io.undertow.server.handlers.resource.ResourceChangeEvent;
+import io.undertow.server.handlers.resource.ResourceChangeListener;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -79,7 +82,7 @@ public class Server {
     private String PID;
     private String serverState = ServerState.STOPPED;
 
-    private static URLClassLoader _classLoader;
+    private static ClassLoader _classLoader;
 
     private String serverName = "default";
     private File statusFile = null;
@@ -106,7 +109,7 @@ public class Server {
     //          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
     //          Thread.currentThread().setContextClassLoader(_classLoader);
             } else {
-                _classLoader = new URLClassLoader(null);
+                _classLoader = Thread.currentThread().getContextClassLoader();
             }
         }
     }
@@ -115,7 +118,7 @@ public class Server {
         _classLoader = classLoader;
     }
     
-    public static URLClassLoader getClassLoader(){
+    public static ClassLoader getClassLoader(){
         return _classLoader;
     }
     
@@ -431,22 +434,49 @@ public class Server {
         });
         */
 
+        if(cfengine.equals("adobe")){
+            String cfclassesDir = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
+            if(cfclassesDir == null || cfclassesDir.startsWith("/WEB-INF")){
+                // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
+                cfclassesDir = new File(webinf, "/cfclasses").getAbsolutePath();
+                log.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
+                servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
+            }
+        }
+
         configureURLRewrite(servletBuilder, webinf);
 
         if (serverOptions.isCacheEnabled()) {
             addCacheHandler(servletBuilder);
+        } else {
+            log.debug("File cache is disabled");
         }
 
         if (serverOptions.isCustomHTTPStatusEnabled()) {
             servletBuilder.setSendCustomReasonPhraseOnError(true);
         }
 
+        //someday we may wanna listen for changes
+        /*
+        servletBuilder.getResourceManager().registerResourceChangeListener(new ResourceChangeListener() {
+            @Override
+            public void handleChanges(Collection<ResourceChangeEvent> changes) {
+                for(ResourceChangeEvent change : changes) {
+                    log.info("CHANGE");
+                    log.info(change.getResource());
+                    log.info(change.getType().name());
+                    manager.getDeployment().getServletPaths().invalidate();
+                }
+            }
+        });
+        */
+
         // this prevents us from having to use our own ResourceHandler (directory listing, welcome files, see below) and error handler for now
         servletBuilder.addServlet(new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
             .addInitParam("directory-listing", Boolean.toString(serverOptions.isDirectoryListingEnabled())));
 
         manager = defaultContainer().addDeployment(servletBuilder);
-
+        
         manager.deploy();
         HttpHandler servletHandler = manager.start();
         log.debug("started servlet deployment manager");
@@ -464,7 +494,7 @@ public class Server {
         if(serverOptions.isEnableHTTP()) {
             serverBuilder.addHttpListener(portNumber, host);
         }
-
+        
         if (serverOptions.isEnableSSL()) {
             int sslPort = serverOptions.getSSLPort();
             serverBuilder.setDirectBuffers(true);
@@ -493,6 +523,11 @@ public class Server {
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
+                }
+                // clear any welcome-file info cached after initial request
+                if (serverOptions.isDirectoryListingEnabled() && exchange.getRequestPath().endsWith("/")) {
+                    //log.trace("*** Resetting servlet path info");
+                    manager.getDeployment().getServletPaths().invalidate();
                 }
                 super.handleRequest(exchange);
             }
@@ -531,7 +566,6 @@ public class Server {
         if (serverOptions.isKeepRequestLog()) {
             log.error("request log currently unsupported");
         }
-        
         // start the stop monitor thread
         undertow = serverBuilder.build();
         Thread monitor = new MonitorThread(stoppassword);
