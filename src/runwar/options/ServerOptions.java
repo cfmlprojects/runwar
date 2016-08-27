@@ -3,7 +3,9 @@ package runwar.options;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ServerOptions {
 	private String serverName = "default", processName = "RunWAR", loglevel = "WARN";
@@ -33,6 +35,7 @@ public class ServerOptions {
 	private int mariadb4jPort = 13306;
 	private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
 	private List<String> jvmArgs = null;
+	private Map<Integer, String> errorPages = null;
 	
 	public String getServerName() {
 	    return serverName;
@@ -103,6 +106,9 @@ public class ServerOptions {
     public ServerOptions setEnableHTTP(boolean bool) {
     	this.enableHTTP = bool;
         return this;
+    }
+    public boolean isURLRewriteApacheFormat() {
+        return getURLRewriteFile() == null ? false : getURLRewriteFile().getPath().endsWith(".htaccess");
     }
     public boolean isEnableURLRewrite() {
         return enableURLRewrite;
@@ -420,6 +426,28 @@ public class ServerOptions {
     }
     public List<String> getJVMArgs() {
         return this.jvmArgs;
+    }
+
+    public ServerOptions setErrorPages(String errorpages) {
+        this.errorPages = new HashMap<Integer, String>();
+        String[] pageList = errorpages.split(",");
+        for (int x = 0; x < pageList.length; x++) {
+            String[] splitted = pageList[x].split("=");
+            if (splitted.length == 1) {
+                errorPages.put(1,pageList[x].trim());
+            } else {
+                int errorCode = Integer.parseInt(splitted[0].trim());
+                errorPages.put(errorCode, splitted[1].trim());
+            }
+        }
+        return this;
+    }
+    public ServerOptions setErrorPages(Map<Integer, String> errorpages) {
+        this.errorPages = errorpages;
+        return this;
+    }
+    public Map<Integer, String> getErrorPages() {
+        return this.errorPages;
     }
 
 }

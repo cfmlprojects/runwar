@@ -56,6 +56,7 @@ import io.undertow.server.handlers.resource.ResourceChangeListener;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.ErrorPage;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
@@ -456,6 +457,19 @@ public class Server {
             servletBuilder.setSendCustomReasonPhraseOnError(true);
         }
 
+        if(serverOptions.getErrorPages() != null){
+            for(Integer errorCode : serverOptions.getErrorPages().keySet()) {
+                String location = serverOptions.getErrorPages().get(errorCode);
+                if(errorCode == 1) {
+                    servletBuilder.addErrorPage( new ErrorPage(location));
+                    log.debug("Adding default error location: " + location);
+                } else {
+                    servletBuilder.addErrorPage( new ErrorPage(location, errorCode));
+                    log.debug("Adding "+errorCode+" error code location: " + location);
+                }
+            }
+        }
+
         //someday we may wanna listen for changes
         /*
         servletBuilder.getResourceManager().registerResourceChangeListener(new ResourceChangeListener() {
@@ -514,7 +528,6 @@ public class Server {
             log.info("Enabling AJP protocol on port " + serverOptions.getAJPPort());
             serverBuilder.addAjpListener(serverOptions.getAJPPort(), host);
         }
-
 //        final PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
 //                .addPrefixPath(contextPath, servletHandler);
 

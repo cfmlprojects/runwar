@@ -177,7 +177,7 @@ public class CommandLineHandler {
         options.addOption( OptionBuilder
                 .withLongOpt( "dirs" )
                 .withDescription( "List of external directories to serve from" )
-                .hasArg().withArgName("path,path,...")
+                .hasArg().withArgName("path,path,... or alias=path,..")
                 .create("d") );
         
         options.addOption( OptionBuilder
@@ -366,6 +366,12 @@ public class CommandLineHandler {
                 .withDescription( "JVM arguments for background process." )
                 .hasArg().withArgName("option=value,option=value")
                 .create("jvmargs") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "error-pages" )
+                .withDescription( "List of error codes and locations, no code or '1' will set the default" )
+                .hasArg().withArgName("404=/location,500=/location")
+                .create("errorpages") );
         
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
@@ -629,6 +635,9 @@ public class CommandLineHandler {
                     jvmArgs.add(arg);
                 }
                 serverOptions.setJVMArgs(jvmArgs);
+            }
+            if (line.hasOption("errorpages")) {
+                serverOptions.setErrorPages(line.getOptionValue("errorpages"));
             }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {
