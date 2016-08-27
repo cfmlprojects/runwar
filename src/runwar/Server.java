@@ -687,11 +687,12 @@ public class Server {
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
             }
-            log.debug("URL rewriting config file: " + urlRewriteFile);
+            String rewriteformat = serverOptions.isURLRewriteApacheFormat() ? "modRewrite-style" : "XML";
+            log.debug(rewriteformat + " rewrite config file: " + urlRewriteFile);
             servletBuilder.addFilter(new FilterInfo("UrlRewriteFilter", rewriteFilter)
                 .addInitParam("confPath", urlRewriteFile)
                 .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
-                .addInitParam("modRewriteConf", "false"));
+                .addInitParam("modRewriteConf", Boolean.toString(serverOptions.isURLRewriteApacheFormat())));
             servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
         } else {
             log.debug("URL rewriting is disabled");            
