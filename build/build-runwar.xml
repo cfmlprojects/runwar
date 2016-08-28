@@ -216,7 +216,7 @@
     <property name="gpg.cfmlprojects.pass" value="" />
 
     <pom-gpgsign-and-deploy repoId="sonatype.repo" pomid="runwar.c.pom" file="${dist.dir}/pom.xml" artifact="${runwar.jar.file}"  packaging="jar" groupId="org.cfmlprojects"
-      artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="${mvn.type}"
+      artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="${mvn.type}" deletesnapshots="false"
       repoUser="${sonatype.cfmlprojects.user}" repoPassword="${sonatype.cfmlprojects.pass}" repoUrl="${sonatype.repo.url}"
       secring="${gpg.cfmlprojects.secring}" pubring="${gpg.cfmlprojects.pubring}" keyid="${gpg.cfmlprojects.signkeyid}" keypass="${gpg.cfmlprojects.pass}"
       dir="${dist.dir}">
