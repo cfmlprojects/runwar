@@ -1,5 +1,6 @@
 package runwar;
 
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.Toolkit;
 
@@ -271,8 +272,12 @@ public class LaunchUtil {
 //        SystemTray.COMPATIBILITY_MODE = true;
         SystemTray.FORCE_GTK2 = true;
 ////        System.setProperty("SWT_GTK3", "0");
+        if ( GraphicsEnvironment.isHeadless() ) {
+            log.debug("Server is in headless mode, System Tray is not supported");
+            return;
+        }
         systemTray = SystemTray.getSystemTray();
-        if ( systemTray == null) {
+        if ( systemTray == null || GraphicsEnvironment.isHeadless()) {
             log.warn("System Tray is not supported");
             return;
         }
