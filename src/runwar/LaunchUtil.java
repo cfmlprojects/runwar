@@ -277,7 +277,7 @@ public class LaunchUtil {
             return;
         }
         systemTray = SystemTray.getSystemTray();
-        if ( systemTray == null || GraphicsEnvironment.isHeadless()) {
+        if ( systemTray == null ) {
             log.warn("System Tray is not supported");
             return;
         }
