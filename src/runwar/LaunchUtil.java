@@ -276,7 +276,11 @@ public class LaunchUtil {
             log.debug("Server is in headless mode, System Tray is not supported");
             return;
         }
-        systemTray = SystemTray.getSystemTray();
+        try{
+            systemTray = SystemTray.getSystemTray();
+        } catch (java.lang.ExceptionInInitializerError e) {
+            log.debug(e);
+        }
         if ( systemTray == null ) {
             log.warn("System Tray is not supported");
             return;
