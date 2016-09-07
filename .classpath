@@ -21,9 +21,9 @@
 	<classpathentry kind="lib" path="/workspace/runwar/lib/xnio-api-3.3.6.Final.jar"/>
 	<classpathentry kind="lib" path="/workspace/runwar/lib/xnio-nio-3.3.6.Final.jar"/>
 	<classpathentry kind="lib" path="lib/jopt-simple-5.0-beta-1.jar"/>
-	<classpathentry kind="lib" path="lib/Notify-2.14.jar"/>
+	<classpathentry kind="lib" path="lib/Notify-2.15.jar" sourcepath="/home/valliant/Downloads/Notify-2.15-sources.jar"/>
 	<classpathentry kind="lib" path="lib/SystemTray-2.20.jar" sourcepath="/home/valliant/.m2/repository/com/dorkbox/SystemTray/2.20/SystemTray-2.20-sources.jar"/>
-	<classpathentry kind="lib" path="lib/Notify-Dorkbox-Util-2.14.jar"/>
+	<classpathentry kind="lib" path="lib/Notify-Dorkbox-Util-2.15.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.9.jar"/>
 	<classpathentry kind="lib" path="lib/jna-4.2.1.jar"/>
 	<classpathentry kind="lib" path="lib/ObjectPool-2.6.jar"/>
