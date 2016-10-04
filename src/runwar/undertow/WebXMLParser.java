@@ -9,6 +9,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 
 import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.ErrorPage;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.MimeMapping;
@@ -357,6 +358,32 @@ public class WebXMLParser {
 					// add the type
 					info.addMimeMapping(new MimeMapping(extention,mimeType));
 				}
+			}
+			// do error pages
+			listOfElements = doc.getElementsByTagName("error-page");
+			totalElements = listOfElements.getLength();
+			log.debugf("Total no of error-pages: %s", totalElements);
+			for (int i = 0; i < totalElements; i++) {
+			    Node inNode = listOfElements.item(i);
+			    if (inNode.getNodeType() == Node.ELEMENT_NODE) {
+			        Element inElmnt = (Element) inNode;
+			        NodeList inValElmntLst = inElmnt.getElementsByTagName("location");
+			        Element inValElmnt = (Element) inValElmntLst.item(0);
+			        NodeList inVal = inValElmnt.getChildNodes();
+			        String location = (inVal.item(0)).getNodeValue().trim();
+			        
+			        NodeList inNmElmntLst = inElmnt.getElementsByTagName("error-code");
+			        Element inNmElmnt = (Element) inNmElmntLst.item(0);
+			        if(inNmElmnt != null) {
+			            NodeList inNm = inNmElmnt.getChildNodes();
+			            int errorCode = Integer.parseInt((inNm.item(0)).getNodeValue().trim());
+			            log.debug("error-code: " + errorCode + " location: "+location);
+			            info.addErrorPage( new ErrorPage(location,errorCode));
+			        } else {
+			            log.debug("default error location: "+location);
+			            info.addErrorPage( new ErrorPage(location));			            
+			        }
+			    }
 			}
 			// do display name
 			NodeList dNmElmntLst = doc.getElementsByTagName("display-name");

@@ -18,11 +18,11 @@ public class MariaDB4jManager {
     private Object server;
     private String username, password, dbName = null;
     private int port;
-    private URLClassLoader classLoader;
+    private ClassLoader classLoader;
     private static Logger log = Logger.getLogger("RunwarLogger");
     volatile boolean isShuttingDown;
 
-    public MariaDB4jManager(URLClassLoader _classLoader) {
+    public MariaDB4jManager(ClassLoader _classLoader) {
         classLoader = _classLoader;
     }
 

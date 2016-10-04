@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -50,9 +51,12 @@ import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
+import io.undertow.server.handlers.resource.ResourceChangeEvent;
+import io.undertow.server.handlers.resource.ResourceChangeListener;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.ErrorPage;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
@@ -79,7 +83,7 @@ public class Server {
     private String PID;
     private String serverState = ServerState.STOPPED;
 
-    private static URLClassLoader _classLoader;
+    private static ClassLoader _classLoader;
 
     private String serverName = "default";
     private File statusFile = null;
@@ -106,7 +110,7 @@ public class Server {
     //          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
     //          Thread.currentThread().setContextClassLoader(_classLoader);
             } else {
-                _classLoader = new URLClassLoader(null);
+                _classLoader = Thread.currentThread().getContextClassLoader();
             }
         }
     }
@@ -115,7 +119,7 @@ public class Server {
         _classLoader = classLoader;
     }
     
-    public static URLClassLoader getClassLoader(){
+    public static ClassLoader getClassLoader(){
         return _classLoader;
     }
     
@@ -174,7 +178,7 @@ public class Server {
             argarray.add("false");
             int launchTimeout = serverOptions.getLaunchTimeout();
             LaunchUtil.relaunchAsBackgroundProcess(launchTimeout, argarray.toArray(new String[argarray.size()]),
-                    processName);
+                    serverOptions.getJVMArgs(), processName);
             setServerState(ServerState.STARTED_BACKGROUND);
             // just in case
             Thread.sleep(200);
@@ -431,22 +435,62 @@ public class Server {
         });
         */
 
+        if(cfengine.equals("adobe")){
+            String cfclassesDir = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
+            if(cfclassesDir == null || cfclassesDir.startsWith("/WEB-INF")){
+                // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
+                cfclassesDir = new File(webinf, "/cfclasses").getAbsolutePath();
+                log.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
+                servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
+            }
+        }
+
         configureURLRewrite(servletBuilder, webinf);
 
         if (serverOptions.isCacheEnabled()) {
             addCacheHandler(servletBuilder);
+        } else {
+            log.debug("File cache is disabled");
         }
 
         if (serverOptions.isCustomHTTPStatusEnabled()) {
             servletBuilder.setSendCustomReasonPhraseOnError(true);
         }
 
+        if(serverOptions.getErrorPages() != null){
+            for(Integer errorCode : serverOptions.getErrorPages().keySet()) {
+                String location = serverOptions.getErrorPages().get(errorCode);
+                if(errorCode == 1) {
+                    servletBuilder.addErrorPage( new ErrorPage(location));
+                    log.debug("Adding default error location: " + location);
+                } else {
+                    servletBuilder.addErrorPage( new ErrorPage(location, errorCode));
+                    log.debug("Adding "+errorCode+" error code location: " + location);
+                }
+            }
+        }
+
+        //someday we may wanna listen for changes
+        /*
+        servletBuilder.getResourceManager().registerResourceChangeListener(new ResourceChangeListener() {
+            @Override
+            public void handleChanges(Collection<ResourceChangeEvent> changes) {
+                for(ResourceChangeEvent change : changes) {
+                    log.info("CHANGE");
+                    log.info(change.getResource());
+                    log.info(change.getType().name());
+                    manager.getDeployment().getServletPaths().invalidate();
+                }
+            }
+        });
+        */
+
         // this prevents us from having to use our own ResourceHandler (directory listing, welcome files, see below) and error handler for now
         servletBuilder.addServlet(new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
             .addInitParam("directory-listing", Boolean.toString(serverOptions.isDirectoryListingEnabled())));
 
         manager = defaultContainer().addDeployment(servletBuilder);
-
+        
         manager.deploy();
         HttpHandler servletHandler = manager.start();
         log.debug("started servlet deployment manager");
@@ -464,7 +508,7 @@ public class Server {
         if(serverOptions.isEnableHTTP()) {
             serverBuilder.addHttpListener(portNumber, host);
         }
-
+        
         if (serverOptions.isEnableSSL()) {
             int sslPort = serverOptions.getSSLPort();
             serverBuilder.setDirectBuffers(true);
@@ -484,7 +528,6 @@ public class Server {
             log.info("Enabling AJP protocol on port " + serverOptions.getAJPPort());
             serverBuilder.addAjpListener(serverOptions.getAJPPort(), host);
         }
-
 //        final PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
 //                .addPrefixPath(contextPath, servletHandler);
 
@@ -493,6 +536,11 @@ public class Server {
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
+                }
+                // clear any welcome-file info cached after initial request
+                if (serverOptions.isDirectoryListingEnabled() && exchange.getRequestPath().endsWith("/")) {
+                    //log.trace("*** Resetting servlet path info");
+                    manager.getDeployment().getServletPaths().invalidate();
                 }
                 super.handleRequest(exchange);
             }
@@ -531,7 +579,6 @@ public class Server {
         if (serverOptions.isKeepRequestLog()) {
             log.error("request log currently unsupported");
         }
-        
         // start the stop monitor thread
         undertow = serverBuilder.build();
         Thread monitor = new MonitorThread(stoppassword);
@@ -640,11 +687,12 @@ public class Server {
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
             }
-            log.debug("URL rewriting config file: " + urlRewriteFile);
+            String rewriteformat = serverOptions.isURLRewriteApacheFormat() ? "modRewrite-style" : "XML";
+            log.debug(rewriteformat + " rewrite config file: " + urlRewriteFile);
             servletBuilder.addFilter(new FilterInfo("UrlRewriteFilter", rewriteFilter)
                 .addInitParam("confPath", urlRewriteFile)
                 .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
-                .addInitParam("modRewriteConf", "false"));
+                .addInitParam("modRewriteConf", Boolean.toString(serverOptions.isURLRewriteApacheFormat())));
             servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
         } else {
             log.debug("URL rewriting is disabled");            
@@ -715,7 +763,11 @@ public class Server {
             if (".".equals(path) || "..".equals(path))
                 continue;
 
-            File file = new File(path);
+            File file = new File(path); 
+            // Ignore non-existent dirs
+            if( !file.exists() ) {
+                continue;
+            }
             for (File item : file.listFiles()) {
                 String fileName = item.getAbsolutePath();
                 if (!item.isDirectory()) {

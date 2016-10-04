@@ -17,9 +17,12 @@ public class MappedResourceManager extends FileResourceManager {
     private HashMap<String, File> aliasMap = new HashMap<String, File>();
     private File[] cfmlDirsFiles;
     private File WEBINF = null;
+    
+    private final boolean allowResourceChangeListeners;
 
     public MappedResourceManager(File base, long transferMinSize, String cfmlDirList) {
         super(base, transferMinSize);
+        this.allowResourceChangeListeners = true;
         processMappings(cfmlDirList);
     }
 
@@ -57,7 +60,7 @@ public class MappedResourceManager extends FileResourceManager {
     };
     
     public Resource getResource(String path) {
-        // log.debug("* requested:" + path);
+        log.trace("* requested:" + path);
         File reqFile = null;
         try {
             if (WEBINF != null && (path.startsWith("/WEB-INF") || path.startsWith("./WEB-INF"))) {
@@ -74,11 +77,11 @@ public class MappedResourceManager extends FileResourceManager {
                 if (!reqFile.exists()) {
                     reqFile = getAliasedFile(aliasMap, path);
                 }
-                if (reqFile != null) {
+                if (reqFile == null) {
                     for (int x = 0; x < cfmlDirsFiles.length; x++) {
                         String absPath = cfmlDirsFiles[x].getCanonicalPath();
                         reqFile = new File(cfmlDirsFiles[x], path.replace(absPath, ""));
-                        // log.debugf("checking:%s = %s",absPath,reqFile.getAbsolutePath());
+                        log.tracef("checking:%s = %s",absPath,reqFile.getAbsolutePath());
                         if (reqFile.exists()) {
                             break;
                         }
@@ -86,10 +89,10 @@ public class MappedResourceManager extends FileResourceManager {
                 }
             }
             if (reqFile != null && reqFile.exists()) {
-                // log.debugf("path mapped to:%s", reqFile.getAbsolutePath());
+                log.tracef("path mapped to:%s", reqFile.getAbsolutePath());
                 return new FileResource(reqFile, this, path);
             } else {
-                // log.debugf("no mapped resoruce for:%s",path);
+                log.tracef("no mapped resoruce for:%s",path);
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {
@@ -121,5 +124,10 @@ public class MappedResourceManager extends FileResourceManager {
     
     public HashMap<String, File> getAliasMap() {
         return aliasMap;
+    }
+    
+    @Override
+    public boolean isResourceChangeListenerSupported() {
+        return true;
     }
 }

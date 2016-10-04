@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import runwar.LaunchUtil;
 import runwar.Server;
@@ -277,6 +278,17 @@ public class ConfigParser {
             }
             if (serverConfig.hasOption("mariadb4jimport") && serverConfig.getOptionValue("mariadb4jimport").length() > 0) {
                 serverOptions.setMariaDB4jImportSQLFile(new File(serverConfig.getOptionValue("mariadb4jimport")));
+            }
+            if (serverConfig.hasOption("jvmargs") && serverConfig.getOptionValue("jvmargs").length() > 0) {
+                List<String> jvmArgs = new ArrayList<String>();
+                String[] jvmArgArray = serverConfig.getOptionValue("jvmargs").split(";");
+                for(String arg : jvmArgArray) {
+                    jvmArgs.add(arg);
+                }
+                serverOptions.setJVMArgs(jvmArgs);
+            }
+            if (serverConfig.hasOption("errorpages")) {
+                serverOptions.setErrorPages(serverConfig.getOptionValue("errorpages"));
             }
 
             if(serverOptions.getLoglevel().equals("DEBUG")) {
