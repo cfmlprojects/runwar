@@ -433,12 +433,17 @@ public class ServerOptions {
         String[] pageList = errorpages.split(",");
         for (int x = 0; x < pageList.length; x++) {
             String[] splitted = pageList[x].split("=");
+            String location = "";
+            int errorCode = 1;
             if (splitted.length == 1) {
-                errorPages.put(1,pageList[x].trim());
+                location = pageList[x].trim();
             } else {
-                int errorCode = Integer.parseInt(splitted[0].trim());
-                errorPages.put(errorCode, splitted[1].trim());
+                errorCode = Integer.parseInt(splitted[0].trim());
+                location = splitted[1].trim();
             }
+            //TODO: verify we don't need to do anything different if the WAR context is something other than "/".
+            location = location.startsWith("/") ? location : "/" + location;
+            errorPages.put(errorCode,location);
         }
         return this;
     }
