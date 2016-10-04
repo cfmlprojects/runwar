@@ -763,7 +763,11 @@ public class Server {
             if (".".equals(path) || "..".equals(path))
                 continue;
 
-            File file = new File(path);
+            File file = new File(path); 
+            // Ignore non-existent dirs
+            if( !file.exists() ) {
+                continue;
+            }
             for (File item : file.listFiles()) {
                 String fileName = item.getAbsolutePath();
                 if (!item.isDirectory()) {
