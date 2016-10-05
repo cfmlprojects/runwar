@@ -62,6 +62,7 @@ public class LaunchUtil {
     private static final int KB = 1024;
     private static SystemTray systemTray;
     private static Notify notify;
+    private static String processName;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
 
@@ -271,6 +272,9 @@ public class LaunchUtil {
     public static void hookTray(Server server) {
 //        SystemTray.COMPATIBILITY_MODE = true;
         SystemTray.FORCE_GTK2 = true;
+//        SystemTray.FORCE_LINUX_TYPE = SystemTray.LINUX_GTK;
+//        SystemTray.FORCE_SWT = true;
+        processName = server.getServerOptions().getProcessName();
 ////        System.setProperty("SWT_GTK3", "0");
         if ( GraphicsEnvironment.isHeadless() ) {
             log.debug("Server is in headless mode, System Tray is not supported");
@@ -295,7 +299,9 @@ public class LaunchUtil {
         String PID = server.getPID();
 
         setIconImage(iconImage);
-        systemTray.setStatus( processName + " server on " + host + ":" + portNumber + " PID:" + PID );
+        final String statusText = processName + " server on " + host + ":" + portNumber + " PID:" + PID;
+        systemTray.setStatus( statusText );
+        systemTray.setTooltipText( statusText );
 
         JSONArray menuItems;
 
@@ -441,7 +447,7 @@ public class LaunchUtil {
 
         @Override
         public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
-            displayMessage("Info", "Opening browser");
+            displayMessage("Info", "Opening browser to " + url);
             openURL(url);
         }
     }
@@ -468,34 +474,69 @@ public class LaunchUtil {
         }
     }
 
-    public static void displayMessage(String title, String text) {
-        try{
-            Class<?> arl = Server.class.getClassLoader().loadClass("dorkbox.util.swing.ActiveRenderLoop");
-            arl.getClass().getName();
-            notify = Notify
-            .create()
-            .title(title)
-            .text(text)
-            .hideAfter(50000).position(Pos.TOP_RIGHT)
-            // .setScreen(0)
-            .darkStyle().shake(1300, 4)
-            // .shake(1300, 10)
-            // .hideCloseButton()
-            .onAction(new ActionHandler<Notify>() {
-                @Override
-                public void handle(final Notify arg0) {
-                    System.out.println("Notification clicked on!");
-                }
-            });
-            if(title.equals("Error")) {
-                notify.showError();
-            } else if (title.equals("Warning")) {
-                notify.showWarning();
-            } else {
+    public enum MessageType {
+        INFO, WARNING, ERROR
+    }
+
+    public static void displayMessage(String type, String text) {
+        if(type.toLowerCase().startsWith("warn")) {
+            displayMessage(processName, text, MessageType.WARNING);
+        } else if (type.toLowerCase().startsWith("error")) {
+            displayMessage(processName, text, MessageType.ERROR);
+        } else {
+            displayMessage(processName, text, MessageType.INFO);
+        }
+    }
+    
+    public static void printMessage(String title, String text, MessageType type) {
+        if(type == MessageType.ERROR) {
+            System.err.println(title + " " + text);
+        } else {
+            System.out.println(title + " " + text);
+        }
+    }
+    
+    public static void displayMessage(String title, String text, MessageType type) {
+        if(GraphicsEnvironment.isHeadless()) {
+            printMessage(title, text, type);
+            return;
+        }
+        try {
+            notify = Notify.create()
+                .title(title)
+                .text(text)
+                .hideAfter(5000)
+                .position(Pos.BOTTOM_RIGHT)
+                // .setScreen(0)
+                .darkStyle()
+                //.shake(1300, 10)
+                // .hideCloseButton()
+                .onAction(new ActionHandler<Notify>() {
+                    @Override
+                    public void handle(final Notify arg0) {
+//                        System.out.println("Notification clicked on!");
+                    }
+                });
+            switch (type) {
+            case INFO:
                 notify.showInformation();
+                break;
+
+            case WARNING:
+                notify.showWarning();
+                break;
+
+            case ERROR:
+                notify.showError();
+                break;
+
+            default:
+                notify.show();
+                break;
             }
-        } catch (java.lang.ClassNotFoundException e) {
-            System.out.println(text);
+        } catch (Exception e) {
+            printMessage(title, text, type);
+            //log.error(e);
         }
     }
 
