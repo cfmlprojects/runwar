@@ -276,18 +276,18 @@ public class Server {
         }
         String libDirs = serverOptions.getLibDirs();
         URL jarURL = serverOptions.getJarURL();
-        if (warFile.isDirectory() && webinf.exists()) {
+        // If this folder is a proper war, use it's lib folder instead of the passed libDirs
+        if (warFile.isDirectory() && new File(webinf, "/web.xml").exists()) {
             libDirs = webinf.getAbsolutePath() + "/lib";
             log.info("Using existing WEB-INF/lib of: " + libDirs);
         }
 
         List<URL> cp = new ArrayList<URL>();
-        if (libDirs != null || jarURL != null) {
-            if (libDirs != null)
-                cp.addAll(getJarList(libDirs));
-            if (jarURL != null)
-                cp.add(jarURL);
-        }
+        if (libDirs != null)
+            cp.addAll(getJarList(libDirs));
+        if (jarURL != null)
+            cp.add(jarURL);
+        
         if(serverOptions.getMariaDB4jImportSQLFile() != null){
             System.out.println("ADDN"+serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
             cp.add(serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
@@ -344,7 +344,7 @@ public class Server {
             System.setProperty("java.library.path", cfusionDir + "/lib");
         }
 
-        if(warFile.isDirectory() && !webinf.exists()) {
+        if(warFile.isDirectory() && !new File(webinf, "/web.xml").exists()) {
             if (cfmlServletConfigWebDir == null) {
                 File webConfigDirFile = new File(getThisJarLocation().getParentFile(), "engine/cfml/server/cfml-web/");
                 cfmlServletConfigWebDir = webConfigDirFile.getPath() + "/" + serverName;
