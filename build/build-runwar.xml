@@ -270,7 +270,7 @@
     <dependency groupId="com.dorkbox" artifactId="SystemTray" version="2.21" unzip="false" type="jar" dest="${runwar.lib.dir}" />
     <dependency groupId="com.dorkbox" artifactId="Notify" version="2.17" unzip="false" type="jar" dest="${runwar.lib.dir}" />
  -->
-    <dependency groupId="org.cfmlprojects" artifactId="SystemTray" version="2.22" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+    <dependency groupId="org.cfmlprojects" artifactId="SystemTray" version="2.24" unzip="false" type="jar" dest="${runwar.lib.dir}" />
     <dependency groupId="org.cfmlprojects" artifactId="Notify" version="2.18" unzip="false" type="jar" dest="${runwar.lib.dir}" />
   </target>
 

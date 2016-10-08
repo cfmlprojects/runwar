@@ -655,7 +655,6 @@ public class Server {
     public void stopServer() {
         int exitCode = 0;
         try{
-            LaunchUtil.displayMessage("info", "Stopping server");
             System.out.println();
             System.out.println(bar);
             System.out.println("*** stopping server");

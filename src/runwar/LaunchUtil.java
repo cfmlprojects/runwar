@@ -33,8 +33,10 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -300,40 +302,113 @@ public class LaunchUtil {
 
         setIconImage(iconImage);
         final String statusText = processName + " server on " + host + ":" + portNumber + " PID:" + PID;
-        systemTray.setStatus( statusText );
-        systemTray.setTooltipText( statusText );
+        
+        HashMap<String,String> variableMap = new HashMap<String,String>();
+        variableMap.put("defaultTitle", statusText);
+        variableMap.put("runwar.port", Integer.toString(portNumber));
+        variableMap.put("runwar.processName", processName);
+        variableMap.put("runwar.host", host);
+        variableMap.put("runwar.stopsocket", Integer.toString(stopSocket));
 
-        JSONArray menuItems;
-
-        final String defaultMenu = "["
+        final String defaultMenu = "{\"title\" : \"${defaultTitle}\", \"items\": ["
                 + "{label:\"Stop Server (${runwar.processName})\", action:\"stopserver\"}"
                 + ",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
-                + "]";
+                + "]}";
 
+        JSONObject menu;
         if (serverOptions.getTrayConfig() != null) {
-            menuItems = (JSONArray) JSONValue.parse(readFile(serverOptions.getTrayConfig()));
+            menu = getTrayConfig( readFile( serverOptions.getTrayConfig() ), statusText, variableMap );
         } else {
-            menuItems = (JSONArray) JSONValue.parse(getResourceAsString("runwar/taskbar.json"));
+            menu = getTrayConfig( getResourceAsString("runwar/taskbar.json"), statusText, variableMap );
         }
-        if (menuItems == null) {
+        if (menu == null) {
             log.error("Could not load taskbar properties");
-            menuItems = (JSONArray) JSONValue.parse(defaultMenu);
+            menu = getTrayConfig( defaultMenu, statusText, variableMap );
         }
-
-        for (Object ob : menuItems) {
+        
+        systemTray.setStatus( menu.get("title").toString() );
+        systemTray.setTooltipText( menu.get("tooltip").toString() );
+        
+        for (Object ob : (JSONArray) menu.get("items")) {
             JSONObject itemInfo = (JSONObject) ob;
-            String label = replaceMenuTokens(itemInfo.get("label").toString(), processName, host, portNumber, stopSocket);
-            String action = itemInfo.get("action").toString();
-
-            if (action.toLowerCase().equals("stopserver")) {
-                systemTray.addMenuEntry(label, new ExitAction());
-            } else if (action.toLowerCase().equals("openbrowser")) {
-                String url = replaceMenuTokens( itemInfo.get("url").toString(), processName, host, portNumber, stopSocket );
-                systemTray.addMenuEntry(label, new OpenBrowserAction(url));
-            } else {
-                log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
+            InputStream is = null;
+            String label = itemInfo.get("label").toString();
+            if(itemInfo.get("image") != null) {
+                is = getImageInputStream(itemInfo.get("image").toString());
+            }
+            String imgHash = Integer.toString(label.hashCode());
+            if(itemInfo.get("disabled") != null && itemInfo.get("disabled").toString().trim().toLowerCase() == "true"){
+                systemTray.addMenuEntry(label, imgHash, is, null);
+                systemTray.updateMenuEntry_Enabled(label,false);
+            }
+            else if(itemInfo.get("action") != null) {
+                String action = itemInfo.get("action").toString();
+                if (action.toLowerCase().equals("stopserver")) {
+                    systemTray.addMenuEntry(label, imgHash, is, new ExitAction());
+                } else if (action.toLowerCase().equals("openbrowser")) {
+                    String url = itemInfo.get("url").toString();
+                    systemTray.addMenuEntry(label, imgHash, is, new OpenBrowserAction(url));
+                } else {
+                    log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
+                }
             }
         }
+    }
+    
+    public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {
+        JSONObject config;
+        JSONArray loadItems;
+        JSONArray items = new JSONArray();
+        if(jsonText == null) {
+            return null;
+        }
+        Object menuObject = JSONValue.parse(jsonText);
+        if(menuObject instanceof JSONArray) {
+            config = new JSONObject();
+            loadItems = (JSONArray) menuObject;
+        } else {
+            config = (JSONObject) JSONValue.parse(jsonText);
+            loadItems = (JSONArray) config.get("items");
+        }
+        config.put("title", config.get("title") != null ? config.get("title").toString() : defaultTitle );
+        config.put("title", replaceMenuTokens(config.get("title").toString(),variableMap));
+        config.put("tooltip", config.get("tooltip") != null ? config.get("tooltip").toString() : defaultTitle );
+        config.put("tooltip", replaceMenuTokens(config.get("tooltip").toString(),variableMap));
+        if (loadItems == null) {
+            loadItems = (JSONArray) JSONValue.parse("[]");
+        }
+
+        for (Object ob : loadItems) {
+            JSONObject itemInfo = (JSONObject) ob;
+            if(itemInfo.get("label") == null) {
+                log.error("No label for menu item: " + itemInfo.toJSONString());
+                continue;
+            }
+            String label = replaceMenuTokens(itemInfo.get("label").toString(), variableMap);
+            itemInfo.put("label",label);
+            if(itemInfo.get("action") != null) {
+                String action = itemInfo.get("action").toString();
+                if (action.toLowerCase().equals("stopserver") && action.toLowerCase().equals("openbrowser")) {
+                    log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
+                    itemInfo.put("action",null);
+                }
+            }
+            if(itemInfo.get("url") != null) {
+                itemInfo.put("action", itemInfo.get("action") != null ? itemInfo.get("action") : "openbrowser");
+                itemInfo.put("url", replaceMenuTokens( itemInfo.get("url").toString(), variableMap ));
+            }
+            items.add(itemInfo);
+        }
+        config.put("items",items);
+
+        return config;
+    }
+
+    private static String replaceMenuTokens(String string, HashMap<String,String> variableMap) {
+        for(String key : variableMap.keySet() ) {
+            string = string.replace("${" + key + "}", variableMap.get(key) );
+        }
+        return string;
     }
 
     public static void unhookTray() {
@@ -430,13 +505,44 @@ public class LaunchUtil {
         systemTray.setIcon( Start.class.getResource("/runwar/icon.png") );
     }
 
-    private static String replaceMenuTokens(String label, String processName, String host, int portNumber,
-            int stopSocket) {
-        label = label.replaceAll("\\$\\{runwar.port\\}", Integer.toString(portNumber))
-                .replaceAll("\\$\\{runwar.processName\\}", processName).replaceAll("\\$\\{runwar.host\\}", host)
-                .replaceAll("\\$\\{runwar.stopsocket\\}", Integer.toString(stopSocket));
-        return label;
+    public static InputStream getImageInputStream(String iconImage) {
+        if (iconImage != null && iconImage.length() != 0) {
+            iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
+            log.debug("trying to load icon: " + iconImage);
+            if (iconImage.contains("!")) {
+                String[] zip = iconImage.split("!");
+                try {
+                    ZipFile zipFile = new ZipFile(zip[0]);
+                    ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
+                    return zipFile.getInputStream(zipEntry);
+                } catch (IOException e2) {
+                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
+                }
+            } else if (new File(iconImage).exists()) {
+                try {
+                    return new FileInputStream(iconImage);
+                } catch (FileNotFoundException e) {
+                    log.debug(e);
+                }
+            } else {
+                log.debug("trying parent loader for image: " + iconImage);
+                URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
+                if (imageURL == null) {
+                    log.debug("trying loader for image: " + iconImage);
+                    imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
+                }
+                if (imageURL != null) {
+                    try {
+                        return imageURL.openStream();
+                    } catch (IOException e) {
+                        log.debug(e);
+                    }
+                }
+            }
+        }
+        return null;
     }
+
 
     private static class OpenBrowserAction implements SystemTrayMenuAction {
         private String url;
