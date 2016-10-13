@@ -1,4 +1,9 @@
-[
-{"label":"Stop Server (${runwar.processName})", "action":"stopserver"}
-,{"label":"Open Browser", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/"}
-]
+{ 
+"title" : "${defaultTitle}",
+"tooltip" : "${defaultTitle}",
+"items":
+	[
+	{"label":"Stop Server (${runwar.processName})", "action":"stopserver", "image":"resources/dialog-error.png"}
+	,{"label":"Open Browser", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/","image":"resources/dialog-information.png"}
+	]
+}

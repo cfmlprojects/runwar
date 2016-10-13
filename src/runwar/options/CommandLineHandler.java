@@ -636,7 +636,7 @@ public class CommandLineHandler {
                 }
                 serverOptions.setJVMArgs(jvmArgs);
             }
-            if (line.hasOption("errorpages")) {
+            if (line.hasOption("errorpages") && line.getOptionValue("errorpages").length() > 0) {
                 serverOptions.setErrorPages(line.getOptionValue("errorpages"));
             }
             if(serverOptions.getLoglevel().equals("DEBUG")) {

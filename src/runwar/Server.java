@@ -29,6 +29,7 @@ import java.awt.Image;
 import javax.net.SocketFactory;
 import javax.servlet.DispatcherType;
 
+import runwar.LaunchUtil.MessageType;
 import runwar.logging.Logger;
 import runwar.logging.LogSubverter;
 import runwar.mariadb4j.MariaDB4jManager;
@@ -40,6 +41,7 @@ import runwar.util.TeeOutputStream;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
+import io.undertow.io.Sender;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
@@ -51,13 +53,12 @@ import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
-import io.undertow.server.handlers.resource.ResourceChangeEvent;
-import io.undertow.server.handlers.resource.ResourceChangeListener;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ErrorPage;
 import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.LoggingExceptionHandler;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
@@ -489,6 +490,8 @@ public class Server {
         servletBuilder.addServlet(new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
             .addInitParam("directory-listing", Boolean.toString(serverOptions.isDirectoryListingEnabled())));
 
+//        servletBuilder.setExceptionHandler(LoggingExceptionHandler.DEFAULT);
+
         manager = defaultContainer().addDeployment(servletBuilder);
         
         manager.deploy();
@@ -537,6 +540,7 @@ public class Server {
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
                 }
+                //log.trace("pathhandler path:" + exchange.getRequestPath() + " querystring:" +exchange.getQueryString());
                 // clear any welcome-file info cached after initial request
                 if (serverOptions.isDirectoryListingEnabled() && exchange.getRequestPath().endsWith("/")) {
                     //log.trace("*** Resetting servlet path info");
@@ -558,9 +562,15 @@ public class Server {
             final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size[5]")))
                     .setNext(pathHandler);
+/*
             serverBuilder.setHandler(handler);
+ */
+            HttpHandler errPageHandler = new ErrorHandler(handler);
+            serverBuilder.setHandler(errPageHandler);
         } else {
-            serverBuilder.setHandler(pathHandler);
+//            serverBuilder.setHandler(pathHandler);
+            HttpHandler errPageHandler = new ErrorHandler(pathHandler);
+            serverBuilder.setHandler(errPageHandler);
         }
 
         try {
@@ -594,8 +604,20 @@ public class Server {
         // if this println changes be sure to update the LaunchUtil so it will know success
         String msg = "Server is up - http-port:" + portNumber + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         log.debug(msg);
+        LaunchUtil.displayMessage("info", msg);
         System.out.println(msg);
         setServerState(ServerState.STARTED);
+//        ConfigWebAdmin admin = new ConfigWebAdmin(lucee.runtime.engine.ThreadLocalPageContext.getConfig(), null);
+//        admin._updateMapping(virtual, physical, archive, primary, inspect, toplevel);
+//        admin._store();
+
+//        Class<?> appClass = _classLoader.loadClass("lucee.loader.engine.CFMLEngineFactory");
+//        Method getAppMethod = appClass.getMethod("getInstance");
+//        Object appInstance = getAppMethod.invoke(null);
+//        Object webs = appInstance.getClass().getMethod("getCFMLEngineFactory").invoke(appInstance, null);
+//        Object ef = webs.getClass().getMethod("getInstance").invoke(webs, null);
+//
+//        System.out.println(appInstance.toString());
 
         if (serverOptions.isMariaDB4jEnabled()) {
             try {

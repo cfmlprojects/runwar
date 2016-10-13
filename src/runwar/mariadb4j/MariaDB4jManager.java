@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
+
+import runwar.LaunchUtil;
 import runwar.logging.Logger;
 import static runwar.util.Reflection.invoke;
 import static runwar.util.Reflection.method;
@@ -167,6 +169,7 @@ public class MariaDB4jManager {
 
     public void stop() throws InterruptedException {
         isShuttingDown = true;
+        LaunchUtil.displayMessage("info", "Stopping embedded mariadb server on port " + port + " ...");
         System.out.println("*** Stopping MariaDB server on port " + port + " ...");
         try {
             invoke(method(server.getClass(), "stop"), server);
