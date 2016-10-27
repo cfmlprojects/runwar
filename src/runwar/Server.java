@@ -89,6 +89,8 @@ public class Server {
     private String serverName = "default";
     private File statusFile = null;
     public static final String bar = "******************************************************************************";
+    private String[] welcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
+            "default.html", "default.htm" };
     
     public Server() {
     }
@@ -163,6 +165,7 @@ public class Server {
         String loglevel = serverOptions.getLoglevel();
         char[] stoppassword = serverOptions.getStopPassword();
         Long transferMinSize= serverOptions.getTransferMinSize();
+        boolean ignoreWelcomePages = false;
 
         if (serverOptions.isBackground()) {
             setServerState(ServerState.STARTING_BACKGROUND);
@@ -297,6 +300,10 @@ public class Server {
         initClassLoader(cp);
         
         mariadb4jManager = new MariaDB4jManager(_classLoader);
+        
+        if(serverOptions.getWelcomeFiles() != null && serverOptions.getWelcomeFiles().length > 0) {
+            ignoreWelcomePages = true;
+        }
 
         log.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
 
@@ -373,7 +380,7 @@ public class Server {
             if (webXmlFile != null) {
                 log.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
                 servletBuilder.setClassLoader(_classLoader);
-                WebXMLParser.parseWebXml(webXmlFile, servletBuilder);
+                WebXMLParser.parseWebXml(webXmlFile, servletBuilder, ignoreWelcomePages);
             } else {
                 if (_classLoader == null) {
                     throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
@@ -422,7 +429,7 @@ public class Server {
             servletBuilder.setClassLoader(_classLoader);
             servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
             LogSubverter.subvertJDKLoggers(loglevel);
-            WebXMLParser.parseWebXml(new File(webinf, "/web.xml"), servletBuilder);
+            WebXMLParser.parseWebXml(new File(webinf, "/web.xml"), servletBuilder, ignoreWelcomePages);
         } else {
             throw new RuntimeException("Didn't know how to handle war:"+warFile.getAbsolutePath());
         }
@@ -497,7 +504,17 @@ public class Server {
         manager.deploy();
         HttpHandler servletHandler = manager.start();
         log.debug("started servlet deployment manager");
-/*
+
+        List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
+        if(ignoreWelcomePages) {
+            manager.getDeployment().getDeploymentInfo().addWelcomePages(serverOptions.getWelcomeFiles());
+            log.info("welcome pages: " + manager.getDeployment().getDeploymentInfo().getWelcomePages());
+        } else if(welcomePages.size() == 0){
+            manager.getDeployment().getDeploymentInfo().addWelcomePages(welcomeFiles);
+            log.debug("welcome pages: " + manager.getDeployment().getDeploymentInfo().getWelcomePages());
+        }
+
+        /*
         List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
         CFMLResourceHandler resourceHandler = new CFMLResourceHandler(servletBuilder.getResourceManager(), servletHandler, welcomePages);
         resourceHandler.setDirectoryListingEnabled(directoryListingEnabled);
@@ -506,6 +523,7 @@ public class Server {
         HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
         Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, host).setHandler(errPageHandler);
 */
+        
         Builder serverBuilder = Undertow.builder();
 
         if(serverOptions.isEnableHTTP()) {

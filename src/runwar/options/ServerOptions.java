@@ -21,8 +21,7 @@ public class ServerOptions {
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean directoryListingEnabled = true;
     private boolean cacheEnabled = false;
-    private String[] welcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
-            "default.html", "default.htm" };
+    private String[] welcomeFiles;
 	private File sslCertificate, sslKey, configFile;
 	private char[] sslKeyPass;
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
