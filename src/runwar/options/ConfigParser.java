@@ -290,6 +290,12 @@ public class ConfigParser {
             if (serverConfig.hasOption("errorpages")) {
                 serverOptions.setErrorPages(serverConfig.getOptionValue("errorpages"));
             }
+            if (serverConfig.hasOption("servletrest") && serverConfig.getOptionValue("servletrest").length() > 0) {
+                serverOptions.setServletRestEnabled(Boolean.valueOf(serverConfig.getOptionValue("servletrest")));
+            }
+            if (serverConfig.hasOption("servletrestmappings") && serverConfig.getOptionValue("servletrestmappings").length() > 0) {
+                serverOptions.setServletRestMappings(serverConfig.getOptionValue("servletrestmappings"));
+            }
 
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();

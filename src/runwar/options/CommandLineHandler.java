@@ -373,6 +373,18 @@ public class CommandLineHandler {
                 .hasArg().withArgName("404=/location,500=/location")
                 .create("errorpages") );
         
+        options.addOption( OptionBuilder
+                .withLongOpt( "servlet-rest-enable" )
+                .withDescription( "Enable an embedded CFML server REST servlet" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("servletrest") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "servlet-rest-mappings" )
+                .withDescription( "Embedded CFML server REST servlet URL mapping paths, comma separated [/rest/*]" )
+                .hasArg().withArgName("/rest/*,/api/*")
+                .create("servletrestmappings") );
+        
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
@@ -638,6 +650,12 @@ public class CommandLineHandler {
             }
             if (line.hasOption("errorpages") && line.getOptionValue("errorpages").length() > 0) {
                 serverOptions.setErrorPages(line.getOptionValue("errorpages"));
+            }
+            if (line.hasOption("servletrest") && line.getOptionValue("servletrest").length() > 0) {
+                serverOptions.setServletRestEnabled(Boolean.valueOf(line.getOptionValue("servletrest")));
+            }
+            if (line.hasOption("servletrestmappings") && line.getOptionValue("servletrestmappings").length() > 0) {
+                serverOptions.setServletRestMappings(line.getOptionValue("servletrestmappings"));
             }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {

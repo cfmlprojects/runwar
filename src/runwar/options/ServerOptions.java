@@ -35,6 +35,8 @@ public class ServerOptions {
 	private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
 	private List<String> jvmArgs = null;
 	private Map<Integer, String> errorPages = null;
+    private boolean servletRestEnabled = true;
+    private String[] servletRestMappings = null;
 	
 	public String getServerName() {
 	    return serverName;
@@ -452,6 +454,25 @@ public class ServerOptions {
     }
     public Map<Integer, String> getErrorPages() {
         return this.errorPages;
+    }
+
+    public ServerOptions setServletRestEnabled(boolean enabled) {
+        this.servletRestEnabled = enabled;
+        return this;
+    }
+    public boolean getServletRestEnabled() {
+        return this.servletRestEnabled;
+    }
+
+    public ServerOptions setServletRestMappings(String mappings) {
+        return setServletRestMappings(mappings.split(","));
+    }
+    public ServerOptions setServletRestMappings(String[] mappings) {
+        this.servletRestMappings = mappings;
+        return this;
+    }
+    public String[] getServletRestMappings() {
+        return this.servletRestMappings;
     }
 
 }

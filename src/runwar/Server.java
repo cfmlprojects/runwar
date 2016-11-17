@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -29,7 +28,6 @@ import java.awt.Image;
 import javax.net.SocketFactory;
 import javax.servlet.DispatcherType;
 
-import runwar.LaunchUtil.MessageType;
 import runwar.logging.Logger;
 import runwar.logging.LogSubverter;
 import runwar.mariadb4j.MariaDB4jManager;
@@ -41,7 +39,6 @@ import runwar.util.TeeOutputStream;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
-import io.undertow.io.Sender;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
@@ -58,7 +55,6 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ErrorPage;
 import io.undertow.servlet.api.FilterInfo;
-import io.undertow.servlet.api.LoggingExceptionHandler;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
@@ -387,7 +383,7 @@ public class Server {
                 }
                 servletBuilder.setClassLoader(_classLoader);
                 Class cfmlServlet;
-                Class restServlet;
+                Class restServletClass;
                 try {
                     cfmlServlet = _classLoader.loadClass(cfengine + ".loader.servlet.CFMLServlet");
                     log.debug("dynamically loaded CFML servlet from runwar child classloader");
@@ -396,30 +392,35 @@ public class Server {
                     log.debug("dynamically loaded CFML servlet from runwar classloader");
                 }
                 try {
-                    restServlet = _classLoader.loadClass(cfengine + ".loader.servlet.RestServlet");
+                    restServletClass = _classLoader.loadClass(cfengine + ".loader.servlet.RestServlet");
                 } catch (java.lang.ClassNotFoundException e) {
-                    restServlet = Server.class.getClassLoader().loadClass(cfengine + ".loader.servlet.RestServlet");
+                    restServletClass = Server.class.getClassLoader().loadClass(cfengine + ".loader.servlet.RestServlet");
                 }
                 log.debug("loaded servlet classes");
-                servletBuilder
-                    .addWelcomePages(serverOptions.getWelcomeFiles())
-                    .addServlets(
-                        servlet("CFMLServlet", cfmlServlet)
-                                .setRequireWelcomeFileMapping(true)
-                                .addInitParam("configuration",cfmlServletConfigWebDir)
-                                .addInitParam(cfengine+"-server-root",cfmlServletConfigServerDir)
-                                .addMapping("*.cfm")
-                                .addMapping("*.cfc")
-                                .addMapping("/index.cfc/*")
-                                .addMapping("/index.cfm/*")
-                                .addMapping("/index.cfml/*")
-                                .setLoadOnStartup(1)
-                                ,
-                        servlet("RESTServlet", restServlet)
-                                .setRequireWelcomeFileMapping(true)
-                                .addInitParam(cfengine+"-web-directory",cfmlServletConfigWebDir)
-                                .addMapping("/rest/*")
-                                .setLoadOnStartup(2));
+                servletBuilder.addWelcomePages(serverOptions.getWelcomeFiles());
+                servletBuilder.addServlet(
+                    servlet("CFMLServlet", cfmlServlet)
+                    .setRequireWelcomeFileMapping(true)
+                    .addInitParam("configuration",cfmlServletConfigWebDir)
+                    .addInitParam(cfengine+"-server-root",cfmlServletConfigServerDir)
+                    .addMapping("*.cfm")
+                    .addMapping("*.cfc")
+                    .addMapping("/index.cfc/*")
+                    .addMapping("/index.cfm/*")
+                    .addMapping("/index.cfml/*")
+                    .setLoadOnStartup(1)
+                    );
+                if(serverOptions.getServletRestEnabled()) {
+                    log.debug("Adding REST servlet");
+                    ServletInfo restServlet = servlet("RESTServlet", restServletClass)
+                        .setRequireWelcomeFileMapping(true)
+                        .addInitParam(cfengine+"-web-directory",cfmlServletConfigWebDir)
+                        .setLoadOnStartup(2);
+                    for(String path : serverOptions.getServletRestMappings()) {
+                        restServlet.addMapping(path);
+                    }
+                    servletBuilder.addServlet(restServlet);
+                }
             }
         } else if(webinf.exists()) {
             log.debug("found WEB-INF: " + webinf.getAbsolutePath());
