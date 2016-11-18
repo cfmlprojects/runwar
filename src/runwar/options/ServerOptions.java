@@ -37,6 +37,7 @@ public class ServerOptions {
 	private Map<Integer, String> errorPages = null;
     private boolean servletRestEnabled = true;
     private String[] servletRestMappings = null;
+    private boolean filterPathInfoEnabled = true;
 	
 	public String getServerName() {
 	    return serverName;
@@ -473,6 +474,15 @@ public class ServerOptions {
     }
     public String[] getServletRestMappings() {
         return this.servletRestMappings;
+    }
+
+    
+    public ServerOptions setFilterPathInfoEnabled(boolean enabled) {
+        this.filterPathInfoEnabled = enabled;
+        return this;
+    }
+    public boolean isFilterPathInfoEnabled() {
+        return this.filterPathInfoEnabled;
     }
 
 }

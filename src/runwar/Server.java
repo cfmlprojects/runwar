@@ -323,7 +323,7 @@ public class Server {
             }
         } else {
             System.setProperty("java.library.path",
-                    getThisJarLocation().getPath() + ":" + System.getProperty("java.library.path"));
+                    getThisJarLocation().getPath() + System.getProperty("path.separator") + System.getProperty("java.library.path"));
         }
         log.debug("java.library.path:" + System.getProperty("java.library.path"));
 
@@ -455,6 +455,7 @@ public class Server {
         }
 
         configureURLRewrite(servletBuilder, webinf);
+        configurePathInfoFilter(servletBuilder);
 
         if (serverOptions.isCacheEnabled()) {
             addCacheHandler(servletBuilder);
@@ -740,6 +741,23 @@ public class Server {
         }
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void configurePathInfoFilter(DeploymentInfo servletBuilder) throws ClassNotFoundException, IOException {
+        if(serverOptions.isFilterPathInfoEnabled()) {
+            log.debug("enabling path_info filter");
+            Class regexPathInfoFilter;
+            try{
+                regexPathInfoFilter = _classLoader.loadClass("org.cfmlprojects.regexpathinfofilter.RegexPathInfoFilter");
+            } catch (java.lang.ClassNotFoundException e) {
+                regexPathInfoFilter = Server.class.getClassLoader().loadClass("org.cfmlprojects.regexpathinfofilter.RegexPathInfoFilter");
+            }
+            servletBuilder.addFilter(new FilterInfo("RegexPathInfoFilter", regexPathInfoFilter));
+            servletBuilder.addFilterUrlMapping("RegexPathInfoFilter", "/*", DispatcherType.REQUEST);
+        } else {
+            log.debug("path_info filter is disabled");            
+        }
+    }
+    
     private void addCacheHandler(final DeploymentInfo servletBuilder) {
         // this handles mime types and adds a simple cache for static files
         servletBuilder.addInitialHandlerChainWrapper(new HandlerWrapper() {

@@ -297,6 +297,10 @@ public class ConfigParser {
                 serverOptions.setServletRestMappings(serverConfig.getOptionValue("servletrestmappings"));
             }
 
+            if (serverConfig.hasOption("filterpathinfo") && serverConfig.getOptionValue("filterpathinfo").length() > 0) {
+                serverOptions.setFilterPathInfoEnabled(Boolean.valueOf(serverConfig.getOptionValue("filterpathinfo")));
+            }
+
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();
                 while(optionsIterator.hasNext()) {

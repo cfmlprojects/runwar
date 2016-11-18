@@ -384,7 +384,13 @@ public class CommandLineHandler {
                 .withDescription( "Embedded CFML server REST servlet URL mapping paths, comma separated [/rest/*]" )
                 .hasArg().withArgName("/rest/*,/api/*")
                 .create("servletrestmappings") );
-        
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "filter-pathinfo-enable" )
+                .withDescription( "Enable (*.cf[c|m])(/.*) handling, setting cgi.PATH_INFO to $2" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("filterpathinfo") );
+
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
@@ -656,6 +662,9 @@ public class CommandLineHandler {
             }
             if (line.hasOption("servletrestmappings") && line.getOptionValue("servletrestmappings").length() > 0) {
                 serverOptions.setServletRestMappings(line.getOptionValue("servletrestmappings"));
+            }
+            if (line.hasOption("filterpathinfo") && line.getOptionValue("filterpathinfo").length() > 0) {
+                serverOptions.setFilterPathInfoEnabled(Boolean.valueOf(line.getOptionValue("filterpathinfo")));
             }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {
