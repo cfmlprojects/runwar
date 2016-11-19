@@ -85,7 +85,7 @@ public class Server {
     private String serverName = "default";
     private File statusFile = null;
     public static final String bar = "******************************************************************************";
-    private String[] welcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
+    private String[] defaultWelcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
             "default.html", "default.htm" };
     
     public Server() {
@@ -299,6 +299,8 @@ public class Server {
         
         if(serverOptions.getWelcomeFiles() != null && serverOptions.getWelcomeFiles().length > 0) {
             ignoreWelcomePages = true;
+        } else {
+            serverOptions.setWelcomeFiles(defaultWelcomeFiles);
         }
 
         log.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
@@ -397,7 +399,6 @@ public class Server {
                     restServletClass = Server.class.getClassLoader().loadClass(cfengine + ".loader.servlet.RestServlet");
                 }
                 log.debug("loaded servlet classes");
-                servletBuilder.addWelcomePages(serverOptions.getWelcomeFiles());
                 servletBuilder.addServlet(
                     servlet("CFMLServlet", cfmlServlet)
                     .setRequireWelcomeFileMapping(true)
@@ -512,7 +513,7 @@ public class Server {
             manager.getDeployment().getDeploymentInfo().addWelcomePages(serverOptions.getWelcomeFiles());
             log.info("welcome pages: " + manager.getDeployment().getDeploymentInfo().getWelcomePages());
         } else if(welcomePages.size() == 0){
-            manager.getDeployment().getDeploymentInfo().addWelcomePages(welcomeFiles);
+            manager.getDeployment().getDeploymentInfo().addWelcomePages(defaultWelcomeFiles);
             log.debug("welcome pages: " + manager.getDeployment().getDeploymentInfo().getWelcomePages());
         }
 
