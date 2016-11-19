@@ -265,7 +265,8 @@
         <exclusion groupId="org.jboss.spec.javax.annotation" artifactId="jboss-annotations-api_1.2_spec" />
       </exclusions>
     </dependency>
-
+    <!-- regexpathinfofilter lets us handle *.cfm/* paths -->
+    <dependency groupId="org.cfmlprojects" artifactId="regexpathinfofilter" version="1.0.0" unzip="false" type="jar" dest="${runwar.lib.dir}" />
 <!--
     <dependency groupId="com.dorkbox" artifactId="SystemTray" version="2.21" unzip="false" type="jar" dest="${runwar.lib.dir}" />
     <dependency groupId="com.dorkbox" artifactId="Notify" version="2.17" unzip="false" type="jar" dest="${runwar.lib.dir}" />
