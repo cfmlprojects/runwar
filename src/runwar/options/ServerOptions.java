@@ -36,7 +36,7 @@ public class ServerOptions {
 	private List<String> jvmArgs = null;
 	private Map<Integer, String> errorPages = null;
     private boolean servletRestEnabled = true;
-    private String[] servletRestMappings = null;
+    private String[] servletRestMappings = { "/rest" };
     private boolean filterPathInfoEnabled = true;
 	
 	public String getServerName() {
