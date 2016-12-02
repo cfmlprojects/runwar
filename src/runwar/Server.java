@@ -502,20 +502,22 @@ public class Server {
 
 //        servletBuilder.setExceptionHandler(LoggingExceptionHandler.DEFAULT);
 
+
+        List welcomePages =  servletBuilder.getWelcomePages();
+        if(ignoreWelcomePages) {
+            log.debug("Ignoring web.xml welcome file, so adding server options welcome files to deployment manager.");
+            servletBuilder.addWelcomePages(serverOptions.getWelcomeFiles());
+        } else if(welcomePages.size() == 0){
+            log.debug("No welcome pages set yet, so adding defaults to deployment manager.");
+            servletBuilder.addWelcomePages(defaultWelcomeFiles);
+        }
+        log.info("welcome pages in deployment manager: " + servletBuilder.getWelcomePages());
+
         manager = defaultContainer().addDeployment(servletBuilder);
         
         manager.deploy();
         HttpHandler servletHandler = manager.start();
         log.debug("started servlet deployment manager");
-
-        List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
-        if(ignoreWelcomePages) {
-            manager.getDeployment().getDeploymentInfo().addWelcomePages(serverOptions.getWelcomeFiles());
-            log.info("welcome pages: " + manager.getDeployment().getDeploymentInfo().getWelcomePages());
-        } else if(welcomePages.size() == 0){
-            manager.getDeployment().getDeploymentInfo().addWelcomePages(defaultWelcomeFiles);
-            log.debug("welcome pages: " + manager.getDeployment().getDeploymentInfo().getWelcomePages());
-        }
 
         /*
         List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
