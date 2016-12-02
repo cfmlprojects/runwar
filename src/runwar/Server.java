@@ -276,10 +276,13 @@ public class Server {
         }
         String libDirs = serverOptions.getLibDirs();
         URL jarURL = serverOptions.getJarURL();
-        // If this folder is a proper war, use it's lib folder instead of the passed libDirs
+        // If this folder is a proper war, add its WEB-INF/lib folder to the passed libDirs
         if (warFile.isDirectory() && new File(webinf, "/web.xml").exists()) {
-            libDirs = webinf.getAbsolutePath() + "/lib";
-            log.info("Using existing WEB-INF/lib of: " + libDirs);
+        	if( libDirs.length() > 0 ) {
+        		libDirs = libDirs + ","; 
+        	}
+    		libDirs = libDirs + webinf.getAbsolutePath() + "/lib";
+            log.info("Adding additional lib dir of: " + webinf.getAbsolutePath() + "/lib");
         }
 
         List<URL> cp = new ArrayList<URL>();
