@@ -761,6 +761,7 @@ public class Server {
             }
             servletBuilder.addFilter(new FilterInfo("RegexPathInfoFilter", regexPathInfoFilter));
             servletBuilder.addFilterUrlMapping("RegexPathInfoFilter", "/*", DispatcherType.REQUEST);
+            servletBuilder.addFilterUrlMapping("RegexPathInfoFilter", "/*", DispatcherType.FORWARD);
         } else {
             log.debug("path_info filter is disabled");            
         }
