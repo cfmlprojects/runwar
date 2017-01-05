@@ -278,7 +278,9 @@ public class Server {
         URL jarURL = serverOptions.getJarURL();
         // If this folder is a proper war, add its WEB-INF/lib folder to the passed libDirs
         if (warFile.isDirectory() && new File(webinf, "/web.xml").exists()) {
-        	if( libDirs.length() > 0 ) {
+        	if (libDirs == null) {
+        		libDirs = "";
+        	} else if( libDirs.length() > 0 ) {
         		libDirs = libDirs + ","; 
         	}
     		libDirs = libDirs + webinf.getAbsolutePath() + "/lib";
