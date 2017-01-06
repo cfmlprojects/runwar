@@ -225,8 +225,6 @@ public class Server {
             }
         }
         
-        new AgentInitialization().loadAgentFromLocalJarFile(new File(warFile, "/WEB-INF/lib/"));
-
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
         if( iconPNG != null && iconPNG.length() > 0) {
