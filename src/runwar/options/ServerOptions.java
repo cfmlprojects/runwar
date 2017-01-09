@@ -21,8 +21,7 @@ public class ServerOptions {
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean directoryListingEnabled = true;
     private boolean cacheEnabled = false;
-    private String[] welcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
-            "default.html", "default.htm" };
+    private String[] welcomeFiles;
 	private File sslCertificate, sslKey, configFile;
 	private char[] sslKeyPass;
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
@@ -36,6 +35,9 @@ public class ServerOptions {
 	private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
 	private List<String> jvmArgs = null;
 	private Map<Integer, String> errorPages = null;
+    private boolean servletRestEnabled = true;
+    private String[] servletRestMappings = { "/rest" };
+    private boolean filterPathInfoEnabled = true;
 	
 	public String getServerName() {
 	    return serverName;
@@ -453,6 +455,34 @@ public class ServerOptions {
     }
     public Map<Integer, String> getErrorPages() {
         return this.errorPages;
+    }
+
+    public ServerOptions setServletRestEnabled(boolean enabled) {
+        this.servletRestEnabled = enabled;
+        return this;
+    }
+    public boolean getServletRestEnabled() {
+        return this.servletRestEnabled;
+    }
+
+    public ServerOptions setServletRestMappings(String mappings) {
+        return setServletRestMappings(mappings.split(","));
+    }
+    public ServerOptions setServletRestMappings(String[] mappings) {
+        this.servletRestMappings = mappings;
+        return this;
+    }
+    public String[] getServletRestMappings() {
+        return this.servletRestMappings;
+    }
+
+    
+    public ServerOptions setFilterPathInfoEnabled(boolean enabled) {
+        this.filterPathInfoEnabled = enabled;
+        return this;
+    }
+    public boolean isFilterPathInfoEnabled() {
+        return this.filterPathInfoEnabled;
     }
 
 }

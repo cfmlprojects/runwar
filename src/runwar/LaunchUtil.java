@@ -8,6 +8,7 @@ import dorkbox.systemTray.MenuEntry;
 import dorkbox.systemTray.SystemTray;
 import dorkbox.systemTray.SystemTrayMenuAction;
 import dorkbox.util.ActionHandler;
+import dorkbox.util.OS;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
 
@@ -56,6 +57,7 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import runwar.logging.Logger;
 import runwar.options.ServerOptions;
+import sun.awt.OSInfo.OSType;
 
 public class LaunchUtil {
 
@@ -352,6 +354,12 @@ public class LaunchUtil {
                     log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                 }
             }
+            try {
+                if (is != null)
+                    is.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
     
@@ -608,11 +616,12 @@ public class LaunchUtil {
             return;
         }
         try {
+            Pos position = OS.isMacOsX() ? Pos.TOP_RIGHT : Pos.BOTTOM_RIGHT;
             notify = Notify.create()
                 .title(title)
                 .text(text)
                 .hideAfter(5000)
-                .position(Pos.BOTTOM_RIGHT)
+                .position(position)
                 // .setScreen(0)
                 .darkStyle()
                 //.shake(1300, 10)

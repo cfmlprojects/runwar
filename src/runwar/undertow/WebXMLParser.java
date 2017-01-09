@@ -30,7 +30,7 @@ import org.w3c.dom.NodeList;
 
 public class WebXMLParser {
 
-    private static Logger log = Logger.getLogger("RunwarLogger");
+	private static Logger log = Logger.getLogger("RunwarLogger");
 
 	/**
 	 * Parses the web.xml and configures the context.
@@ -39,22 +39,25 @@ public class WebXMLParser {
 	 * @param info
 	 */
 	@SuppressWarnings("unchecked")
-	public static void parseWebXml(File webxml, DeploymentInfo info) {
+	public static void parseWebXml(File webxml, DeploymentInfo info, boolean ignoreWelcomePages) {
 		if (!webxml.exists() || !webxml.canRead()) {
 			log.error("Error reading web.xml! exists:"+webxml.exists()+"readable:"+webxml.canRead());
 		}
 		try {
-		    String webinfPath = webxml.getParentFile().getCanonicalPath();
-		    if (File.separatorChar=='\\') {
-		        webinfPath = webinfPath.replace("\\", "\\\\");
-		    }
-		    trace("parsing %s",webxml.getCanonicalPath());
+			String webinfPath = webxml.getParentFile().getCanonicalPath();
+			if (File.separatorChar=='\\') {
+				webinfPath = webinfPath.replace("\\", "\\\\");
+			}
+			trace("parsing %s",webxml.getCanonicalPath());
 			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+
+			// disable validation, so we don't incur network calls
 			docBuilderFactory.setValidating(false);
 			docBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+
+			// parse and normalize text representation
 			Document doc = docBuilder.parse(webxml);
-			// normalize text representation
 			doc.getDocumentElement().normalize();
 
 			trace("Root element of the doc is %s", doc.getDocumentElement().getNodeName());
@@ -318,25 +321,29 @@ public class WebXMLParser {
 				info.addServlets(servletMap.values());
 			}
 			// do welcome files
-			listOfElements = doc.getElementsByTagName("welcome-file-list");
-			totalElements = listOfElements.getLength();
-			trace("Total no of welcome-files: %s", totalElements);
-			for (int s = 0; s < totalElements; s++) {
-				Node fstNode = listOfElements.item(s);
-				if (fstNode.getNodeType() == Node.ELEMENT_NODE) {
-					Element fstElmnt = (Element) fstNode;
-					NodeList fstNmElmntLst = fstElmnt.getElementsByTagName("welcome-file");
-					int totalWelcomeFiles = fstNmElmntLst.getLength();
+			if (ignoreWelcomePages) {
+				log.info("Ignoring any welcome pages in web.xml");
+			} else {
+				listOfElements = doc.getElementsByTagName("welcome-file-list");
+				totalElements = listOfElements.getLength();
+				trace("Total no of welcome-files: %s", totalElements);
+				for (int s = 0; s < totalElements; s++) {
+					Node fstNode = listOfElements.item(s);
+					if (fstNode.getNodeType() == Node.ELEMENT_NODE) {
+						Element fstElmnt = (Element) fstNode;
+						NodeList fstNmElmntLst = fstElmnt.getElementsByTagName("welcome-file");
+						int totalWelcomeFiles = fstNmElmntLst.getLength();
 
-					log.debug( "Adding welcome pages:" );
-					for(int i=0; i < totalWelcomeFiles; i++){
-						Element fstNmElmnt = (Element) fstNmElmntLst.item(i);
-						NodeList fstNm = fstNmElmnt.getChildNodes();
-						String pName = (fstNm.item(0)).getNodeValue().trim();
-						trace("Param name: %s", pName);
-						log.debug( "welcome page:" + pName);
-						// add welcome page
-						info.addWelcomePage(pName);
+						log.debug("Adding welcome pages:");
+						for (int i = 0; i < totalWelcomeFiles; i++) {
+							Element fstNmElmnt = (Element) fstNmElmntLst.item(i);
+							NodeList fstNm = fstNmElmnt.getChildNodes();
+							String pName = (fstNm.item(0)).getNodeValue().trim();
+							trace("Param name: %s", pName);
+							log.debug("welcome page:" + pName);
+							// add welcome page
+							info.addWelcomePage(pName);
+						}
 					}
 				}
 			}
@@ -366,26 +373,26 @@ public class WebXMLParser {
 			totalElements = listOfElements.getLength();
 			log.debugf("Total no of error-pages: %s", totalElements);
 			for (int i = 0; i < totalElements; i++) {
-			    Node inNode = listOfElements.item(i);
-			    if (inNode.getNodeType() == Node.ELEMENT_NODE) {
-			        Element inElmnt = (Element) inNode;
-			        NodeList inValElmntLst = inElmnt.getElementsByTagName("location");
-			        Element inValElmnt = (Element) inValElmntLst.item(0);
-			        NodeList inVal = inValElmnt.getChildNodes();
-			        String location = (inVal.item(0)).getNodeValue().trim();
-			        
-			        NodeList inNmElmntLst = inElmnt.getElementsByTagName("error-code");
-			        Element inNmElmnt = (Element) inNmElmntLst.item(0);
-			        if(inNmElmnt != null) {
-			            NodeList inNm = inNmElmnt.getChildNodes();
-			            int errorCode = Integer.parseInt((inNm.item(0)).getNodeValue().trim());
-			            log.debug("error-code: " + errorCode + " location: "+location);
-			            info.addErrorPage( new ErrorPage(location,errorCode));
-			        } else {
-			            log.debug("default error location: "+location);
-			            info.addErrorPage( new ErrorPage(location));			            
-			        }
-			    }
+				Node inNode = listOfElements.item(i);
+				if (inNode.getNodeType() == Node.ELEMENT_NODE) {
+					Element inElmnt = (Element) inNode;
+					NodeList inValElmntLst = inElmnt.getElementsByTagName("location");
+					Element inValElmnt = (Element) inValElmntLst.item(0);
+					NodeList inVal = inValElmnt.getChildNodes();
+					String location = (inVal.item(0)).getNodeValue().trim();
+					
+					NodeList inNmElmntLst = inElmnt.getElementsByTagName("error-code");
+					Element inNmElmnt = (Element) inNmElmntLst.item(0);
+					if(inNmElmnt != null) {
+						NodeList inNm = inNmElmnt.getChildNodes();
+						int errorCode = Integer.parseInt((inNm.item(0)).getNodeValue().trim());
+						log.debug("error-code: " + errorCode + " location: "+location);
+						info.addErrorPage( new ErrorPage(location,errorCode));
+					} else {
+						log.debug("default error location: "+location);
+						info.addErrorPage( new ErrorPage(location));						
+					}
+				}
 			}
 			// do display name
 			NodeList dNmElmntLst = doc.getElementsByTagName("display-name");
