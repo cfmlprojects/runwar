@@ -73,7 +73,6 @@ public class LogSubverter {
         for(Enumeration<String> loggerNames = logManager.getLoggerNames(); loggerNames.hasMoreElements();){
             String name = loggerNames.nextElement();
             java.util.logging.Logger nextLogger = logManager.getLogger(name);
-            System.out.println("'"+name+"'");
             if( nextLogger != null && loggers.contains(name) ) {
                 log.debugLazy(" JDK loggers detected, " + name + " set to level "+level);
                 nextLogger.setUseParentHandlers(false);
