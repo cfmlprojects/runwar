@@ -247,6 +247,8 @@
       dest="${runwar.lib.dir}" />
     <dependency groupId="commons-cli" artifactId="commons-cli" version="1.2" unzip="false" type="jar"
       dest="${runwar.lib.dir}" repoId="jboss.repo" />
+    <dependency groupId="io.undertow" artifactId="undertow-websockets-jsr" version="${undertow.version}" unzip="false" type="jar"
+      dest="${runwar.lib.dir}" repoId="jboss.repo" />
     <dependency groupId="io.undertow" artifactId="undertow-jsp" version="1.0.0.Beta27" unzip="false" type="jar"
       dest="${runwar.lib.dir}" repoId="jboss.repo">
       <exclusions>

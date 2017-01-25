@@ -39,7 +39,7 @@ public class WebXMLParser {
 	 * @param info
 	 */
 	@SuppressWarnings("unchecked")
-	public static void parseWebXml(File webxml, DeploymentInfo info, boolean ignoreWelcomePages) {
+	public static void parseWebXml(File webxml, DeploymentInfo info, boolean ignoreWelcomePages, boolean ignoreRestMappings) {
 		if (!webxml.exists() || !webxml.canRead()) {
 			log.error("Error reading web.xml! exists:"+webxml.exists()+"readable:"+webxml.canRead());
 		}
@@ -302,6 +302,10 @@ public class WebXMLParser {
 						// lookup the servlet info
 						ServletInfo servlet = servletMap.get(pName);
 						// add the mapping
+						if(ignoreRestMappings && (pName.equals("RestServlet") || pName.equals("CFRestServlet")) ) {
+						    trace("Skipping mapping for %s", pName);
+						    continue;
+						}
 						if (servlet != null) {
 							NodeList lstNmElmntLst = fstElmnt.getElementsByTagName("url-pattern");
 							for (int p = 0; p < lstNmElmntLst.getLength(); p++) {

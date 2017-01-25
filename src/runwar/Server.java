@@ -20,7 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.awt.Image;
@@ -87,6 +89,7 @@ public class Server {
     public static final String bar = "******************************************************************************";
     private String[] defaultWelcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
             "default.html", "default.htm" };
+    private String[] defaultRestMappings = new String[] { "/rest/*" };
     
     public Server() {
     }
@@ -162,6 +165,7 @@ public class Server {
         char[] stoppassword = serverOptions.getStopPassword();
         Long transferMinSize= serverOptions.getTransferMinSize();
         boolean ignoreWelcomePages = false;
+        boolean ignoreRestMappings = false;
 
         if (serverOptions.isBackground()) {
             setServerState(ServerState.STARTING_BACKGROUND);
@@ -225,8 +229,6 @@ public class Server {
             }
         }
         
-        new AgentInitialization().loadAgentFromLocalJarFile(new File(warFile, "/WEB-INF/lib/"));
-
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
         if( iconPNG != null && iconPNG.length() > 0) {
@@ -307,6 +309,9 @@ public class Server {
         } else {
             serverOptions.setWelcomeFiles(defaultWelcomeFiles);
         }
+        if(serverOptions.getServletRestMappings() != null && serverOptions.getServletRestMappings().length > 0) {
+            ignoreRestMappings = true;
+        }
 
         log.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
 
@@ -383,7 +388,7 @@ public class Server {
             if (webXmlFile != null) {
                 log.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
                 servletBuilder.setClassLoader(_classLoader);
-                WebXMLParser.parseWebXml(webXmlFile, servletBuilder, ignoreWelcomePages);
+                WebXMLParser.parseWebXml(webXmlFile, servletBuilder, ignoreWelcomePages, ignoreRestMappings);
             } else {
                 if (_classLoader == null) {
                     throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
@@ -436,7 +441,7 @@ public class Server {
             servletBuilder.setClassLoader(_classLoader);
             servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
             LogSubverter.subvertJDKLoggers(loglevel);
-            WebXMLParser.parseWebXml(new File(webinf, "/web.xml"), servletBuilder, ignoreWelcomePages);
+            WebXMLParser.parseWebXml(new File(webinf, "/web.xml"), servletBuilder, ignoreWelcomePages, ignoreRestMappings);
         } else {
             throw new RuntimeException("Didn't know how to handle war:"+warFile.getAbsolutePath());
         }
@@ -518,6 +523,21 @@ public class Server {
         }
         log.info("welcome pages in deployment manager: " + servletBuilder.getWelcomePages());
 
+        if(ignoreRestMappings) {
+            log.info("Overriding web.xml rest mappings.");
+            Iterator<Entry<String, ServletInfo>> it = servletBuilder.getServlets().entrySet().iterator();
+            while (it.hasNext()) {
+                ServletInfo restServlet = it.next().getValue();
+                if( restServlet.getName().equals("RestServlet") || restServlet.getName().equals("CFRestServlet") ) {
+                    for(String path : serverOptions.getServletRestMappings()) {
+                        restServlet.addMapping(path);
+                        log.info("Added rest mapping: " + path);
+                    }
+                }
+            }
+        }
+        
+        
         manager = defaultContainer().addDeployment(servletBuilder);
         
         manager.deploy();

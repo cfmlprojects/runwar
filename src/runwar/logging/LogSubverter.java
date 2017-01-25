@@ -6,6 +6,9 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.StreamHandler;
 
 import runwar.logging.Logger;
 //import org.jboss.logging.Logger; 
@@ -35,10 +38,10 @@ public class LogSubverter {
     public static void subvertJDKLoggers(String level) {
         System.setProperty("java.util.logging.ConsoleHandler.formatter", "java.util.logging.SimpleFormatter");
         System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %3$s %5$s%6$s%n");
-        java.util.logging.ConsoleHandler chandler = new java.util.logging.ConsoleHandler();
+        final java.util.logging.ConsoleHandler logHandler = new java.util.logging.ConsoleHandler();
         java.util.logging.Level LEVEL = JDKLevel.WARN;
         if(level.trim().toUpperCase().equals("TRACE"))
-            LEVEL = JDKLevel.TRACE;
+            LEVEL = JDKLevel.ALL;
         if(level.trim().toUpperCase().equals("WARN"))
             LEVEL = JDKLevel.WARN;
         if(level.trim().toUpperCase().equals("INFO"))
@@ -49,7 +52,7 @@ public class LogSubverter {
             LEVEL = JDKLevel.ERROR;
         if(level.trim().toUpperCase().equals("FATAL"))
             LEVEL = JDKLevel.FATAL;
-        chandler.setLevel(LEVEL);
+        logHandler.setLevel(LEVEL);
         java.util.logging.LogManager logManager = java.util.logging.LogManager.getLogManager();
 //        try {
 //            InputStream fis = Start.class.getClassLoader().getResourceAsStream("resources/logging.properties");
@@ -60,20 +63,35 @@ public class LogSubverter {
 //        catch(IOException e) {
 //            e.printStackTrace();
 //        }
-        
+        class DefaultLogHandler extends StreamHandler {
+            public void publish(LogRecord record) {
+                if(record.getLoggerName().contains("undertow") || record.getLoggerName().contains("cfml")) {
+                    logHandler.publish(record);
+                }
+            }
+        }
         for(Enumeration<String> loggerNames = logManager.getLoggerNames(); loggerNames.hasMoreElements();){
             String name = loggerNames.nextElement();
             java.util.logging.Logger nextLogger = logManager.getLogger(name);
-            if(loggers.contains(name) && nextLogger != null) {
-                log.debugLazy("JDK loggers detected, level to "+level);
+            if( nextLogger != null && loggers.contains(name) ) {
+                log.debugLazy(" JDK loggers detected, " + name + " set to level "+level);
                 nextLogger.setUseParentHandlers(false);
                 nextLogger.setLevel(LEVEL);
                 if(nextLogger.getHandlers() != null) {
                     for(java.util.logging.Handler handler : nextLogger.getHandlers()) {
                         nextLogger.removeHandler(handler);
                     }
-                    nextLogger.addHandler(chandler);                    
+                    nextLogger.addHandler(logHandler);
                 }
+            }
+            // replace the default/catchall handler with a name.contains( 'cfml' || 'undertow' ) filtered one
+            if(nextLogger != null && name.equals("")) {
+                nextLogger.setUseParentHandlers(false);
+                nextLogger.setLevel(LEVEL);
+                for(java.util.logging.Handler handler : nextLogger.getHandlers()) {
+                    nextLogger.removeHandler(handler);
+                }
+                nextLogger.addHandler(new DefaultLogHandler());
             }
         }
     }
@@ -153,7 +171,5 @@ public class LogSubverter {
         }
         return JDKLevel.ALL;
     }
-
-
 
 }
