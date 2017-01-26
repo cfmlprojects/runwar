@@ -104,11 +104,10 @@ public class Server {
         if (_classLoader == null) {
             log.debug("Loading classes from lib dir");
             if( _classpath != null && _classpath.size() > 0) {
-            log.debugf("classpath: %s",_classpath);
+                log.tracef("classpath: %s",_classpath);
+                _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
     //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
     //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-    //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
-                _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
     //          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
     //          Thread.currentThread().setContextClassLoader(_classLoader);
             } else {
@@ -337,7 +336,7 @@ public class Server {
             System.setProperty("java.library.path",
                     getThisJarLocation().getPath() + System.getProperty("path.separator") + System.getProperty("java.library.path"));
         }
-        log.debug("java.library.path:" + System.getProperty("java.library.path"));
+        log.trace("java.library.path:" + System.getProperty("java.library.path"));
 
         if (System.getProperty("coldfusion.home") == null) {
             String cfusionDir = new File(webinf,"cfusion").getAbsolutePath();
@@ -765,7 +764,7 @@ public class Server {
                 .addInitParam("modRewriteConf", Boolean.toString(serverOptions.isURLRewriteApacheFormat())));
             servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
         } else {
-            log.debug("URL rewriting is disabled");            
+            log.debug("URL rewriting is disabled");
         }
     }
 
@@ -783,7 +782,7 @@ public class Server {
             servletBuilder.addFilterUrlMapping("RegexPathInfoFilter", "/*", DispatcherType.REQUEST);
             servletBuilder.addFilterUrlMapping("RegexPathInfoFilter", "/*", DispatcherType.FORWARD);
         } else {
-            log.debug("path_info filter is disabled");            
+            log.debug("path_info filter is disabled");
         }
     }
     
@@ -862,7 +861,7 @@ public class Server {
                     if (fileName.toLowerCase().endsWith(".jar") || fileName.toLowerCase().endsWith(".zip")) {
                         URL url = item.toURI().toURL();
                         classpath.add(url);
-                        log.debug("lib: added to classpath: " + fileName);
+                        log.trace("lib: added to classpath: " + fileName);
                     }
                 }
             }
