@@ -92,7 +92,7 @@ public class MappedResourceManager extends FileResourceManager {
                 log.tracef("path mapped to:%s", reqFile.getAbsolutePath());
                 return new FileResource(reqFile, this, path);
             } else {
-                log.tracef("no mapped resoruce for:%s",path);
+                log.tracef("No mapped resource for:%s",path);
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {
@@ -112,7 +112,7 @@ public class MappedResourceManager extends FileResourceManager {
         while (pathDir.lastIndexOf('/') > 0) {
             pathDir = pathDir.substring(0, pathDir.lastIndexOf('/'));
             if (aliasMap.containsKey(pathDir)) {
-                file = new File(aliasMap.get(pathDir), path.replace(pathDir, ""));
+                file = new File(aliasMap.get(pathDir), path.substring(pathDir.length()));
                 if(file.getPath().indexOf('\\') > 0){
                     file = new File(file.getPath().replace('/', '\\'));
                 }
