@@ -39,21 +39,25 @@ public class MappedResourceManager extends FileResourceManager {
         String[] dirList = cfmlDirList.split(",");
         for (int x = 0; x < dirList.length; x++) {
             File dir;
+            String virtual = "";
             String[] splitted = dirList[x].split("=");
             if (splitted.length == 1) {
                 dir = new File(dirList[x].trim());
-                dirs.add(dir);
+                dir = dir.getPath().startsWith("..") ? dir.getAbsoluteFile() : dir;
+                dirs.add(dir.toPath().normalize().toFile());
             } else {
-                String virtual = splitted[0].trim();
+                virtual = splitted[0].trim();
                 virtual = virtual.startsWith("/") ? virtual : "/" + virtual;
                 virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length()-1) : virtual;
                 dir = new File(splitted[1].trim());
-                aliasMap.put(virtual, dir);
+                dir = dir.getPath().startsWith("..") ? dir.getAbsoluteFile() : dir;
+                aliasMap.put(virtual, dir.toPath().normalize().toFile());
             }
+            String aliasInfo = virtual.isEmpty() ? "" : " as " + virtual;
             if (!dir.exists()) {
-                log.error("Does not exist, cannot serve content: " + dir.getAbsolutePath());
+                log.error("Does not exist, cannot serve content from: " + dir.getAbsolutePath() + aliasInfo);
             } else {
-                log.info("Serving content from " + dir.getAbsolutePath());
+                log.info("Serving content from " + dir.getAbsolutePath() + aliasInfo);
             }
         }
         cfmlDirsFiles = dirs.toArray(new File[dirs.size()]);
@@ -89,10 +93,11 @@ public class MappedResourceManager extends FileResourceManager {
                 }
             }
             if (reqFile != null && reqFile.exists()) {
-                log.tracef("path mapped to:%s", reqFile.getAbsolutePath());
+                reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
+                log.tracef("path mapped to:%s", reqFile);
                 return new FileResource(reqFile, this, path);
             } else {
-                log.tracef("no mapped resoruce for:%s",path);
+                log.tracef("No mapped resource for:%s",path);
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {
@@ -104,6 +109,15 @@ public class MappedResourceManager extends FileResourceManager {
     }
 
     public static File getAliasedFile(HashMap<String, File> aliasMap, String path) {
+        if(path.startsWith("/file:")){
+            // groovy servlet asks for /file:... for some reason, when scripts are in an aliased dir
+            path = path.replace("/file:", "");
+            for( File file : aliasMap.values()) {
+                if(path.startsWith(file.getPath())) {
+                    return new File(path);
+                }
+            }
+        }
         String pathDir = path.startsWith("/") ? path : "/" + path;
         File file = aliasMap.get(pathDir);
         if(file != null) {
@@ -112,7 +126,7 @@ public class MappedResourceManager extends FileResourceManager {
         while (pathDir.lastIndexOf('/') > 0) {
             pathDir = pathDir.substring(0, pathDir.lastIndexOf('/'));
             if (aliasMap.containsKey(pathDir)) {
-                file = new File(aliasMap.get(pathDir), path.replace(pathDir, ""));
+                file = new File(aliasMap.get(pathDir), path.substring(pathDir.length()));
                 if(file.getPath().indexOf('\\') > 0){
                     file = new File(file.getPath().replace('/', '\\'));
                 }
@@ -128,6 +142,6 @@ public class MappedResourceManager extends FileResourceManager {
     
     @Override
     public boolean isResourceChangeListenerSupported() {
-        return true;
+        return allowResourceChangeListeners;
     }
 }
