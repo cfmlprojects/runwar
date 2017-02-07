@@ -642,8 +642,13 @@ public class Server {
         Thread monitor = new MonitorThread(stoppassword);
         monitor.start();
         log.debug("started stop monitor");
-        LaunchUtil.hookTray(this);
-        log.debug("hooked system tray");
+        try {
+            LaunchUtil.hookTray(this);
+            log.debug("hooked system tray");	
+        } catch( Throwable e ) {
+            log.debug("system tray hook failed.");
+            log.error( e );        	
+        }
 
         if (serverOptions.isOpenbrowser()) {
             new Server(3);
