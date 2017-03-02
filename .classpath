@@ -18,8 +18,6 @@
 	<classpathentry kind="lib" path="lib/bcprov-jdk15on-1.51.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-logging-3.2.1.Final.jar"/>
 	<classpathentry kind="lib" path="lib/urlrewritefilter-4.0.4.jar"/>
-	<classpathentry kind="lib" path="/workspace/runwar/lib/xnio-api-3.3.6.Final.jar"/>
-	<classpathentry kind="lib" path="/workspace/runwar/lib/xnio-nio-3.3.6.Final.jar"/>
 	<classpathentry kind="lib" path="lib/jopt-simple-5.0-beta-1.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.9.jar"/>
 	<classpathentry kind="lib" path="lib/jna-4.2.1.jar"/>
@@ -28,8 +26,11 @@
 	<classpathentry kind="lib" path="lib/TweenEngine-7.13.jar"/>
 	<classpathentry kind="lib" path="lib/Notify-Dorkbox-Util-2.16.jar"/>
 	<classpathentry kind="lib" path="lib/Notify-2.18.jar"/>
-	<classpathentry kind="lib" path="lib/undertow-core-1.4.8.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-servlet-1.4.8.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-core-1.4.8.Final.jar"/>
+	<classpathentry kind="lib" path="lib/regexpathinfofilter-1.0.0.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-api-3.3.6.Final.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-nio-3.3.6.Final.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/SystemTray-2.24.jar"/>
 	<classpathentry kind="output" path="bin"/>

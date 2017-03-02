@@ -169,14 +169,18 @@ public class MariaDB4jManager {
 
     public void stop() throws InterruptedException {
         isShuttingDown = true;
-        LaunchUtil.displayMessage("info", "Stopping embedded mariadb server on port " + port + " ...");
         System.out.println("*** Stopping MariaDB server on port " + port + " ...");
+//        LaunchUtil.displayMessage("info", "Stopping embedded mariadb server on port " + port + " ...");
+        ClassLoader OCL = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(classLoader);
         try {
             invoke(method(server.getClass(), "stop"), server);
             System.out.println("*** Stopped MariaDB server on port " + port);
         } catch (Exception e) {
             System.out.println("*** Error stopping MariaDB server on port " + port);
             e.printStackTrace();
+        } finally {
+            Thread.currentThread().setContextClassLoader(OCL);
         }
     }
 
