@@ -23,7 +23,7 @@ public class ServerOptions {
     private boolean cacheEnabled = false;
     private String[] welcomeFiles;
 	private File sslCertificate, sslKey, configFile;
-	private char[] sslKeyPass;
+	private char[] sslKeyPass = null;
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
 	private String action;
 	private String cfengineName = "lucee";
@@ -38,7 +38,15 @@ public class ServerOptions {
     private boolean servletRestEnabled = true;
     private String[] servletRestMappings = { "/rest" };
     private boolean filterPathInfoEnabled = true;
-	
+    private String[] sslAddCerts = null;
+    private static Map<String,String> userPasswordList;
+    private boolean enableBasicAuth = false;
+    static {
+        userPasswordList = new HashMap<String, String>();
+        userPasswordList.put("bob", "12345");
+        userPasswordList.put("alice", "secret");
+    }
+    
 	public String getServerName() {
 	    return serverName;
 	}
@@ -483,6 +491,42 @@ public class ServerOptions {
     }
     public boolean isFilterPathInfoEnabled() {
         return this.filterPathInfoEnabled;
+    }
+
+    public ServerOptions setEnableBasicAuth(boolean enable) {
+        this.enableBasicAuth = enable;
+        return this;
+    }
+    public boolean isEnableBasicAuth() {
+        return this.enableBasicAuth;
+    }
+    public ServerOptions setBasicAuth(String userPasswordList) {
+        HashMap<String,String> ups = new HashMap<String,String>();
+        for(String up : userPasswordList.split("(?<!\\\\),")) {
+            up = up.replace("\\,", ",");
+            String u = up.split("(?<!\\\\)=")[0].replace("\\=", "=");
+            String p = up.split("(?<!\\\\)=")[1].replace("\\=", "=");
+            ups.put(u, p);
+        }
+        return setBasicAuth(ups);
+    }
+    public ServerOptions  setBasicAuth(Map<String,String> userPasswordList) {
+        this.userPasswordList = userPasswordList;
+        return this;
+    }
+    public Map<String,String> getBasicAuth() {
+        return this.userPasswordList;
+    }
+
+    public ServerOptions setSSLAddCerts(String sslCerts) {
+        return setSSLAddCerts(sslCerts.split("(?<!\\\\),"));
+    }
+    public ServerOptions  setSSLAddCerts(String[] sslCerts) {
+        this.sslAddCerts = sslCerts;
+        return this;
+    }
+    public String[] getSSLAddCerts() {
+        return this.sslAddCerts;
     }
 
 }

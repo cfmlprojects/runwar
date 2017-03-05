@@ -301,6 +301,20 @@ public class ConfigParser {
                 serverOptions.setFilterPathInfoEnabled(Boolean.valueOf(serverConfig.getOptionValue("filterpathinfo")));
             }
 
+            if (serverConfig.hasOption("ssladdcerts") && serverConfig.getOptionValue("ssladdcerts").length() > 0) {
+                serverOptions.setSSLAddCerts(serverConfig.getOptionValue("ssladdcerts"));
+            }
+
+            if (serverConfig.hasOption("basicauthenable")) {
+                serverOptions.setEnableBasicAuth((Boolean.valueOf(serverConfig.getOptionValue("basicauthenable"))));
+            }
+            if (serverConfig.hasOption("basicauth") && serverConfig.getOptionValue("basicauth").length() > 0) {
+                if(!serverConfig.hasOption("basicauthenable") || serverConfig.hasOption("basicauthenable") && Boolean.valueOf(serverConfig.getOptionValue("basicauthenable"))) {
+                    serverOptions.setEnableBasicAuth(true);
+                }
+                serverOptions.setBasicAuth(serverConfig.getOptionValue("basicauth"));
+            }
+            
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();
                 while(optionsIterator.hasNext()) {

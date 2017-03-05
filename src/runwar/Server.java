@@ -20,8 +20,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -37,7 +39,9 @@ import runwar.options.CommandLineHandler;
 import runwar.options.ServerOptions;
 import runwar.undertow.MappedResourceManager;
 import runwar.undertow.WebXMLParser;
+import runwar.util.SSLUtil;
 import runwar.util.TeeOutputStream;
+import runwar.security.SecurityManager;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -89,17 +93,16 @@ public class Server {
     public static final String bar = "******************************************************************************";
     private String[] defaultWelcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
             "default.html", "default.htm" };
-    private String[] defaultRestMappings = new String[] { "/rest/*" };
-    
+
     public Server() {
     }
-    
+
     // for openBrowser 
     public Server(int seconds) {
         Timer timer = new Timer();
         timer.schedule(this.new OpenBrowserTask(), seconds * 1000);
     }
-    
+
     protected void initClassLoader(List<URL> _classpath) {
         if (_classLoader == null) {
             log.debug("Loading classes from lib dir");
@@ -115,7 +118,7 @@ public class Server {
             }
         }
     }
-    
+
     protected void setClassLoader(URLClassLoader classLoader){
         _classLoader = classLoader;
     }
@@ -563,14 +566,22 @@ public class Server {
             int sslPort = serverOptions.getSSLPort();
             serverBuilder.setDirectBuffers(true);
             log.info("Enabling SSL protocol on port " + sslPort);
-            if (serverOptions.getSSLCertificate() != null) {
-                File certfile = serverOptions.getSSLCertificate();
-                File keyfile = serverOptions.getSSLKey();
-                char[] keypass = serverOptions.getSSLKeyPass();
-                serverBuilder.addHttpsListener(sslPort, host, SSLUtil.createSSLContext(certfile, keyfile, keypass));
-                Arrays.fill(keypass, '*');
-            } else {
-                serverBuilder.addHttpsListener(sslPort, host, SSLUtil.createSSLContext());
+            try {
+                if (serverOptions.getSSLCertificate() != null) {
+                    File certfile = serverOptions.getSSLCertificate();
+                    File keyfile = serverOptions.getSSLKey();
+                    char[] keypass = serverOptions.getSSLKeyPass();
+                    String[] sslAddCerts = serverOptions.getSSLAddCerts();
+                    serverBuilder.addHttpsListener(sslPort, host, SSLUtil.createSSLContext(certfile, keyfile, keypass, sslAddCerts));
+                    if(keypass != null) 
+                        Arrays.fill(keypass, '*');
+                } else {
+                    serverBuilder.addHttpsListener(sslPort, host, SSLUtil.createSSLContext());
+                }
+            } catch (Exception e) {
+                log.error("Unable to start SSL:" + e.getMessage());
+                e.printStackTrace();
+                System.exit(1);
             }
         }
         
@@ -604,22 +615,31 @@ public class Server {
 //        // set as next handler your root handler
 //        sessionAttachmentHandler.setNext(pathHandler);
 
+        HttpHandler errPageHandler;
         
         if (serverOptions.isGzipEnabled()) {
             final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size[5]")))
                     .setNext(pathHandler);
-/*
-            serverBuilder.setHandler(handler);
- */
-            HttpHandler errPageHandler = new ErrorHandler(handler);
-            serverBuilder.setHandler(errPageHandler);
+            errPageHandler = new ErrorHandler(handler);
         } else {
 //            serverBuilder.setHandler(pathHandler);
-            HttpHandler errPageHandler = new ErrorHandler(pathHandler);
+            errPageHandler = new ErrorHandler(pathHandler);
+        }
+        if(serverOptions.isEnableBasicAuth()) {
+            String realm = serverName + " Realm";
+            log.debug("Enabling Basic Auth: " + realm);
+            final Map<String, char[]> users = new HashMap<>(2);
+            for(Entry<String,String> userNpass : serverOptions.getBasicAuth().entrySet()) {
+                users.put(userNpass.getKey(), userNpass.getValue().toCharArray());
+                log.debug(String.format("User:%s password:%s",userNpass.getKey(),userNpass.getValue()));
+            }
+            serverBuilder.setHandler(SecurityManager.addSecurity(errPageHandler, users, realm));
+        } else {
             serverBuilder.setHandler(errPageHandler);
         }
 
+        
         try {
             PID = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
             String pidFile = serverOptions.getPidFile();
@@ -689,16 +709,20 @@ public class Server {
         final Thread mainThread = Thread.currentThread();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
+                log.debug("Running shutdown hook");
                 try {
                     stopServer();
 //                    if(tempWarDir != null) {
 //                        LaunchUtil.deleteRecursive(tempWarDir);
 //                    }
-                    mainThread.join();
+                    if(mainThread.isAlive()) {
+                        mainThread.interrupt();
+                        mainThread.join();
+                    }
                 } catch ( Exception e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
+                log.debug("Ran shutdown hook");
             }
         });
         log.debug("Added shutdown hook");
@@ -729,14 +753,17 @@ public class Server {
             exitCode = 1;
         }
         try {
-            if (tee != null)
-                tee.close();
+            if (tee != null) {
+                tee.flush();
+                tee.closeBranch();
+            }
         } catch (Exception e) {
-            System.out.println("Redirect:  Unable to close this log file!");
+            System.err.println("Redirect:  Unable to close this log file!");
         }
         if(exitCode != 0) {
             System.exit(exitCode);
         }
+
     }
 
     
@@ -821,7 +848,7 @@ public class Server {
             }
         });
     }
-    
+
     public static File getThisJarLocation() {
         return LaunchUtil.getJarDir(Server.class);
     }

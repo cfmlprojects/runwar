@@ -594,12 +594,16 @@ public class LaunchUtil {
     }
 
     public static void displayMessage(String type, String text) {
-        if(type.toLowerCase().startsWith("warn")) {
-            displayMessage(processName, text, MessageType.WARNING);
-        } else if (type.toLowerCase().startsWith("error")) {
-            displayMessage(processName, text, MessageType.ERROR);
-        } else {
-            displayMessage(processName, text, MessageType.INFO);
+        try{
+            if(type.toLowerCase().startsWith("warn")) {
+                displayMessage(processName, text, MessageType.WARNING);
+            } else if (type.toLowerCase().startsWith("error")) {
+                displayMessage(processName, text, MessageType.ERROR);
+            } else {
+                displayMessage(processName, text, MessageType.INFO);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     
