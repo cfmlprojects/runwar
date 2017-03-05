@@ -391,6 +391,24 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("filterpathinfo") );
 
+        options.addOption( OptionBuilder
+                .withLongOpt( "ssl-add-certs" )
+                .withDescription( "Comma-separated list of additional SSL certificates to add to the store." )
+                .hasArg().withArgName("/path/to/cert,/path/to/cert")
+                .create("ssladdcerts") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "basicauth-enable" )
+                .withDescription( "Enable Basic Auth" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("basicauth") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "basicauth-users" )
+                .withDescription( "List of users and passwords, comma separated and equals separated." )
+                .hasArg().withArgName("bob:secret,alice:12345")
+                .create("users") );
+
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
@@ -666,6 +684,18 @@ public class CommandLineHandler {
             if (line.hasOption("filterpathinfo") && line.getOptionValue("filterpathinfo").length() > 0) {
                 serverOptions.setFilterPathInfoEnabled(Boolean.valueOf(line.getOptionValue("filterpathinfo")));
             }
+            if (line.hasOption("ssladdcerts") && line.getOptionValue("ssladdcerts").length() > 0) {
+                serverOptions.setSSLAddCerts(line.getOptionValue("ssladdcerts"));
+            }
+            if (line.hasOption("basicauth")) {
+                serverOptions.setEnableBasicAuth(Boolean.valueOf(line.getOptionValue("basicauth")));
+            }
+            if (line.hasOption("users") && line.getOptionValue("users").length() > 0) {
+                if(!line.hasOption("basicauth") || line.hasOption("basicauth") && Boolean.valueOf(line.getOptionValue("basicauth"))) {
+                    serverOptions.setEnableBasicAuth(true);
+                }
+                serverOptions.setBasicAuth(line.getOptionValue("users"));
+            }
             if(serverOptions.getLoglevel().equals("DEBUG")) {
     	    	for(Option arg: line.getOptions()) {
     	    		log.debug(arg);
@@ -693,7 +723,7 @@ public class CommandLineHandler {
     static File getFile(String path) {
         File file = new File(path);
         if(!file.exists() || file == null) {
-            throw new RuntimeException("File not found: " + path);
+            throw new RuntimeException("File not found: " + path +" (" + file.getAbsolutePath() + ")");
         }
     	return file;
     }

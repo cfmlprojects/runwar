@@ -1,75 +1,112 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package runwar.util;
-import java.io.OutputStream;
+
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
- * An OutputStream that sends bytes written to it to multiple output streams
- * in much the same way as the UNIX 'tee' command.
+ * Classic splitter of OutputStream. Named after the unix 'tee' 
+ * command. It allows a stream to be branched off so there 
+ * are now two streams.
  *
- * @author Sabre150
  */
-public class TeeOutputStream extends OutputStream
-{
+public class TeeOutputStream extends ProxyOutputStream {
+
+    /** the second OutputStream to write to */
+    protected OutputStream branch; //TODO consider making this private
+
     /**
-     * Constructs from a varags set of output streams
-     *
-     * @param ostream... the varags array of OutputStreams
+     * Constructs a TeeOutputStream.
+     * @param out the main OutputStream
+     * @param branch the second OutputStream
      */
-    public TeeOutputStream(OutputStream... ostream)
-    {
-        ostream_ = ostream;
+    public TeeOutputStream(final OutputStream out, final OutputStream branch) {
+        super(out);
+        this.branch = branch;
     }
- 
+
     /**
-     * Writes a byte to both output streams
-     *
-     * @param b the byte to write
-     * @throws IOException from any of the OutputStreams
-     */
-    @Override
-    public void write(int b) throws IOException
-    {
-        for (OutputStream ostream : ostream_)
-        {
-            ostream.write(b);
-        }
-    }
- 
-    /**
-     * Writes an array of bytes to all OutputStreams
-     *
+     * Write the bytes to both streams.
      * @param b the bytes to write
-     * @param off the offset to start writing from
-     * @param len the number of bytes to write
-     * @throws IOException from any of the OutputStreams
+     * @throws IOException if an I/O error occurs
      */
     @Override
-    public void write(byte[] b, int off, int len) throws IOException
-    {
-        for (OutputStream ostream : ostream_)
-        {
-            ostream.write(b, off, len);
-        }
+    public synchronized void write(final byte[] b) throws IOException {
+        super.write(b);
+        this.branch.write(b);
     }
- 
+
+    /**
+     * Write the specified bytes to both streams.
+     * @param b the bytes to write
+     * @param off The start offset
+     * @param len The number of bytes to write
+     * @throws IOException if an I/O error occurs
+     */
     @Override
-    public void flush() throws IOException
-    {
-        for (OutputStream ostream : ostream_)
-        {
-            ostream.flush();
-        }
+    public synchronized void write(final byte[] b, final int off, final int len) throws IOException {
+        super.write(b, off, len);
+        this.branch.write(b, off, len);
     }
- 
+
+    /**
+     * Write a byte to both streams.
+     * @param b the byte to write
+     * @throws IOException if an I/O error occurs
+     */
     @Override
-    public void close() throws IOException
-    {
-        for (OutputStream ostream : ostream_)
-        {
-            ostream.flush();
-            ostream.close();
+    public synchronized void write(final int b) throws IOException {
+        super.write(b);
+        this.branch.write(b);
+    }
+
+    /**
+     * Flushes both streams.
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    public void flush() throws IOException {
+        super.flush();
+        this.branch.flush();
+    }
+
+    /**
+     * Closes both output streams.
+     * 
+     * If closing the main output stream throws an exception, attempt to close the branch output stream.
+     * 
+     * If closing the main and branch output streams both throw exceptions, which exceptions is thrown by this method is
+     * currently unspecified and subject to change.
+     * 
+     * @throws IOException
+     *             if an I/O error occurs
+     */
+    @Override
+    public void close() throws IOException {
+        try {
+            super.close();
+        } finally {
+            this.branch.close();
         }
     }
-    // Obvious
-    private final OutputStream[] ostream_;
+
+    public void closeBranch() throws IOException {
+        this.branch.close();
+    }
+
 }
