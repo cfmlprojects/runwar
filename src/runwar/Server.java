@@ -589,6 +589,24 @@ public class Server {
             log.info("Enabling AJP protocol on port " + serverOptions.getAJPPort());
             serverBuilder.addAjpListener(serverOptions.getAJPPort(), host);
         }
+        
+        if(serverOptions.getBufferSize() != 0) {
+            log.info("Buffer Size: " + serverOptions.getBufferSize());
+            serverBuilder.setBufferSize(serverOptions.getBufferSize());
+        }
+        if(serverOptions.getIoThreads() != 0) {
+            log.info("IO Threads: " + serverOptions.getIoThreads());
+            serverBuilder.setIoThreads(serverOptions.getIoThreads());
+        }
+        if(serverOptions.getWorkerThreads() != 0) {
+            log.info("Worker threads: " + serverOptions.getWorkerThreads());
+            serverBuilder.setWorkerThreads(serverOptions.getWorkerThreads());
+        }
+        log.info("Direct Buffers: " + serverOptions.isDirectBuffers());
+        serverBuilder.setDirectBuffers(serverOptions.isDirectBuffers());
+
+        
+        
 //        final PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
 //                .addPrefixPath(contextPath, servletHandler);
 

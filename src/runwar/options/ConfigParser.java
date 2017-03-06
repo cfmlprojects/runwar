@@ -314,6 +314,18 @@ public class ConfigParser {
                 }
                 serverOptions.setBasicAuth(serverConfig.getOptionValue("basicauth"));
             }
+            if (serverConfig.hasOption("buffersize") && serverConfig.getOptionValue("buffersize").length() > 0) {
+                serverOptions.setBufferSize(Integer.valueOf(serverConfig.getOptionValue("buffersize")));
+            }
+            if (serverConfig.hasOption("iothreads") && serverConfig.getOptionValue("iothreads").length() > 0) {
+                serverOptions.setIoThreads(Integer.valueOf(serverConfig.getOptionValue("iothreads")));
+            }
+            if (serverConfig.hasOption("workerthreads") && serverConfig.getOptionValue("workerthreads").length() > 0) {
+                serverOptions.setWorkerThreads(Integer.valueOf(serverConfig.getOptionValue("workerthreads")));
+            }
+            if (serverConfig.hasOption("directbuffers")) {
+                serverOptions.setDirectBuffers(Boolean.valueOf(serverConfig.getOptionValue("directbuffers")));
+            }
             
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();
