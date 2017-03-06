@@ -2,6 +2,7 @@ package runwar.options;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 
 //import static java.io.File.*;
@@ -10,6 +11,7 @@ import java.util.Comparator;
 //import joptsimple.OptionParser;
 //import joptsimple.OptionSet;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -406,12 +408,62 @@ public class CommandLineHandler {
         options.addOption( OptionBuilder
                 .withLongOpt( "basicauth-users" )
                 .withDescription( "List of users and passwords, comma separated and equals separated." )
-                .hasArg().withArgName("bob:secret,alice:12345")
+                .hasArg().withArgName("bob=secret,alice=12345")
                 .create("users") );
 
+        options.addOption( OptionBuilder
+                .withLongOpt( "buffer-size" )
+                .withDescription( "buffer size" )
+                .hasArg().withArgName("size").withType(Number.class)
+                .create("buffersize") );
+                
+        options.addOption( OptionBuilder
+                .withLongOpt( "io-threads" )
+                .withDescription( "number of IO threads" )
+                .hasArg().withArgName("size").withType(Number.class)
+                .create("iothreads") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "worker-threads" )
+                .withDescription( "number of worker threads" )
+                .hasArg().withArgName("size").withType(Number.class)
+                .create("workerthreads") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "direct-buffers" )
+                .withDescription( "Enable direct buffers" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("directbuffers") );
+        
+        
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
+        String json = "";
+        Object[] opts2 = options.getOptions().toArray();
+        Option[] opts = new Option[opts2.length];
+        for (int i = 0; i < opts2.length; i++) {
+            opts[i] = (Option) opts2[i];
+        }
+        
+        Arrays.sort(opts, new Comparator<Option>() {
+            public int compare(Option o1, Option o2) {
+                String name = o2.getLongOpt() != null ? o2.getLongOpt() : "";
+                String name2 = o1.getLongOpt() != null ? o1.getLongOpt() : "";
+                return name2.compareTo(name);
+            }
+        });
+        for (int i = 0; i < opts.length; i++) {
+            Option op = (Option) opts[i];
+            String argName, name, description, type, alias = "";
+            name = op.getLongOpt() != null ? op.getLongOpt() : "";
+            description = op.getDescription() != null ? op.getDescription().trim() : "";
+            type = op.getType() != null ? op.getType().toString() : "";
+            alias = op.getOpt() != null ? op.getOpt() : "";
+            argName = op.getArgName() != null ? op.getArgName() : "";
+            json += String.format("\"%s\": { \"description\": \"%s\", \"type\": \"%s\", \"alias\": \"%s\", \"arg\":\"%s\" },\n",name,description,type,alias,argName);
+        }
+        System.out.println("{" + json + "}");
 
         try {
             CommandLine line = parser.parse( options, args );
@@ -696,12 +748,25 @@ public class CommandLineHandler {
                 }
                 serverOptions.setBasicAuth(line.getOptionValue("users"));
             }
+            if (line.hasOption("buffersize") && line.getOptionValue("buffersize").length() > 0) {
+                serverOptions.setBufferSize(Integer.valueOf(line.getOptionValue("buffersize")));
+            }
+            if (line.hasOption("iothreads") && line.getOptionValue("iothreads").length() > 0) {
+                serverOptions.setIoThreads(Integer.valueOf(line.getOptionValue("iothreads")));
+            }
+            if (line.hasOption("workerthreads") && line.getOptionValue("workerthreads").length() > 0) {
+                serverOptions.setWorkerThreads(Integer.valueOf(line.getOptionValue("workerthreads")));
+            }
+            if (line.hasOption("directbuffers")) {
+                serverOptions.setDirectBuffers(Boolean.valueOf(line.getOptionValue("directbuffers")));
+            }
+
             if(serverOptions.getLoglevel().equals("DEBUG")) {
-    	    	for(Option arg: line.getOptions()) {
-    	    		log.debug(arg);
-    	    		log.debug(arg.getValue());
-    	    	}
-    	    }
+                for (Option arg : line.getOptions()) {
+                    log.debug(arg);
+                    log.debug(arg.getValue());
+                }
+            }
             return serverOptions;
         }
         catch( Exception exp ) {

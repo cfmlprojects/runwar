@@ -41,6 +41,9 @@ public class ServerOptions {
     private String[] sslAddCerts = null;
     private static Map<String,String> userPasswordList;
     private boolean enableBasicAuth = false;
+    private boolean directBuffers = false;
+    int bufferSize,ioThreads,workerThreads = 0;
+
     static {
         userPasswordList = new HashMap<String, String>();
         userPasswordList.put("bob", "12345");
@@ -521,12 +524,42 @@ public class ServerOptions {
     public ServerOptions setSSLAddCerts(String sslCerts) {
         return setSSLAddCerts(sslCerts.split("(?<!\\\\),"));
     }
-    public ServerOptions  setSSLAddCerts(String[] sslCerts) {
+    public ServerOptions setSSLAddCerts(String[] sslCerts) {
         this.sslAddCerts = sslCerts;
         return this;
     }
     public String[] getSSLAddCerts() {
         return this.sslAddCerts;
     }
+    
+    public int getBufferSize() {
+        return bufferSize;
+    }
+    public ServerOptions setBufferSize(int bufferSize) {
+        this.bufferSize = bufferSize;
+        return this;
+    }
+    public int getIoThreads() {
+        return ioThreads;
+    }
+    public ServerOptions setIoThreads(int ioThreads) {
+        this.ioThreads = ioThreads;
+        return this;
+    }
+    public int getWorkerThreads() {
+        return workerThreads;
+    }
+    public ServerOptions setWorkerThreads(int workerThreads) {
+        this.workerThreads = workerThreads;
+        return this;
+    }
+    public ServerOptions setDirectBuffers(boolean enable) {
+        this.directBuffers = enable;
+        return this;
+    }
+    public boolean isDirectBuffers() {
+        return this.directBuffers;
+    }
+
 
 }
