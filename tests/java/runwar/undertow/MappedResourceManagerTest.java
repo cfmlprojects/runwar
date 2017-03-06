@@ -83,6 +83,30 @@ public class MappedResourceManagerTest {
     }
     
     @Test
+    public void testAliasMapCaseInsensitiveLookup() {
+
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/DOCS/somedoc.doc");
+        assertNotNull(reqFile);
+        assertEquals("C:\\someplace\\docs\\somedoc.doc", reqFile.getPath());
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/ImAGe/someimage.jpg");
+        assertNull(reqFile);
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/ImAGes/someimage.jpg");
+        assertEquals("C:\\someplace\\somewhereelse\\someimage.jpg", reqFile.getPath());
+        
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/fOO/bar.txt");
+        assertNotNull(reqFile);
+        assertEquals("myFolder/bar.txt", reqFile.getPath());
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/FOO/foo.txt");
+        assertNotNull(reqFile);
+        assertEquals("myFolder/foo.txt", reqFile.getPath());
+        
+    }
+        
+    @Test
     public void testAliasMapGroovyLookup() {
         reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/file:/this/is/somewhere/some.groovy");
         assertNotNull(reqFile);

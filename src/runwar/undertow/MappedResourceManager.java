@@ -51,7 +51,7 @@ public class MappedResourceManager extends FileResourceManager {
                 virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length()-1) : virtual;
                 dir = new File(splitted[1].trim());
                 dir = dir.getPath().startsWith("..") ? dir.getAbsoluteFile() : dir;
-                aliasMap.put(virtual, dir.toPath().normalize().toFile());
+                aliasMap.put(virtual.toLowerCase(), dir.toPath().normalize().toFile());
             }
             String aliasInfo = virtual.isEmpty() ? "" : " as " + virtual;
             if (!dir.exists()) {
@@ -119,14 +119,14 @@ public class MappedResourceManager extends FileResourceManager {
             }
         }
         String pathDir = path.startsWith("/") ? path : "/" + path;
-        File file = aliasMap.get(pathDir);
+        File file = aliasMap.get(pathDir.toLowerCase());
         if(file != null) {
             return new File(file.getPath());
         }
         while (pathDir.lastIndexOf('/') > 0) {
             pathDir = pathDir.substring(0, pathDir.lastIndexOf('/'));
-            if (aliasMap.containsKey(pathDir)) {
-                file = new File(aliasMap.get(pathDir), path.substring(pathDir.length()));
+            if (aliasMap.containsKey(pathDir.toLowerCase())) {
+                file = new File(aliasMap.get(pathDir.toLowerCase()), path.substring(pathDir.length()));
                 if(file.getPath().indexOf('\\') > 0){
                     file = new File(file.getPath().replace('/', '\\'));
                 }
