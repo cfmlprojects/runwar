@@ -288,16 +288,12 @@
  -->
   </target>
 
-  <target name="build.testwar" depends="cfdistro.build">
-    <mapping physical="${basedir}/../tests" virtual="/tests"/>
-  </target>
-  
   <target name="runwar.test" depends="runwar.jar">
     <property name="tests.dir" location="../tests" />
       <dependency groupId="com.adobe" artifactId="coldfusion" version="2016.0.0.297996" unzip="false"
-      type="war" dest="${tests.dir}/war/adobe space/" />
+      type="war" dest="${tests.dir}/resource/war/adobe space/" />
       <dependency groupId="org.lucee" artifactId="lucee.war" version="4.5.2.018" unzip="false"
-      type="war" dest="${tests.dir}/war/lucee space/" />
+      type="war" dest="${tests.dir}/resource/war/lucee space/" />
   </target>
 
   <target name="runembedded.jar" description="creates an jar with the WAR embedded">
