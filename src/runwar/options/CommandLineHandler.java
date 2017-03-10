@@ -439,32 +439,6 @@ public class CommandLineHandler {
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 
-        String json = "";
-        Object[] opts2 = options.getOptions().toArray();
-        Option[] opts = new Option[opts2.length];
-        for (int i = 0; i < opts2.length; i++) {
-            opts[i] = (Option) opts2[i];
-        }
-        
-        Arrays.sort(opts, new Comparator<Option>() {
-            public int compare(Option o1, Option o2) {
-                String name = o2.getLongOpt() != null ? o2.getLongOpt() : "";
-                String name2 = o1.getLongOpt() != null ? o1.getLongOpt() : "";
-                return name2.compareTo(name);
-            }
-        });
-        for (int i = 0; i < opts.length; i++) {
-            Option op = (Option) opts[i];
-            String argName, name, description, type, alias = "";
-            name = op.getLongOpt() != null ? op.getLongOpt() : "";
-            description = op.getDescription() != null ? op.getDescription().trim() : "";
-            type = op.getType() != null ? op.getType().toString() : "";
-            alias = op.getOpt() != null ? op.getOpt() : "";
-            argName = op.getArgName() != null ? op.getArgName() : "";
-            json += String.format("\"%s\": { \"description\": \"%s\", \"type\": \"%s\", \"alias\": \"%s\", \"arg\":\"%s\" },\n",name,description,type,alias,argName);
-        }
-        System.out.println("{" + json + "}");
-
         try {
             CommandLine line = parser.parse( options, args );
             // parse the command line arguments

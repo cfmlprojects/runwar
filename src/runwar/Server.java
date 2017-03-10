@@ -46,6 +46,7 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.predicate.Predicates;
+import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -66,6 +67,7 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
+import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static io.undertow.servlet.Servlets.servlet;
@@ -539,6 +541,10 @@ public class Server {
             }
         }
         
+        // TODO: add buffer pool size (maybe-- direct is best at 16k), enable/disable be good I reckon tho
+        servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
+          new WebSocketDeploymentInfo().setBuffers(new DefaultByteBufferPool(true, 1024 * 16)));
+        log.debug("Added websocket context");
         
         manager = defaultContainer().addDeployment(servletBuilder);
         
