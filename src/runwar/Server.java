@@ -533,6 +533,11 @@ public class Server {
             }
         }
         
+        // TODO: add buffer pool size (maybe-- direct is best at 16k), enable/disable be good I reckon tho
+        servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
+          new WebSocketDeploymentInfo().setBuffers(new DefaultByteBufferPool(true, 1024 * 16)));
+        log.debug("Added websocket context");
+        
         manager = defaultContainer().addDeployment(servletBuilder);
        
         
