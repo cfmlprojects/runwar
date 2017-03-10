@@ -46,6 +46,7 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.predicate.Predicates;
+import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -66,6 +67,7 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
+import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static io.undertow.servlet.Servlets.servlet;
@@ -143,13 +145,17 @@ public class Server {
         }
     }
     
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void startServer(final String[] args) throws Exception {
+        startServer(CommandLineHandler.parseArguments(args));
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void startServer(final ServerOptions options) throws Exception {
         ensureJavaVersion();
+        serverOptions = options;
         serverState = ServerState.STARTING;
-        serverOptions = CommandLineHandler.parseArguments(args);
         if(serverOptions.getAction().equals("stop")){
-            Stop.stopServer(args,true);
+            Stop.stopServer(serverOptions,true);
         }
         serverName = serverOptions.getServerName();
         portNumber = serverOptions.getPortNumber();
@@ -172,19 +178,7 @@ public class Server {
         if (serverOptions.isBackground()) {
             setServerState(ServerState.STARTING_BACKGROUND);
             // this will eventually system.exit();
-            List<String> argarray = new ArrayList<String>();
-            for (String arg : args) {
-                if (arg.contains("background") || arg.startsWith("-b")) {
-                    continue;
-                } else {
-                    argarray.add(arg);
-                }
-            }
-            argarray.add("--background");
-            argarray.add("false");
-            int launchTimeout = serverOptions.getLaunchTimeout();
-            LaunchUtil.relaunchAsBackgroundProcess(launchTimeout, argarray.toArray(new String[argarray.size()]),
-                    serverOptions.getJVMArgs(), processName);
+            LaunchUtil.relaunchAsBackgroundProcess(serverOptions.setBackground(false),true);
             setServerState(ServerState.STARTED_BACKGROUND);
             // just in case
             Thread.sleep(200);
@@ -539,8 +533,8 @@ public class Server {
             }
         }
         
-        
         manager = defaultContainer().addDeployment(servletBuilder);
+       
         
         manager.deploy();
         HttpHandler servletHandler = manager.start();
@@ -605,11 +599,6 @@ public class Server {
         log.info("Direct Buffers: " + serverOptions.isDirectBuffers());
         serverBuilder.setDirectBuffers(serverOptions.isDirectBuffers());
 
-        
-        
-//        final PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
-//                .addPrefixPath(contextPath, servletHandler);
-
         final PathHandler pathHandler = new PathHandler(Handlers.redirect(contextPath)) {
             @Override
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
@@ -641,7 +630,6 @@ public class Server {
                     .setNext(pathHandler);
             errPageHandler = new ErrorHandler(handler);
         } else {
-//            serverBuilder.setHandler(pathHandler);
             errPageHandler = new ErrorHandler(pathHandler);
         }
         if(serverOptions.isEnableBasicAuth()) {

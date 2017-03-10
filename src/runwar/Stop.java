@@ -14,7 +14,10 @@ public class Stop {
     }
 
     public static void stopServer(String[] args, boolean andExit) throws Exception {
-        ServerOptions serverOptions = CommandLineHandler.parseArguments(args);
+        stopServer(CommandLineHandler.parseArguments(args), andExit);
+    }
+    
+    public static void stopServer(ServerOptions serverOptions, boolean andExit) throws Exception {
         int socketNumber = serverOptions.getSocketNumber();
         String host = serverOptions.getHost();
         char[] stoppassword = serverOptions.getStopPassword();

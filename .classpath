@@ -31,6 +31,8 @@
 	<classpathentry kind="lib" path="lib/undertow-core-1.4.11.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-servlet-1.4.11.Final.jar"/>
 	<classpathentry kind="lib" path="lib/urlrewritefilter-4.0.5.jar"/>
+	<classpathentry kind="lib" path="lib/jboss-websocket-api_1.1_spec-1.1.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-websockets-jsr-1.4.11.Final.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/SystemTray-2.24.jar"/>
 	<classpathentry kind="output" path="bin"/>
