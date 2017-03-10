@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -58,7 +57,6 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import runwar.logging.Logger;
 import runwar.options.ServerOptions;
-import sun.awt.OSInfo.OSType;
 
 public class LaunchUtil {
 
@@ -115,8 +113,12 @@ public class LaunchUtil {
     }
 
     public static void launch(List<String> cmdarray, int timeout) throws IOException, InterruptedException {
-        // byte[] buffer = new byte[1024];
+        launch(cmdarray, timeout, true);
+    }
 
+    public static void launch(List<String> cmdarray, int timeout, boolean andExit) throws IOException, InterruptedException {
+        // byte[] buffer = new byte[1024];
+        boolean serverIsUp = false;
         ProcessBuilder processBuilder = new ProcessBuilder(cmdarray);
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
@@ -130,7 +132,7 @@ public class LaunchUtil {
         int exit = -1;
         long start = System.currentTimeMillis();
         System.out.print("Starting in background - ");
-        while ((System.currentTimeMillis() - start) < timeout) {
+        while ((System.currentTimeMillis() - start) < timeout && !serverIsUp) {
             if (br.ready() && (line = br.readLine()) != null) {
                 // Outputs your process execution
                 try {
@@ -140,7 +142,11 @@ public class LaunchUtil {
                         while ((line = br.readLine()) != null) {
                             log.debug(line);
                         }
-                        System.exit(0);
+                        if(andExit) {
+                            System.exit(0);
+                        }
+                        serverIsUp = true;
+                        break;
                     } else if (exit == 1) {
                         System.out.println();
                         printExceptionLine(line);
@@ -152,29 +158,38 @@ public class LaunchUtil {
                 } catch (IllegalThreadStateException t) {
                     // This exceptions means the process has not yet finished.
                     // decide to continue, exit(0), or exit(1)
-                    processOutout(line, process);
+                    serverIsUp = processOutout(line, process, andExit);
                 }
             }
             Thread.sleep(100);
         }
-        if ((System.currentTimeMillis() - start) > timeout) {
+        if ((System.currentTimeMillis() - start) > timeout && !serverIsUp) {
             process.destroy();
             System.out.println();
             System.err.println("ERROR: Startup exceeded timeout of " + timeout / 1000 + " seconds - aborting!");
             System.exit(1);
         }
         System.out.println("Server is up - ");
-        System.exit(0);
+        if(andExit) {
+            System.exit(0);
+        } else {
+            relaunching = false;
+            System.out.println("Not exiting.");
+        }
     }
 
-    private static boolean processOutout(String line, Process process) {
+    private static boolean processOutout(String line, Process process, boolean exitWhenUp) {
         log.info("processoutput: " + line);
         if (line.indexOf("Server is up - ") != -1) {
             // start up was successful, quit out
             System.out.println(line);
-            System.exit(0);
+            if(exitWhenUp) {
+                System.exit(0);
+            } else {
+                return true;
+            }
         } else if (line.indexOf("Exception in thread \"main\" java.lang.RuntimeException") != -1) {
-            return true;
+            return false;
         }
         return false;
     }
@@ -189,7 +204,17 @@ public class LaunchUtil {
         }
     }
 
+    public static void relaunchAsBackgroundProcess(ServerOptions serverOptions, boolean andExit) {
+        serverOptions.setBackground(false);
+        relaunchAsBackgroundProcess(serverOptions.getLaunchTimeout(), serverOptions.getCommandLineArgs(),
+                serverOptions.getJVMArgs(), serverOptions.getProcessName(), andExit);
+    }
+
     public static void relaunchAsBackgroundProcess(int timeout, String[] args, List<String> jvmArgs, String processName) {
+        relaunchAsBackgroundProcess(timeout, args, jvmArgs, processName, true);
+    }
+
+    public static void relaunchAsBackgroundProcess(int timeout, String[] args, List<String> jvmArgs, String processName, boolean andExit) {
         try {
             if (relaunching)
                 return;
@@ -215,7 +240,7 @@ public class LaunchUtil {
             for (String arg : args) {
                 cmdarray.add(arg);
             }
-            launch(cmdarray, timeout);
+            launch(cmdarray, timeout, andExit);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -279,7 +304,7 @@ public class LaunchUtil {
         SystemTray.FORCE_GTK2 = true;
 //        SystemTray.FORCE_LINUX_TYPE = SystemTray.LINUX_GTK;
 //        SystemTray.FORCE_SWT = true;
-        processName = server.getServerOptions().getProcessName();
+        processName = Server.getServerOptions().getProcessName();
 ////        System.setProperty("SWT_GTK3", "0");
         if ( GraphicsEnvironment.isHeadless() ) {
             log.debug("Server is in headless mode, System Tray is not supported");
@@ -523,7 +548,9 @@ public class LaunchUtil {
                 try {
                     ZipFile zipFile = new ZipFile(zip[0]);
                     ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
-                    return zipFile.getInputStream(zipEntry);
+                    InputStream is = zipFile.getInputStream(zipEntry);
+                    zipFile.close();
+                    return is;
                 } catch (IOException e2) {
                     log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
                 }

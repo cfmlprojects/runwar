@@ -3,6 +3,7 @@ package runwar.options;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +40,11 @@ public class ServerOptions {
     private String[] servletRestMappings = { "/rest" };
     private boolean filterPathInfoEnabled = true;
     private String[] sslAddCerts = null;
+    private String[] cmdlineArgs = null;
+    private String[] loadBalance = null;
     private static Map<String,String> userPasswordList;
     private boolean enableBasicAuth = false;
-    private boolean directBuffers = false;
+    private boolean directBuffers = true;
     int bufferSize,ioThreads,workerThreads = 0;
 
     static {
@@ -50,6 +53,31 @@ public class ServerOptions {
         userPasswordList.put("alice", "secret");
     }
     
+    public ServerOptions setCommandLineArgs(String[] args) {
+        this.cmdlineArgs = args;
+        return this;
+    }
+	public String[] getCommandLineArgs() {
+	    // TODO: totally refactor argument handling so we can serialize and not muck around like this.
+        List<String> argarray = new ArrayList<String>();
+        for (String arg : cmdlineArgs) {
+            if (arg.contains("background") || arg.startsWith("-b") || arg.contains("balance") 
+                    || arg.startsWith("--port") || arg.startsWith("-p")
+                    || arg.startsWith("--stop-port") || arg.contains("stopsocket")) {
+                continue;
+            } else {
+                argarray.add(arg);
+            }
+        }
+        argarray.add("--background");
+        argarray.add(Boolean.toString(isBackground()));
+        argarray.add("--port");
+        argarray.add(Integer.toString(getPortNumber()));
+        argarray.add("--stop-port");
+        argarray.add(Integer.toString(getSocketNumber()));
+	    return argarray.toArray(new String[argarray.size()]);
+	}
+
 	public String getServerName() {
 	    return serverName;
 	}
@@ -513,12 +541,12 @@ public class ServerOptions {
         }
         return setBasicAuth(ups);
     }
-    public ServerOptions  setBasicAuth(Map<String,String> userPasswordList) {
-        this.userPasswordList = userPasswordList;
+    public ServerOptions setBasicAuth(Map<String,String> userPassList) {
+        userPasswordList = userPassList;
         return this;
     }
     public Map<String,String> getBasicAuth() {
-        return this.userPasswordList;
+        return userPasswordList;
     }
 
     public ServerOptions setSSLAddCerts(String sslCerts) {
@@ -559,6 +587,17 @@ public class ServerOptions {
     }
     public boolean isDirectBuffers() {
         return this.directBuffers;
+    }
+
+    public ServerOptions setLoadBalance(String hosts) {
+        return setLoadBalance(hosts.split("(?<!\\\\),"));
+    }
+    public ServerOptions setLoadBalance(String[] hosts) {
+        this.loadBalance = hosts;
+        return this;
+    }
+    public String[] getLoadBalance() {
+        return this.loadBalance;
     }
 
 

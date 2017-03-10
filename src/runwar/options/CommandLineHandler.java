@@ -11,7 +11,6 @@ import java.util.Comparator;
 //import joptsimple.OptionParser;
 //import joptsimple.OptionSet;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -47,7 +46,7 @@ public class CommandLineHandler {
 //        parser.acceptsAll(asList("c","config")).withRequiredArg()
 //        .describedAs( "config file" )
 //        .ofType( File.class );
-
+        serverOptions.setCommandLineArgs(args);
         parser = new PosixParser();
         options.addOption( OptionBuilder
                 .withLongOpt( "config" )
@@ -435,10 +434,42 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directbuffers") );
         
+        options.addOption( OptionBuilder
+                .withLongOpt( "load-balance" )
+                .withDescription( "Comma-separated list of servers to start and load balance." )
+                .hasArg().withArgName("http://localhost:8081,http://localhost:8082")
+                .create("loadbalance") );
+
         
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
-
+/*
+        String json = "";
+        Object[] opts2 = options.getOptions().toArray();
+        Option[] opts = new Option[opts2.length];
+        for (int i = 0; i < opts2.length; i++) {
+            opts[i] = (Option) opts2[i];
+        }
+        
+        Arrays.sort(opts, new Comparator<Option>() {
+            public int compare(Option o1, Option o2) {
+                String name = o2.getLongOpt() != null ? o2.getLongOpt() : "";
+                String name2 = o1.getLongOpt() != null ? o1.getLongOpt() : "";
+                return name2.compareTo(name);
+            }
+        });
+        for (int i = 0; i < opts.length; i++) {
+            Option op = (Option) opts[i];
+            String argName, name, description, type, alias = "";
+            name = op.getLongOpt() != null ? op.getLongOpt() : "";
+            description = op.getDescription() != null ? op.getDescription().trim() : "";
+            type = op.getType() != null ? op.getType().toString() : "";
+            alias = op.getOpt() != null ? op.getOpt() : "";
+            argName = op.getArgName() != null ? op.getArgName() : "";
+            json += String.format("\"%s\": { \"description\": \"%s\", \"type\": \"%s\", \"alias\": \"%s\", \"arg\":\"%s\" },\n",name,description,type,alias,argName);
+        }
+        System.out.println("{" + json + "}");
+*/
         try {
             CommandLine line = parser.parse( options, args );
             // parse the command line arguments
@@ -733,6 +764,9 @@ public class CommandLineHandler {
             }
             if (line.hasOption("directbuffers")) {
                 serverOptions.setDirectBuffers(Boolean.valueOf(line.getOptionValue("directbuffers")));
+            }
+            if (line.hasOption("loadbalance") && line.getOptionValue("loadbalance").length() > 0) {
+                serverOptions.setLoadBalance(line.getOptionValue("loadbalance"));
             }
 
             if(serverOptions.getLoglevel().equals("DEBUG")) {
