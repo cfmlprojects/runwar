@@ -685,7 +685,8 @@ public class Server {
         }
         
         // if this println changes be sure to update the LaunchUtil so it will know success
-        String msg = "Server is up - http-port:" + portNumber + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
+        String sslInfo = serverOptions.isEnableSSL() ? " https-port:" + serverOptions.getSSLPort() : "";
+        String msg = "Server is up - http-port:" + portNumber + sslInfo + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         log.debug(msg);
         LaunchUtil.displayMessage("info", msg);
         System.out.println(msg);
@@ -712,8 +713,19 @@ public class Server {
                 System.out.println("Error starting MariaDB4j: " + dbStartException.getMessage());
             }
         }
-
-        undertow.start();
+        try{
+            undertow.start();
+        } 
+        catch (Exception any) {
+            if(any.getCause() instanceof java.net.SocketException) {
+                if(any.getCause().getMessage().equals("Permission denied")) {
+                    System.err.println("You need to be root or Administrator to bind to a port below 1024!");
+                }
+            } else {
+                any.printStackTrace();
+            }
+            System.exit(1);
+        }
     }
 
     private void addShutDownHook() {

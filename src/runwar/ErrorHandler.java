@@ -1,11 +1,9 @@
 package runwar;
 
 import runwar.logging.Logger;
-import io.undertow.io.Sender;
 import io.undertow.server.DefaultResponseListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 
 public class ErrorHandler implements HttpHandler {
 

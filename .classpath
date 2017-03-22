@@ -14,8 +14,6 @@
 	<classpathentry kind="lib" path="lib/jboss-servlet-api_3.1_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-jsp-1.0.0.Beta27.jar"/>
 	<classpathentry kind="lib" path="lib/json-smart-mini-1.0.8.jar"/>
-	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-1.51.jar"/>
-	<classpathentry kind="lib" path="lib/bcprov-jdk15on-1.51.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-logging-3.2.1.Final.jar"/>
 	<classpathentry kind="lib" path="lib/jopt-simple-5.0-beta-1.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.9.jar"/>
@@ -33,6 +31,8 @@
 	<classpathentry kind="lib" path="lib/urlrewritefilter-4.0.5.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-websocket-api_1.1_spec-1.1.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-websockets-jsr-1.4.11.Final.jar"/>
+	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-1.56.jar"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk15on-1.56.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/SystemTray-2.24.jar"/>
 	<classpathentry kind="output" path="bin"/>

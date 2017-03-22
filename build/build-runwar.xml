@@ -186,8 +186,10 @@
       <equals arg1="${mvn.type}" arg2="snapshot" />
       <then>
         <property name="runwarbuild.mvn.version" value="${runwarbuild.version}-SNAPSHOT" />
+        <property name="deletesnapshots" value="true" />
       </then>
     </antcontrib:if>
+    <property name="deletesnapshots" value="false" />
     <property name="runwarbuild.mvn.version" value="${runwarbuild.version}" />
 
     <zip destfile="${dist.dir}/runwar-${runwarbuild.version}-sources.jar">
@@ -198,7 +200,7 @@
     </copy>
 
     <pom-and-deploy pomid="runwar.pom" file="${dist.dir}/pom.xml" artifact="${runwar.jar.file}"  packaging="jar" groupId="org.cfmlprojects"
-      artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="snapshot">
+      artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="snapshot" deletesnapshots="${deletesnapshots}">
       <attachments>
         <attach file="${dist.dir}/runwar-${runwarbuild.version}-javadoc.jar" classifier="javadoc"/>
         <attach file="${dist.dir}/runwar-${runwarbuild.version}-sources.jar" classifier="sources"/>
@@ -240,7 +242,7 @@
     <!-- - change this back to org.tuckey when it hits 4.0.5 -->
     <dependency groupId="org.cfmlprojects" artifactId="urlrewritefilter" version="${tuckey.rewrite.version}" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
-    <dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.51" unzip="false" type="jar"
+    <dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.56" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
     <!--  replace options with this eventually
     -->
