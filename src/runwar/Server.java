@@ -611,8 +611,8 @@ public class Server {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
                 }
                 //log.trace("pathhandler path:" + exchange.getRequestPath() + " querystring:" +exchange.getQueryString());
-                // clear any welcome-file info cached after initial request
-                if (serverOptions.isDirectoryListingEnabled() && exchange.getRequestPath().endsWith("/")) {
+                // clear any welcome-file info cached after initial request *NOT THREAD SAFE*
+                if (serverOptions.isDirectoryListingRefreshEnabled() && exchange.getRequestPath().endsWith("/")) {
                     //log.trace("*** Resetting servlet path info");
                     manager.getDeployment().getServletPaths().invalidate();
                 }

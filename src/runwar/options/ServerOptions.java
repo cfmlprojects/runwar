@@ -21,6 +21,7 @@ public class ServerOptions {
     private String iconImage = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean directoryListingEnabled = true;
+    private boolean directoryListingRefreshEnabled = false;
     private boolean cacheEnabled = false;
     private String[] welcomeFiles;
 	private File sslCertificate, sslKey, configFile;
@@ -52,13 +53,14 @@ public class ServerOptions {
         userPasswordList.put("bob", "12345");
         userPasswordList.put("alice", "secret");
     }
-    
+
     public ServerOptions setCommandLineArgs(String[] args) {
         this.cmdlineArgs = args;
         return this;
     }
-	public String[] getCommandLineArgs() {
-	    // TODO: totally refactor argument handling so we can serialize and not muck around like this.
+
+    public String[] getCommandLineArgs() {
+        // TODO: totally refactor argument handling so we can serialize and not muck around like this.
         List<String> argarray = new ArrayList<String>();
         for (String arg : cmdlineArgs) {
             if (arg.contains("background") || arg.startsWith("-b") || arg.contains("balance") 
@@ -75,12 +77,12 @@ public class ServerOptions {
         argarray.add(Integer.toString(getPortNumber()));
         argarray.add("--stop-port");
         argarray.add(Integer.toString(getSocketNumber()));
-	    return argarray.toArray(new String[argarray.size()]);
-	}
+        return argarray.toArray(new String[argarray.size()]);
+    }
 
-	public String getServerName() {
-	    return serverName;
-	}
+    public String getServerName() {
+        return serverName;
+    }
     public ServerOptions setServerName(String serverName) {
         this.serverName = serverName;
         return this;
@@ -332,6 +334,13 @@ public class ServerOptions {
     }
     public ServerOptions setDirectoryListingEnabled(boolean directoryListingEnabled) {
         this.directoryListingEnabled = directoryListingEnabled;
+        return this;
+    }
+    public boolean isDirectoryListingRefreshEnabled() {
+        return directoryListingRefreshEnabled;
+    }
+    public ServerOptions setDirectoryListingRefreshEnabled(boolean directoryListingRefreshEnabled) {
+        this.directoryListingRefreshEnabled = directoryListingRefreshEnabled;
         return this;
     }
     public String[] getWelcomeFiles() {

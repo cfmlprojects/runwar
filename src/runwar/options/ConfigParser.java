@@ -326,13 +326,19 @@ public class ConfigParser {
             if (serverConfig.hasOption("directbuffers")) {
                 serverOptions.setDirectBuffers(Boolean.valueOf(serverConfig.getOptionValue("directbuffers")));
             }
+            if (serverConfig.hasOption("loadbalance") && serverConfig.getOptionValue("loadbalance").length() > 0) {
+                serverOptions.setLoadBalance(serverConfig.getOptionValue("loadbalance"));
+            }
+            if (serverConfig.hasOption("directoryrefresh") && serverConfig.getOptionValue("directoryrefresh").length() > 0) {
+                serverOptions.setDirectoryListingRefreshEnabled(Boolean.valueOf(serverConfig.getOptionValue("directoryrefresh")));
+            }
             
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();
                 while(optionsIterator.hasNext()) {
                     log.debug(optionsIterator.next());
                 }
-            }            
+            }
         }
         return serverOptions;
     }
