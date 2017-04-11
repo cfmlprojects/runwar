@@ -1,10 +1,12 @@
 package runwar;
 
 import io.undertow.Undertow;
+import io.undertow.client.UndertowClient;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
+import io.undertow.server.handlers.proxy.LoadBalancingProxyClient.Host;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.Headers;
 
@@ -50,16 +52,18 @@ public class Start {
                 }
                 loadBalancer.addHost(new URI(balanceHost));
                 balanceHosts.add(balanceHost);
+                log.info("Added balanced host: " + balanceHost);
                 Thread.sleep(3000);
             }
+            int port = serverOptions.getPortNumber();
             loadBalancer.setConnectionsPerThread(20);
             log.info("Started instances.");
 
-            log.info("Starting load balancer...");
-            Undertow reverseProxy = Undertow.builder().addHttpListener(8080, "localhost").setIoThreads(4)
+            log.info("Starting load balancer on 127.0.0.1 port " + port + "...");
+            Undertow reverseProxy = Undertow.builder().addHttpListener(port, "localhost").setIoThreads(4)
                     .setHandler(new ProxyHandler(loadBalancer, 30000, ResponseCodeHandler.HANDLE_404)).build();
             reverseProxy.start();
-            
+            log.info("View balancer admin on http://127.0.0.1:9080");
             Undertow adminServer = Undertow.builder()
                     .addHttpListener(9080, "localhost")
                     .setHandler(new HttpHandler() {

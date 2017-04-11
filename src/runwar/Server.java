@@ -32,6 +32,8 @@ import java.awt.Image;
 import javax.net.SocketFactory;
 import javax.servlet.DispatcherType;
 
+import org.xnio.BufferAllocator;
+
 import runwar.logging.Logger;
 import runwar.logging.LogSubverter;
 import runwar.mariadb4j.MariaDB4jManager;
@@ -57,7 +59,9 @@ import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
+import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ErrorPage;
@@ -95,6 +99,8 @@ public class Server {
     public static final String bar = "******************************************************************************";
     private String[] defaultWelcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
             "default.html", "default.htm" };
+
+    private static final int METADATA_MAX_AGE = 2000;
 
     public Server() {
     }
@@ -379,7 +385,7 @@ public class Server {
             // File(homeDir,"server/"), transferMinSize, cfmlDirs));
             File internalCFMLServerRoot = webinf;
             internalCFMLServerRoot.mkdirs();
-            servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot));
+            servletBuilder.setResourceManager(getResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot));
 
             if (webXmlFile != null) {
                 log.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
@@ -435,7 +441,7 @@ public class Server {
                 throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
             }
             servletBuilder.setClassLoader(_classLoader);
-            servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
+            servletBuilder.setResourceManager(getResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
             LogSubverter.subvertJDKLoggers(loglevel);
             WebXMLParser.parseWebXml(new File(webinf, "/web.xml"), servletBuilder, ignoreWelcomePages, ignoreRestMappings);
         } else {
@@ -870,6 +876,15 @@ public class Server {
                 return predicateHandler;
             }
         });
+    }
+    
+    private ResourceManager getResourceManager(File warFile, Long transferMinSize, String cfmlDirs, File internalCFMLServerRoot) {
+        MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot);
+        if(serverOptions.isDirectoryListingRefreshEnabled()) return mappedResourceManager;
+        final DirectBufferCache dataCache = new DirectBufferCache(1000, 10, 1000 * 10 * 1000, BufferAllocator.DIRECT_BYTE_BUFFER_ALLOCATOR, METADATA_MAX_AGE);
+        final int metadataCacheSize = 100;
+        final long maxFileSize = 10000;
+        return new CachingResourceManager(metadataCacheSize,maxFileSize, dataCache, mappedResourceManager, METADATA_MAX_AGE);
     }
 
     public static File getThisJarLocation() {

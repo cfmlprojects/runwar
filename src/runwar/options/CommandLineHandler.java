@@ -543,7 +543,7 @@ public class CommandLineHandler {
             if (line.hasOption("war")) {
                 String warPath = line.getOptionValue("war");
                 serverOptions.setWarFile(getFile(warPath));
-            } else if (!line.hasOption("stop") && !line.hasOption("c")) {
+            } else if (!line.hasOption("stop") && !line.hasOption("c") && !line.hasOption("loadbalance")) {
                 printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
             } 
             if(line.hasOption("D")){
