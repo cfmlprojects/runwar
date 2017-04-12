@@ -31,6 +31,9 @@ public class Start {
 
 	private static void launchServer(String balanceHost, ServerOptions serverOptions){
         String[] schemeHostAndPort = balanceHost.split(":");
+        if(schemeHostAndPort.length != 3) {
+            throw new RuntimeException("hosts for balancehost should have scheme, host and port, e.g.: http://127.0.0.1:55555");
+        }
         String host = schemeHostAndPort[1].replaceAll("^//", "");
         int port = Integer.parseInt(schemeHostAndPort[2]);
         int stopPort = port+1;
@@ -44,10 +47,11 @@ public class Start {
 		ServerOptions serverOptions = CommandLineHandler.parseArguments(args);
         if(serverOptions.getLoadBalance() != null && serverOptions.getLoadBalance().length > 0) {
             final List<String> balanceHosts = new ArrayList<String>();
-            log.info("Starting instances...");
+            log.info("Initializing...");
             final LoadBalancingProxyClient loadBalancer = new LoadBalancingProxyClient();
             for(String balanceHost : serverOptions.getLoadBalance()) {
                 if(serverOptions.getWarFile() != null) {
+                    log.info("Starting instance of " + serverOptions.getWarFile().getParent() +"...");
                     launchServer(balanceHost,serverOptions);
                 }
                 loadBalancer.addHost(new URI(balanceHost));
@@ -57,7 +61,7 @@ public class Start {
             }
             int port = serverOptions.getPortNumber();
             loadBalancer.setConnectionsPerThread(20);
-            log.info("Started instances.");
+            log.info("Hosts loaded");
 
             log.info("Starting load balancer on 127.0.0.1 port " + port + "...");
             Undertow reverseProxy = Undertow.builder().addHttpListener(port, "localhost").setIoThreads(4)
