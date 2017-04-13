@@ -320,7 +320,8 @@ public class Server {
         final DeploymentInfo servletBuilder = deployment()
                 .setContextPath(contextPath.equals("/") ? "" : contextPath)
                 .setTempDir(new File(System.getProperty("java.io.tmpdir")))
-                .setDeploymentName(warPath);
+                .setDeploymentName(warPath)
+                .setServerName( "WildFly / Undertow" );
 
         if (!warFile.exists()) {
             throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
@@ -461,8 +462,12 @@ public class Server {
             String cfclassesDir = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
             if(cfclassesDir == null || cfclassesDir.startsWith("/WEB-INF")){
                 // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
-                cfclassesDir = new File(webinf, "/cfclasses").getAbsolutePath();
+                File cfclassesDirFile = new File(webinf, "/cfclasses");
+                cfclassesDir = cfclassesDirFile.getAbsolutePath();
                 log.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
+                if( !cfclassesDirFile.exists() ) {
+                	cfclassesDirFile.mkdir();
+                }
                 servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
             }
         }
