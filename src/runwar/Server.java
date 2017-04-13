@@ -526,14 +526,15 @@ public class Server {
         log.info("welcome pages in deployment manager: " + servletBuilder.getWelcomePages());
 
         if(ignoreRestMappings) {
-            log.info("Overriding web.xml rest mappings.");
+            log.info("Overriding web.xml rest mappings with " + Arrays.toString( serverOptions.getServletRestMappings() ) );
             Iterator<Entry<String, ServletInfo>> it = servletBuilder.getServlets().entrySet().iterator();
             while (it.hasNext()) {
                 ServletInfo restServlet = it.next().getValue();
-                if( restServlet.getName().equals("RestServlet") || restServlet.getName().equals("CFRestServlet") ) {
+                log.trace( "Checking servelet named: " + restServlet.getName() + "to see if it's a REST servlet." );
+                if( restServlet.getName().toLowerCase().equals("restservlet") || restServlet.getName().toLowerCase().equals("cfrestservlet") ) {
                     for(String path : serverOptions.getServletRestMappings()) {
                         restServlet.addMapping(path);
-                        log.info("Added rest mapping: " + path);
+                        log.info("Added rest mapping: " + path + " to " + restServlet.getName() );
                     }
                 }
             }

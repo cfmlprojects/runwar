@@ -302,7 +302,7 @@ public class WebXMLParser {
 						// lookup the servlet info
 						ServletInfo servlet = servletMap.get(pName);
 						// add the mapping
-						if(ignoreRestMappings && (pName.equals("RestServlet") || pName.equals("CFRestServlet")) ) {
+						if(ignoreRestMappings && (pName.toLowerCase().equals("restservlet") || pName.toLowerCase().equals("cfrestservlet")) ) {
 						    trace("Skipping mapping for %s", pName);
 						    continue;
 						}
