@@ -13,7 +13,16 @@ public class MappedResourceManagerTest {
     private File reqFile = null;
 
     public MappedResourceManagerTest() {
-        String mappings = "/images=C:\\someplace\\somewhereelse, /moreimages=/this/is/somewhere, /docs/=C:\\someplace\\docs, /one/two=/buckle/my/shoe/, blah=C:\\foo, plain, path";
+        String mappings = "/images=C:\\someplace\\somewhereelse, "
+                + "/moreimages=/this/is/somewhere,"
+                + "/docs/=C:\\someplace\\docs,"
+                + "/one/two=/buckle/my/shoe/, "
+                + "blah=C:\\foo, "
+                + "plain, "
+                + "path, "
+                + "rel=../bar, "
+                + "relative=/root/na/../bar, "
+                + "foo=myFolder";
         MappedResourceManager man = new MappedResourceManager(new File("/tmp"),111,mappings);
         aliasMap = man.getAliasMap();
         try {
@@ -30,6 +39,8 @@ public class MappedResourceManagerTest {
         assertNotNull(aliasMap.get("/one/two"));
         assertNotNull(aliasMap.get("/docs"));
         assertNotNull(aliasMap.get("/blah"));
+        assertNotNull(aliasMap.get("/foo"));
+        assertNotNull(aliasMap.get("/relative"));
     }
     
     @Test
@@ -61,6 +72,58 @@ public class MappedResourceManagerTest {
         reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/image/images/someimage.jpg");
         assertNull(reqFile);
 
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/foo/bar.txt");
+        assertNotNull(reqFile);
+        assertEquals("myFolder/bar.txt", reqFile.getPath());
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/foo/foo.txt");
+        assertNotNull(reqFile);
+        assertEquals("myFolder/foo.txt", reqFile.getPath());
+        
+    }
+    
+    @Test
+    public void testAliasMapCaseInsensitiveLookup() {
+
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/DOCS/somedoc.doc");
+        assertNotNull(reqFile);
+        assertEquals("C:\\someplace\\docs\\somedoc.doc", reqFile.getPath());
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/ImAGe/someimage.jpg");
+        assertNull(reqFile);
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/ImAGes/someimage.jpg");
+        assertEquals("C:\\someplace\\somewhereelse\\someimage.jpg", reqFile.getPath());
+        
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/fOO/bar.txt");
+        assertNotNull(reqFile);
+        assertEquals("myFolder/bar.txt", reqFile.getPath());
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/FOO/foo.txt");
+        assertNotNull(reqFile);
+        assertEquals("myFolder/foo.txt", reqFile.getPath());
+        
+    }
+        
+    @Test
+    public void testAliasMapGroovyLookup() {
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/file:/this/is/somewhere/some.groovy");
+        assertNotNull(reqFile);
+        assertEquals("/this/is/somewhere/some.groovy", reqFile.getPath());
+    }
+    
+    @Test
+    public void testAliasRelative() {
+        File thisDir = new File(System.getProperty("user.dir"));
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/relative/fun/wee.txt");
+        assertNotNull(reqFile);
+        assertEquals("/root/bar/fun/wee.txt", reqFile.getPath());
+
+        reqFile = MappedResourceManager.getAliasedFile(aliasMap, "/rel/fun/wee.txt");
+        assertNotNull(reqFile);
+        assertEquals(thisDir.getParentFile().getPath() + "/bar/fun/wee.txt", reqFile.getPath());
     }
 
     @Test

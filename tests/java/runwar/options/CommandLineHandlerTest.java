@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -53,4 +54,14 @@ public class CommandLineHandlerTest {
        
     }
 
+    @Test
+    public void testSetBasicAuthUsers() throws IOException {
+        ServerOptions serverOptions = new ServerOptions();
+        serverOptions.setBasicAuth("bob=secret,alice=fun,equals=blah\\=inpass");
+        Map<String,String> upMap = serverOptions.getBasicAuth();
+        assertEquals(upMap.get("bob"), "secret");
+        assertEquals(upMap.get("alice"), "fun");
+        assertEquals(upMap.get("equals"), "blah=inpass");
+    }
+    
 }

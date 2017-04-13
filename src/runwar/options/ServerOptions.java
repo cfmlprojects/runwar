@@ -3,6 +3,7 @@ package runwar.options;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +21,11 @@ public class ServerOptions {
     private String iconImage = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean directoryListingEnabled = true;
+    private boolean directoryListingRefreshEnabled = false;
     private boolean cacheEnabled = false;
     private String[] welcomeFiles;
 	private File sslCertificate, sslKey, configFile;
-	private char[] sslKeyPass;
+	private char[] sslKeyPass = null;
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
 	private String action;
 	private String cfengineName = "lucee";
@@ -38,10 +40,49 @@ public class ServerOptions {
     private boolean servletRestEnabled = true;
     private String[] servletRestMappings = { "/rest" };
     private boolean filterPathInfoEnabled = true;
-	
-	public String getServerName() {
-	    return serverName;
-	}
+    private String[] sslAddCerts = null;
+    private String[] cmdlineArgs = null;
+    private String[] loadBalance = null;
+    private static Map<String,String> userPasswordList;
+    private boolean enableBasicAuth = false;
+    private boolean directBuffers = true;
+    int bufferSize,ioThreads,workerThreads = 0;
+
+    static {
+        userPasswordList = new HashMap<String, String>();
+        userPasswordList.put("bob", "12345");
+        userPasswordList.put("alice", "secret");
+    }
+
+    public ServerOptions setCommandLineArgs(String[] args) {
+        this.cmdlineArgs = args;
+        return this;
+    }
+
+    public String[] getCommandLineArgs() {
+        // TODO: totally refactor argument handling so we can serialize and not muck around like this.
+        List<String> argarray = new ArrayList<String>();
+        for (String arg : cmdlineArgs) {
+            if (arg.contains("background") || arg.startsWith("-b") || arg.contains("balance") 
+                    || arg.startsWith("--port") || arg.startsWith("-p")
+                    || arg.startsWith("--stop-port") || arg.contains("stopsocket")) {
+                continue;
+            } else {
+                argarray.add(arg);
+            }
+        }
+        argarray.add("--background");
+        argarray.add(Boolean.toString(isBackground()));
+        argarray.add("--port");
+        argarray.add(Integer.toString(getPortNumber()));
+        argarray.add("--stop-port");
+        argarray.add(Integer.toString(getSocketNumber()));
+        return argarray.toArray(new String[argarray.size()]);
+    }
+
+    public String getServerName() {
+        return serverName;
+    }
     public ServerOptions setServerName(String serverName) {
         this.serverName = serverName;
         return this;
@@ -295,6 +336,13 @@ public class ServerOptions {
         this.directoryListingEnabled = directoryListingEnabled;
         return this;
     }
+    public boolean isDirectoryListingRefreshEnabled() {
+        return directoryListingRefreshEnabled;
+    }
+    public ServerOptions setDirectoryListingRefreshEnabled(boolean directoryListingRefreshEnabled) {
+        this.directoryListingRefreshEnabled = directoryListingRefreshEnabled;
+        return this;
+    }
     public String[] getWelcomeFiles() {
         return welcomeFiles;
     }
@@ -484,5 +532,82 @@ public class ServerOptions {
     public boolean isFilterPathInfoEnabled() {
         return this.filterPathInfoEnabled;
     }
+
+    public ServerOptions setEnableBasicAuth(boolean enable) {
+        this.enableBasicAuth = enable;
+        return this;
+    }
+    public boolean isEnableBasicAuth() {
+        return this.enableBasicAuth;
+    }
+    public ServerOptions setBasicAuth(String userPasswordList) {
+        HashMap<String,String> ups = new HashMap<String,String>();
+        for(String up : userPasswordList.split("(?<!\\\\),")) {
+            up = up.replace("\\,", ",");
+            String u = up.split("(?<!\\\\)=")[0].replace("\\=", "=");
+            String p = up.split("(?<!\\\\)=")[1].replace("\\=", "=");
+            ups.put(u, p);
+        }
+        return setBasicAuth(ups);
+    }
+    public ServerOptions setBasicAuth(Map<String,String> userPassList) {
+        userPasswordList = userPassList;
+        return this;
+    }
+    public Map<String,String> getBasicAuth() {
+        return userPasswordList;
+    }
+
+    public ServerOptions setSSLAddCerts(String sslCerts) {
+        return setSSLAddCerts(sslCerts.split("(?<!\\\\),"));
+    }
+    public ServerOptions setSSLAddCerts(String[] sslCerts) {
+        this.sslAddCerts = sslCerts;
+        return this;
+    }
+    public String[] getSSLAddCerts() {
+        return this.sslAddCerts;
+    }
+    
+    public int getBufferSize() {
+        return bufferSize;
+    }
+    public ServerOptions setBufferSize(int bufferSize) {
+        this.bufferSize = bufferSize;
+        return this;
+    }
+    public int getIoThreads() {
+        return ioThreads;
+    }
+    public ServerOptions setIoThreads(int ioThreads) {
+        this.ioThreads = ioThreads;
+        return this;
+    }
+    public int getWorkerThreads() {
+        return workerThreads;
+    }
+    public ServerOptions setWorkerThreads(int workerThreads) {
+        this.workerThreads = workerThreads;
+        return this;
+    }
+    public ServerOptions setDirectBuffers(boolean enable) {
+        this.directBuffers = enable;
+        return this;
+    }
+    public boolean isDirectBuffers() {
+        return this.directBuffers;
+    }
+
+    public ServerOptions setLoadBalance(String hosts) {
+        return setLoadBalance(hosts.split("(?<!\\\\),"));
+    }
+    public ServerOptions setLoadBalance(String[] hosts) {
+        this.loadBalance = hosts;
+        return this;
+    }
+    public String[] getLoadBalance() {
+        return this.loadBalance;
+    }
+
 
 }

@@ -1,7 +1,10 @@
 package runwar.options;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 
 //import static java.io.File.*;
@@ -45,7 +48,7 @@ public class CommandLineHandler {
 //        parser.acceptsAll(asList("c","config")).withRequiredArg()
 //        .describedAs( "config file" )
 //        .ofType( File.class );
-
+        serverOptions.setCommandLineArgs(args);
         parser = new PosixParser();
         options.addOption( OptionBuilder
                 .withLongOpt( "config" )
@@ -90,23 +93,23 @@ public class CommandLineHandler {
                 .create("stopsocket") );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "stop-password" )
-        		.withDescription( "Pasword checked when stopping server\n" )
-        		.hasArg().withArgName("password")
-        		.create("password") );
-        
+                .withLongOpt( "stop-password" )
+                .withDescription( "Pasword checked when stopping server\n" )
+                .hasArg().withArgName("password")
+                .create("password") );
+
         options.addOption( OptionBuilder
                 .withDescription( "stop backgrounded.  Optional stop-port" )
                 .hasOptionalArg().withArgName("port")
                 .hasOptionalArg().withArgName("password")
                 .withValueSeparator(' ')
                 .create("stop") );
-        
+
         options.addOption( OptionBuilder
-        		.withLongOpt( "http-enable" )
-        		.withDescription( "Enable HTTP.  Default is true ,unless SSL or AJP are enabled." )
-        		.hasArg().withArgName("true|false").withType(Boolean.class)
-        		.create("httpenable") );
+                .withLongOpt( "http-enable" )
+                .withDescription( "Enable HTTP.  Default is true ,unless SSL or AJP are enabled." )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("httpenable") );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "ajp-enable" )
@@ -391,10 +394,90 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("filterpathinfo") );
 
+        options.addOption( OptionBuilder
+                .withLongOpt( "ssl-add-certs" )
+                .withDescription( "Comma-separated list of additional SSL certificates to add to the store." )
+                .hasArg().withArgName("/path/to/cert,/path/to/cert")
+                .create("ssladdcerts") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "basicauth-enable" )
+                .withDescription( "Enable Basic Auth" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("basicauth") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "basicauth-users" )
+                .withDescription( "List of users and passwords, comma separated and equals separated." )
+                .hasArg().withArgName("bob=secret,alice=12345")
+                .create("users") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "buffer-size" )
+                .withDescription( "buffer size" )
+                .hasArg().withArgName("size").withType(Number.class)
+                .create("buffersize") );
+                
+        options.addOption( OptionBuilder
+                .withLongOpt( "io-threads" )
+                .withDescription( "number of IO threads" )
+                .hasArg().withArgName("size").withType(Number.class)
+                .create("iothreads") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "worker-threads" )
+                .withDescription( "number of worker threads" )
+                .hasArg().withArgName("size").withType(Number.class)
+                .create("workerthreads") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "direct-buffers" )
+                .withDescription( "Enable direct buffers" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("directbuffers") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "load-balance" )
+                .withDescription( "Comma-separated list of servers to start and load balance." )
+                .hasArg().withArgName("http://localhost:8081,http://localhost:8082")
+                .create("loadbalance") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "directory-refresh" )
+                .withDescription( "Refresh the direcotry list with each request. *DEV ONLY* not thread-safe" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("directoryrefresh") );
+        
+        
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
-
-
+/*
+        String json = "";
+        Object[] opts2 = options.getOptions().toArray();
+        Option[] opts = new Option[opts2.length];
+        for (int i = 0; i < opts2.length; i++) {
+            opts[i] = (Option) opts2[i];
+        }
+        
+        Arrays.sort(opts, new Comparator<Option>() {
+            public int compare(Option o1, Option o2) {
+                String name = o2.getLongOpt() != null ? o2.getLongOpt() : "";
+                String name2 = o1.getLongOpt() != null ? o1.getLongOpt() : "";
+                return name2.compareTo(name);
+            }
+        });
+        for (int i = 0; i < opts.length; i++) {
+            Option op = (Option) opts[i];
+            String argName, name, description, type, alias = "";
+            name = op.getLongOpt() != null ? op.getLongOpt() : "";
+            description = op.getDescription() != null ? op.getDescription().trim() : "";
+            type = op.getType() != null ? op.getType().toString() : "";
+            alias = op.getOpt() != null ? op.getOpt() : "";
+            argName = op.getArgName() != null ? op.getArgName() : "";
+            json += String.format("\"%s\": { \"description\": \"%s\", \"type\": \"%s\", \"alias\": \"%s\", \"arg\":\"%s\" },\n",name,description,type,alias,argName);
+        }
+        System.out.println("{" + json + "}");
+*/
         try {
             CommandLine line = parser.parse( options, args );
             // parse the command line arguments
@@ -460,7 +543,7 @@ public class CommandLineHandler {
             if (line.hasOption("war")) {
                 String warPath = line.getOptionValue("war");
                 serverOptions.setWarFile(getFile(warPath));
-            } else if (!line.hasOption("stop") && !line.hasOption("c")) {
+            } else if (!line.hasOption("stop") && !line.hasOption("c") && !line.hasOption("loadbalance")) {
                 printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
             } 
             if(line.hasOption("D")){
@@ -552,23 +635,23 @@ public class CommandLineHandler {
                 serverOptions.setLogDir(line.getOptionValue("logdir"));
             } else {
                 if(serverOptions.getWarFile() != null){
-                	File warFile = serverOptions.getWarFile();
-                	String logDir;
-                	if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
-                		logDir = warFile.getPath() + "/WEB-INF/logs/";
-                	} else {
-                		String serverConfigDir = System.getProperty("cfml.server.config.dir");
-                		if(serverConfigDir == null) {
-                			logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
-                		} else {
-                			logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
-                		}
-                	}
-                	serverOptions.setLogDir(logDir);
+                  File warFile = serverOptions.getWarFile();
+                  String logDir;
+                  if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
+                    logDir = warFile.getPath() + "/WEB-INF/logs/";
+                  } else {
+                    String serverConfigDir = System.getProperty("cfml.server.config.dir");
+                    if(serverConfigDir == null) {
+                      logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
+                    } else {
+                      logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
+                    }
+                  }
+                  serverOptions.setLogDir(logDir);
                 }
             }
             if(serverOptions.getWarFile() != null){
-            	serverOptions.setCfmlDirs(serverOptions.getWarFile().getAbsolutePath());
+              serverOptions.setCfmlDirs(serverOptions.getWarFile().getAbsolutePath());
             }
             if (line.hasOption("dirs")) {
                 serverOptions.setCfmlDirs(line.getOptionValue("dirs"));
@@ -605,7 +688,7 @@ public class CommandLineHandler {
             }
             
             if (line.hasOption("cfengine")) {
-            	serverOptions.setCFEngineName(line.getOptionValue("cfengine"));
+              serverOptions.setCFEngineName(line.getOptionValue("cfengine"));
             }
             if (line.hasOption("cfserverconf")) {
                 serverOptions.setCFMLServletConfigServerDir(line.getOptionValue("cfserverconf"));
@@ -614,13 +697,13 @@ public class CommandLineHandler {
                 serverOptions.setCFMLServletConfigWebDir(line.getOptionValue("cfwebconf"));
             }
             if (line.hasOption("directoryindex")) {
-            	serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue("directoryindex")));
+              serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue("directoryindex")));
             }
             if (line.hasOption("cache")) {
-            	serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue("cache")));
+              serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue("cache")));
             }
             if (line.hasOption("customstatus")) {
-            	serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue("customstatus")));
+              serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue("customstatus")));
             }
             if (line.hasOption("transferminsize")) {
                 serverOptions.setTransferMinSize(Long.valueOf(line.getOptionValue("transferminsize")));
@@ -666,12 +749,43 @@ public class CommandLineHandler {
             if (line.hasOption("filterpathinfo") && line.getOptionValue("filterpathinfo").length() > 0) {
                 serverOptions.setFilterPathInfoEnabled(Boolean.valueOf(line.getOptionValue("filterpathinfo")));
             }
+            if (line.hasOption("ssladdcerts") && line.getOptionValue("ssladdcerts").length() > 0) {
+                serverOptions.setSSLAddCerts(line.getOptionValue("ssladdcerts"));
+            }
+            if (line.hasOption("basicauth")) {
+                serverOptions.setEnableBasicAuth(Boolean.valueOf(line.getOptionValue("basicauth")));
+            }
+            if (line.hasOption("users") && line.getOptionValue("users").length() > 0) {
+                if(!line.hasOption("basicauth") || line.hasOption("basicauth") && Boolean.valueOf(line.getOptionValue("basicauth"))) {
+                    serverOptions.setEnableBasicAuth(true);
+                }
+                serverOptions.setBasicAuth(line.getOptionValue("users"));
+            }
+            if (line.hasOption("buffersize") && line.getOptionValue("buffersize").length() > 0) {
+                serverOptions.setBufferSize(Integer.valueOf(line.getOptionValue("buffersize")));
+            }
+            if (line.hasOption("iothreads") && line.getOptionValue("iothreads").length() > 0) {
+                serverOptions.setIoThreads(Integer.valueOf(line.getOptionValue("iothreads")));
+            }
+            if (line.hasOption("workerthreads") && line.getOptionValue("workerthreads").length() > 0) {
+                serverOptions.setWorkerThreads(Integer.valueOf(line.getOptionValue("workerthreads")));
+            }
+            if (line.hasOption("directbuffers")) {
+                serverOptions.setDirectBuffers(Boolean.valueOf(line.getOptionValue("directbuffers")));
+            }
+            if (line.hasOption("loadbalance") && line.getOptionValue("loadbalance").length() > 0) {
+                serverOptions.setLoadBalance(line.getOptionValue("loadbalance"));
+            }
+            if (line.hasOption("directoryrefresh") && line.getOptionValue("directoryrefresh").length() > 0) {
+                serverOptions.setDirectoryListingRefreshEnabled(Boolean.valueOf(line.getOptionValue("directoryrefresh")));
+            }
+
             if(serverOptions.getLoglevel().equals("DEBUG")) {
-    	    	for(Option arg: line.getOptions()) {
-    	    		log.debug(arg);
-    	    		log.debug(arg.getValue());
-    	    	}
-    	    }
+                for (Option arg : line.getOptions()) {
+                    log.debug(arg);
+                    log.debug(arg.getValue());
+                }
+            }
             return serverOptions;
         }
         catch( Exception exp ) {
@@ -688,40 +802,69 @@ public class CommandLineHandler {
             printUsage(msg,1);
         }
         return null;
-    }    
-    
+    }
+
     static File getFile(String path) {
         File file = new File(path);
         if(!file.exists() || file == null) {
-            throw new RuntimeException("File not found: " + path);
+            throw new RuntimeException("File not found: " + path +" (" + file.getAbsolutePath() + ")");
         }
-    	return file;
+      return file;
     }
 
     static void printUsage(String message, int exitCode) {
+        PrintWriter pw = new PrintWriter(System.out);
         HelpFormatter formatter = new HelpFormatter();
-        formatter.setOptionComparator(new Comparator<Option>() {
-            public int compare(Option o1, Option o2) {
-                if(o1.getOpt().equals("war")) {return -1;} else if(o2.getOpt().equals("war")) {return 1;}
-                if(o1.getOpt().equals("p")) {return -1;} else if(o2.getOpt().equals("p")) {return 1;}
-                if(o1.getOpt().equals("c")) { return -1; } else if(o2.getOpt().equals("c")) {return 1;}
-                if(o1.getOpt().equals("context")) { return -1; } else if(o2.getOpt().equals("context")) {return 1;}
-                if(o1.getOpt().equals("d")) { return -1; } else if(o2.getOpt().equals("d")) {return 1;}
-                if(o1.getOpt().equals("b")) { return -1; } else if(o2.getOpt().equals("b")) {return 1;}
-                if(o1.getOpt().equals("h")) {return 1;} else if(o2.getOpt().equals("h")) {return -1;}
-                if(o1.getOpt().equals("url")) {return 1;} else if(o2.getOpt().equals("url")) {return -1;}
-                if(o1.getOpt().equals("open")) {return 1;} else if(o2.getOpt().equals("open")) {return -1;}
-                if(o1.getOpt().equals("stopsocket")) {return 1;} else if(o2.getOpt().equals("stopsocket")) {return -1;}
-                if(o1.getOpt().equals("stop")) {return 1;} else if(o2.getOpt().equals("stop")) {return -1;}
-                return o1.getOpt().compareTo(o2.getOpt());
-            }
-        });
-        formatter.setWidth(80);
-        formatter.setSyntaxPrefix("USAGE:");
-        formatter.setLongOptPrefix("--");
         //formatter.printHelp( SYNTAX, options,false);
         if(exitCode == 0) {
-            formatter.printHelp(80, SYNTAX, message + '\n' + HEADER, options, FOOTER, false);
+            pw.println("USAGE   " + SYNTAX);
+            pw.println(HEADER + '\n');
+            pw.println(message);
+            @SuppressWarnings("unchecked")
+            List<Option> optList = new ArrayList<Option>(options.getOptions());
+            Collections.sort(optList, new Comparator<Option>() {
+                public int compare(Option o1, Option o2) {
+                    if(o1.getOpt().equals("war")) {return -1;} else if(o2.getOpt().equals("war")) {return 1;}
+                    if(o1.getOpt().equals("p")) {return -1;} else if(o2.getOpt().equals("p")) {return 1;}
+                    if(o1.getOpt().equals("c")) { return -1; } else if(o2.getOpt().equals("c")) {return 1;}
+                    if(o1.getOpt().equals("context")) { return -1; } else if(o2.getOpt().equals("context")) {return 1;}
+                    if(o1.getOpt().equals("d")) { return -1; } else if(o2.getOpt().equals("d")) {return 1;}
+                    if(o1.getOpt().equals("b")) { return -1; } else if(o2.getOpt().equals("b")) {return 1;}
+                    if(o1.getOpt().equals("h")) {return 1;} else if(o2.getOpt().equals("h")) {return -1;}
+                    if(o1.getOpt().equals("url")) {return 1;} else if(o2.getOpt().equals("url")) {return -1;}
+                    if(o1.getOpt().equals("open")) {return 1;} else if(o2.getOpt().equals("open")) {return -1;}
+                    if(o1.getOpt().equals("stopsocket")) {return 1;} else if(o2.getOpt().equals("stopsocket")) {return -1;}
+                    if(o1.getOpt().equals("stop")) {return 1;} else if(o2.getOpt().equals("stop")) {return -1;}
+                    return o1.getOpt().compareTo(o2.getOpt());
+                }});
+            for (java.util.Iterator<Option> it = optList.iterator(); it.hasNext();) {
+                Option option = it.next();
+                StringBuffer optBuf = new StringBuffer();
+                if (option.getOpt() == null) {
+                    optBuf.append("  ").append("   ").append("--").append(option.getLongOpt());
+                } else {
+                    optBuf.append("  ").append("-").append(option.getOpt());
+                    if (option.hasLongOpt()) {
+                        optBuf.append(',').append("--").append(option.getLongOpt());
+                    }
+                }
+                if (option.hasArg()) {
+                    String argName = option.getArgName();
+                    if (argName != null && argName.length() == 0) {
+                        // if the option has a blank argname
+                        optBuf.append(' ');
+                    } else {
+                        optBuf.append(option.hasLongOpt() ? " " : " ");
+                        optBuf.append("<").append(argName != null ? option.getArgName() : "arg").append(">");
+                    }
+                }
+                pw.println(optBuf.toString());
+                formatter.printWrapped(pw, 78, 4, "    " + option.getDescription());
+                pw.println();
+            }
+            pw.println(FOOTER);
+            pw.flush();
+//            formatter.printHelp(80, SYNTAX, message + '\n' + HEADER, options, FOOTER, false);
         } else {
             System.out.println("USAGE:  " + SYNTAX + '\n' + message);
         }

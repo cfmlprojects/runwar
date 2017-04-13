@@ -186,8 +186,10 @@
       <equals arg1="${mvn.type}" arg2="snapshot" />
       <then>
         <property name="runwarbuild.mvn.version" value="${runwarbuild.version}-SNAPSHOT" />
+        <property name="deletesnapshots" value="true" />
       </then>
     </antcontrib:if>
+    <property name="deletesnapshots" value="false" />
     <property name="runwarbuild.mvn.version" value="${runwarbuild.version}" />
 
     <zip destfile="${dist.dir}/runwar-${runwarbuild.version}-sources.jar">
@@ -198,7 +200,7 @@
     </copy>
 
     <pom-and-deploy pomid="runwar.pom" file="${dist.dir}/pom.xml" artifact="${runwar.jar.file}"  packaging="jar" groupId="org.cfmlprojects"
-      artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="snapshot">
+      artifactId="runwar" version="${runwarbuild.version}" name="runwar" buildtype="snapshot" deletesnapshots="${deletesnapshots}">
       <attachments>
         <attach file="${dist.dir}/runwar-${runwarbuild.version}-javadoc.jar" classifier="javadoc"/>
         <attach file="${dist.dir}/runwar-${runwarbuild.version}-sources.jar" classifier="sources"/>
@@ -237,9 +239,10 @@
     <mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
     <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
-    <dependency groupId="org.tuckey" artifactId="urlrewritefilter" version="4.0.4" unzip="false" type="jar"
+    <!-- - change this back to org.tuckey when it hits 4.0.5 -->
+    <dependency groupId="org.cfmlprojects" artifactId="urlrewritefilter" version="${tuckey.rewrite.version}" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
-    <dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.51" unzip="false" type="jar"
+    <dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.56" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
     <!--  replace options with this eventually
     -->
@@ -268,21 +271,35 @@
       </exclusions>
     </dependency>
     <!-- regexpathinfofilter lets us handle *.cfm/* paths -->
-    <dependency groupId="org.cfmlprojects" artifactId="regexpathinfofilter" version="1.0.0" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+    <dependency groupId="org.cfmlprojects" artifactId="regexpathinfofilter" version="1.0.1" unzip="false" type="jar" dest="${runwar.lib.dir}" />
 <!--
     <dependency groupId="com.dorkbox" artifactId="SystemTray" version="2.21" unzip="false" type="jar" dest="${runwar.lib.dir}" />
     <dependency groupId="com.dorkbox" artifactId="Notify" version="2.17" unzip="false" type="jar" dest="${runwar.lib.dir}" />
  -->
     <dependency groupId="org.cfmlprojects" artifactId="SystemTray" version="2.24" unzip="false" type="jar" dest="${runwar.lib.dir}" />
     <dependency groupId="org.cfmlprojects" artifactId="Notify" version="2.18" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+
+<!--
+    <dependency groupId="org.everit.json" artifactId="org.everit.json.schema" version="1.5.0" unzip="false" type="jar"
+      dest="${runwar.lib.dir}">
+      <exclusions>
+        <exclusion groupId="com.google.guava" artifactId="guava" />
+        <exclusion groupId="org.json" artifactId="json" />
+      </exclusions>
+    </dependency>
+ -->
   </target>
 
+  <target name="build.testwar" depends="cfdistro.build">
+    <mapping physical="${basedir}/../tests" virtual="/tests"/>
+  </target>
+  
   <target name="runwar.test" depends="runwar.jar">
     <property name="tests.dir" location="../tests" />
       <dependency groupId="com.adobe" artifactId="coldfusion" version="2016.0.0.297996" unzip="false"
-      type="war" dest="${tests.dir}/resource/war/adobe space/" />
+      type="war" dest="${tests.dir}/war/adobe space/" />
       <dependency groupId="org.lucee" artifactId="lucee.war" version="4.5.2.018" unzip="false"
-      type="war" dest="${tests.dir}/resource/war/lucee space/" />
+      type="war" dest="${tests.dir}/war/lucee space/" />
   </target>
 
   <target name="runembedded.jar" description="creates an jar with the WAR embedded">
