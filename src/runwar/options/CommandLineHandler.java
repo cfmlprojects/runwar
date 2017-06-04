@@ -130,6 +130,18 @@ public class CommandLineHandler {
                 .create("urlrewritefile") );
 
         options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-check" )
+                .withDescription( "URL rewriting config file realod check interval, 0 for every request. (disabled)" )
+                .hasArg().withArgName("interval")
+                .create("urlrewritecheck") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-statuspath" )
+                .withDescription( "URL rewriting status path. (disabled)" )
+                .hasArg().withArgName("path")
+                .create("urlrewritestatuspath") );
+        
+        options.addOption( OptionBuilder
         		.withLongOpt( "ssl-enable" )
         		.withDescription( "Enable SSL.  Default is false.  When enabled, http is disabled by default." )
         		.hasArg().withArgName("true|false").withType(Boolean.class)
@@ -641,6 +653,12 @@ public class CommandLineHandler {
             }
             if (line.hasOption("urlrewriteenable")) {
                 serverOptions.setEnableURLRewrite(Boolean.valueOf(line.getOptionValue("urlrewriteenable")));
+            }
+            if (line.hasOption("urlrewritecheck") && line.getOptionValue("urlrewritecheck").length() > 0) {
+                serverOptions.setURLRewriteCheckInterval(line.getOptionValue("urlrewritecheck"));
+            }
+            if (line.hasOption("urlrewritestatuspath") && line.getOptionValue("urlrewritestatuspath").length() > 0) {
+                serverOptions.setURLRewriteStatusPath(line.getOptionValue("urlrewritestatuspath"));
             }
             if (line.hasOption("logdir")) {
                 serverOptions.setLogDir(line.getOptionValue("logdir"));

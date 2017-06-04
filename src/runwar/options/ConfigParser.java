@@ -181,6 +181,12 @@ public class ConfigParser {
             if (serverConfig.hasOption("urlrewriteenable")) {
                 serverOptions.setEnableURLRewrite(Boolean.valueOf(serverConfig.getOptionValue("urlrewriteenable")));
             }
+            if (serverConfig.hasOption("urlrewritecheck") && serverConfig.getOptionValue("urlrewritecheck").length() > 0) {
+                serverOptions.setURLRewriteCheckInterval(serverConfig.getOptionValue("urlrewritecheck"));
+            }
+            if (serverConfig.hasOption("urlrewritestatuspath") && serverConfig.getOptionValue("urlrewritestatuspath").length() > 0) {
+                serverOptions.setURLRewriteStatusPath(serverConfig.getOptionValue("urlrewritestatuspath"));
+            }
             if (serverConfig.hasOption("logdir")) {
                 serverOptions.setLogDir(serverConfig.getOptionValue("logdir"));
             } else {

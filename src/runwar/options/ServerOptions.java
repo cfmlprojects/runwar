@@ -21,6 +21,7 @@ public class ServerOptions {
     private URL jarURL = null;
     private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig, statusFile = null;
     private String iconImage = null;
+    private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean trayEnabled = true;
     private boolean directoryListingEnabled = true;
@@ -175,6 +176,23 @@ public class ServerOptions {
     }
     public File getURLRewriteFile() {
         return this.urlRewriteFile;
+    }
+    public ServerOptions setURLRewriteCheckInterval(String interval) {
+        this.urlRewriteCheckInterval = interval;
+        return this;
+    }
+    public String getURLRewriteCheckInterval() {
+        return this.urlRewriteCheckInterval;
+    }
+    public ServerOptions setURLRewriteStatusPath(String path) {
+        if(!path.startsWith("/")) {
+            path = '/' + path;
+        }
+        this.urlRewriteStatusPath= path;
+        return this;
+    }
+    public String getURLRewriteStatusPath() {
+        return this.urlRewriteStatusPath;
     }
     public int getSocketNumber() {
         return socketNumber;

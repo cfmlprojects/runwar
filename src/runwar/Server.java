@@ -857,12 +857,23 @@ public class Server {
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
             }
+            
             String rewriteformat = serverOptions.isURLRewriteApacheFormat() ? "modRewrite-style" : "XML";
             log.debug(rewriteformat + " rewrite config file: " + urlRewriteFile);
-            servletBuilder.addFilter(new FilterInfo("UrlRewriteFilter", rewriteFilter)
-                .addInitParam("confPath", urlRewriteFile)
-                .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
-                .addInitParam("modRewriteConf", Boolean.toString(serverOptions.isURLRewriteApacheFormat())));
+            FilterInfo rewriteFilterInfo = new FilterInfo("UrlRewriteFilter", rewriteFilter)
+                    .addInitParam("confPath", urlRewriteFile)
+                    .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
+                    .addInitParam("modRewriteConf", Boolean.toString(serverOptions.isURLRewriteApacheFormat()));
+            if(serverOptions.getURLRewriteCheckInterval() != null) {
+                rewriteFilterInfo.addInitParam("confReloadCheckInterval", serverOptions.getURLRewriteCheckInterval());
+            }
+            if(serverOptions.getURLRewriteStatusPath() != null && serverOptions.getURLRewriteStatusPath().length() != 0) {
+                rewriteFilterInfo.addInitParam("statusPath", serverOptions.getURLRewriteStatusPath());
+            }
+            if(serverOptions.getLoglevel() != "WARN") {
+                rewriteFilterInfo.addInitParam("logLevel", serverOptions.getLoglevel());
+            }
+            servletBuilder.addFilter(rewriteFilterInfo);
             servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
         } else {
             log.debug("URL rewriting is disabled");
