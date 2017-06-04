@@ -332,6 +332,10 @@ public class ConfigParser {
             if (serverConfig.hasOption("directoryrefresh") && serverConfig.getOptionValue("directoryrefresh").length() > 0) {
                 serverOptions.setDirectoryListingRefreshEnabled(Boolean.valueOf(serverConfig.getOptionValue("directoryrefresh")));
             }
+            if (serverConfig.hasOption("proxypeeraddress") && serverConfig.getOptionValue("proxypeeraddress").length() > 0) {
+                serverOptions.setProxyPeerAddressEnabled(Boolean.valueOf(serverConfig.getOptionValue("proxypeeraddress")));
+            }
+
             
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();

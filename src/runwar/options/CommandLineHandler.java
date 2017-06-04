@@ -435,7 +435,6 @@ public class CommandLineHandler {
                 .withDescription( "Enable direct buffers" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directbuffers") );
-        
         options.addOption( OptionBuilder
                 .withLongOpt( "load-balance" )
                 .withDescription( "Comma-separated list of servers to start and load balance." )
@@ -447,6 +446,12 @@ public class CommandLineHandler {
                 .withDescription( "Refresh the direcotry list with each request. *DEV ONLY* not thread-safe" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directoryrefresh") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "proxy-peeraddress" )
+                .withDescription( "Enable peer address proxy headers" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("proxypeeraddress") );
         
         
         options.addOption( new Option( "h", "help", false, "print this message" ) );
@@ -633,25 +638,6 @@ public class CommandLineHandler {
             }
             if (line.hasOption("logdir")) {
                 serverOptions.setLogDir(line.getOptionValue("logdir"));
-            } else {
-                if(serverOptions.getWarFile() != null){
-                  File warFile = serverOptions.getWarFile();
-                  String logDir;
-                  if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
-                    logDir = warFile.getPath() + "/WEB-INF/logs/";
-                  } else {
-                    String serverConfigDir = System.getProperty("cfml.server.config.dir");
-                    if(serverConfigDir == null) {
-                      logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
-                    } else {
-                      logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
-                    }
-                  }
-                  serverOptions.setLogDir(logDir);
-                }
-            }
-            if(serverOptions.getWarFile() != null){
-              serverOptions.setCfmlDirs(serverOptions.getWarFile().getAbsolutePath());
             }
             if (line.hasOption("dirs")) {
                 serverOptions.setCfmlDirs(line.getOptionValue("dirs"));
@@ -778,6 +764,9 @@ public class CommandLineHandler {
             }
             if (line.hasOption("directoryrefresh") && line.getOptionValue("directoryrefresh").length() > 0) {
                 serverOptions.setDirectoryListingRefreshEnabled(Boolean.valueOf(line.getOptionValue("directoryrefresh")));
+            }
+            if (line.hasOption("proxypeeraddress") && line.getOptionValue("proxypeeraddress").length() > 0) {
+                serverOptions.setProxyPeerAddressEnabled(Boolean.valueOf(line.getOptionValue("proxypeeraddress")));
             }
 
             if(serverOptions.getLoglevel().equals("DEBUG")) {

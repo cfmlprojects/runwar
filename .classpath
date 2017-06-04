@@ -33,6 +33,11 @@
 	<classpathentry kind="lib" path="lib/undertow-websockets-jsr-1.4.11.Final.jar"/>
 	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-1.56.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk15on-1.56.jar"/>
+	<classpathentry kind="lib" path="testlibs/commons-codec-1.6.jar"/>
+	<classpathentry kind="lib" path="testlibs/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="testlibs/httpclient-4.2.6.jar"/>
+	<classpathentry kind="lib" path="testlibs/httpcore-4.2.5.jar"/>
+	<classpathentry kind="lib" path="testlibs/httpmime-4.2.6.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/SystemTray-2.24.jar"/>
 	<classpathentry kind="output" path="bin"/>

@@ -41,6 +41,7 @@ import runwar.options.CommandLineHandler;
 import runwar.options.ServerOptions;
 import runwar.undertow.MappedResourceManager;
 import runwar.undertow.WebXMLParser;
+import runwar.util.RequestDumper;
 import runwar.util.SSLUtil;
 import runwar.util.TeeOutputStream;
 import runwar.security.SecurityManager;
@@ -54,6 +55,9 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.PredicateHandler;
+import io.undertow.server.handlers.ProxyPeerAddressHandler;
+import io.undertow.server.handlers.RequestDumpingHandler;
+import io.undertow.server.handlers.SSLHeaderHandler;
 import io.undertow.server.handlers.cache.CacheHandler;
 import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -64,6 +68,7 @@ import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.DeploymentManager.State;
 import io.undertow.servlet.api.ErrorPage;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.MimeMapping;
@@ -88,6 +93,7 @@ public class Server {
     int socketNumber;
     private DeploymentManager manager;
     private Undertow undertow;
+    private MonitorThread monitor;
 
     private String PID;
     private String serverState = ServerState.STOPPED;
@@ -628,7 +634,11 @@ public class Server {
                     //log.trace("*** Resetting servlet path info");
                     manager.getDeployment().getServletPaths().invalidate();
                 }
-                super.handleRequest(exchange);
+                if(serverOptions.isDebug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
+                    new RequestDumper().handleRequest(exchange);
+                } else {
+                    super.handleRequest(exchange);
+                }
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
@@ -649,6 +659,17 @@ public class Server {
         } else {
             errPageHandler = new ErrorHandler(pathHandler);
         }
+
+//        if (serverOptions.isDebug()) {
+//            log.debug("Enabling request dumper");
+//            errPageHandler = new RequestDumpingHandler(errPageHandler);
+//        }
+
+        if (serverOptions.isProxyPeerAddressEnabled()) {
+            log.debug("Enabling Proxy Peer Address handling");
+            errPageHandler = new SSLHeaderHandler(new ProxyPeerAddressHandler(errPageHandler));
+        }
+
         if(serverOptions.isEnableBasicAuth()) {
             String realm = serverName + " Realm";
             log.debug("Enabling Basic Auth: " + realm);
@@ -681,7 +702,7 @@ public class Server {
         }
         // start the stop monitor thread
         undertow = serverBuilder.build();
-        Thread monitor = new MonitorThread(stoppassword);
+        monitor = new MonitorThread(stoppassword);
         monitor.start();
         log.debug("started stop monitor");
         try {
@@ -689,7 +710,7 @@ public class Server {
             log.debug("hooked system tray");	
         } catch( Throwable e ) {
             log.debug("system tray hook failed.");
-            log.error( e );        	
+            log.error( e );
         }
 
         if (serverOptions.isOpenbrowser()) {
@@ -766,6 +787,9 @@ public class Server {
     public void stopServer() {
         int exitCode = 0;
         try{
+            if(monitor != null) {
+                monitor.stopListening();
+            }
             System.out.println();
             System.out.println(bar);
             System.out.println("*** stopping server");
@@ -773,7 +797,12 @@ public class Server {
                 mariadb4jManager.stop();
             }
             try {
-                manager.undeploy();
+                switch(manager.getState()) {
+                    case UNDEPLOYED:
+                        break;
+                    default:
+                        manager.undeploy();
+                }
                 undertow.stop();
                 Thread.sleep(1000);
             } catch (Exception notRunning) {
@@ -1031,6 +1060,10 @@ public class Server {
             System.exit(exitCode);
 //            Thread.currentThread().interrupt();
             return;
+        }
+        
+        public void stopListening() {
+            listening = false;
         }
     }
 

@@ -91,10 +91,10 @@ public class Start {
                             for(String balanceHost : balanceHosts) {
                                 String[] schemeHostAndPort = balanceHost.split(":");
                                 String host = schemeHostAndPort[1].replaceAll("^//", "");
-                                int port = Integer.parseInt(schemeHostAndPort[2]);
+                                int port = schemeHostAndPort.length >2 ? Integer.parseInt(schemeHostAndPort[2]) : 80 ;
                                 response += balanceHost + " <a href='?removeHost=" + balanceHost + "'>remove</a> Listening: "+serverListening(host, port)+"<br/>";
                             }
-                            exchange.getResponseSender().send("<h3>Balanced Hosts</h3><form action='?'> Add Host:<input type='text' name='addHost' value='http://127.0.0.1:7070'><input type='submit'></form>" + response);
+                            exchange.getResponseSender().send("<h3>Balanced Hosts</h3><form action='?'> Add Host:<input type='text' name='addHost' placeholder='http://127.0.0.1:7070'><input type='submit'></form>" + response);
                         }
                     }).build();
             adminServer.start();
