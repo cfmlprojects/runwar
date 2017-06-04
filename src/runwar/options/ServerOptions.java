@@ -22,6 +22,7 @@ public class ServerOptions {
     private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig, statusFile = null;
     private String iconImage = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
+    private boolean trayEnabled = true;
     private boolean directoryListingEnabled = true;
     private boolean directoryListingRefreshEnabled = false;
     private boolean cacheEnabled = false;
@@ -330,6 +331,13 @@ public class ServerOptions {
     }
     public ServerOptions setTrayConfig(File trayConfig) {
         this.trayConfig = trayConfig;
+        return this;
+    }
+    public boolean isTrayEnabled() {
+        return trayEnabled;
+    }
+    public ServerOptions setTrayEnabled(boolean enabled) {
+        this.trayEnabled = enabled;
         return this;
     }
     public File getStatusFile() {

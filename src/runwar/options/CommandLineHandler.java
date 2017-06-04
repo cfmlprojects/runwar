@@ -244,6 +244,12 @@ public class CommandLineHandler {
                 .create("procname") );
 
         options.addOption( OptionBuilder
+                .withLongOpt( "tray-enable" )
+                .withDescription( "Enable/Disable system tray integration (true)" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("tray") );
+
+        options.addOption( OptionBuilder
                 .withLongOpt( "tray-icon" )
                 .withDescription( "tray icon and OS X dock icon png image" )
                 .hasArg().withArgName("path")
@@ -661,14 +667,16 @@ public class CommandLineHandler {
                 serverOptions.setProcessName(line.getOptionValue("processname"));
             }
 
+            if (line.hasOption("tray")) {
+                serverOptions.setTrayEnabled(Boolean.valueOf(line.getOptionValue("urlrewriteenable")));
+            }
             if (line.hasOption("icon")) {
                 serverOptions.setIconImage(line.getOptionValue("icon"));
             }
-
             if (line.hasOption("trayconfig") && line.getOptionValue("trayconfig").length() > 0) {
                 serverOptions.setTrayConfig(getFile(line.getOptionValue("trayconfig")));
             }
-            
+
             if (line.hasOption("statusfile") && line.getOptionValue("statusfile").length() > 0) {
                 serverOptions.setStatusFile(getFile(line.getOptionValue("statusfile")));
             }

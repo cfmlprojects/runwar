@@ -225,6 +225,12 @@ public class ConfigParser {
                 serverOptions.setProcessName(serverConfig.getOptionValue("processname"));
             }
 
+            if (serverConfig.hasOption("tray")) {
+                serverOptions.setTrayEnabled(Boolean.valueOf(serverConfig.getOptionValue("urlrewriteenable")));
+            }
+            if (serverConfig.hasOption("icon")) {
+                serverOptions.setIconImage(serverConfig.getOptionValue("icon"));
+            }
             if (serverConfig.hasOption("trayconfig")) {
                 serverOptions.setTrayConfig(getFile(serverConfig.getOptionValue("trayconfig")));
             }
@@ -233,9 +239,6 @@ public class ConfigParser {
                 serverOptions.setStatusFile(getFile(serverConfig.getOptionValue("statusfile")));
             }
             
-            if (serverConfig.hasOption("icon")) {
-                serverOptions.setIconImage(serverConfig.getOptionValue("icon"));
-            }
 
             if (serverConfig.hasOption("cfengine")) {
             	serverOptions.setCFEngineName(serverConfig.getOptionValue("cfengine"));

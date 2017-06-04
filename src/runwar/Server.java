@@ -705,12 +705,17 @@ public class Server {
         monitor = new MonitorThread(stoppassword);
         monitor.start();
         log.debug("started stop monitor");
-        try {
-            LaunchUtil.hookTray(this);
-            log.debug("hooked system tray");	
-        } catch( Throwable e ) {
-            log.debug("system tray hook failed.");
-            log.error( e );
+
+        if(serverOptions.isTrayEnabled()) {
+            try {
+                LaunchUtil.hookTray(this);
+                log.debug("hooked system tray");	
+            } catch( Throwable e ) {
+                log.debug("system tray hook failed.");
+                log.error( e );
+            }
+        } else {
+            log.debug("System tray integration disabled");
         }
 
         if (serverOptions.isOpenbrowser()) {
