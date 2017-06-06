@@ -64,8 +64,8 @@ public class LaunchUtil {
     private static boolean relaunching;
     private static final int KB = 1024;
     private static SystemTray systemTray;
-    private static Notify notify;
     private static String processName;
+    private static boolean trayIsHooked = false;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
 
@@ -300,6 +300,9 @@ public class LaunchUtil {
     }
 
     public static void hookTray(Server server) {
+        if(trayIsHooked){
+            return;
+        }
 //        SystemTray.COMPATIBILITY_MODE = true;
         SystemTray.FORCE_GTK2 = true;
 //        SystemTray.FORCE_LINUX_TYPE = SystemTray.LINUX_GTK;
@@ -372,7 +375,9 @@ public class LaunchUtil {
             else if(itemInfo.get("action") != null) {
                 String action = itemInfo.get("action").toString();
                 if (action.toLowerCase().equals("stopserver")) {
-                    systemTray.addMenuEntry(label, imgHash, is, new ExitAction());
+                    systemTray.addMenuEntry(label, imgHash, is, new ExitAction(server));
+                } else if (action.toLowerCase().equals("restartserver")) {
+                    systemTray.addMenuEntry(label, imgHash, is, new RestartAction(server));
                 } else if (action.toLowerCase().equals("openbrowser")) {
                     String url = itemInfo.get("url").toString();
                     systemTray.addMenuEntry(label, imgHash, is, new OpenBrowserAction(url));
@@ -387,6 +392,7 @@ public class LaunchUtil {
                 e.printStackTrace();
             }
         }
+        trayIsHooked = true;
     }
     
     public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {
@@ -596,14 +602,20 @@ public class LaunchUtil {
 
     private static class ExitAction implements SystemTrayMenuAction {
 
-        public ExitAction() {
+        private Server server;
+
+        public ExitAction(Server server) {
+            this.server = server;
         }
 
         @Override
         public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
             try {
                 System.out.println("Exiting...");
-                systemTray.shutdown();
+                server.stopServer();
+                if(server.serverWentDown()) {
+                    systemTray.shutdown();
+                }
                 System.exit(0);
             } catch (Exception e1) {
                 displayMessage("Error", e1.getMessage());
@@ -612,6 +624,29 @@ public class LaunchUtil {
                 } catch (InterruptedException e2) {
                 }
                 System.exit(1);
+            }
+        }
+    }
+    
+    private static class RestartAction implements SystemTrayMenuAction {
+        
+        private Server server;
+        
+        public RestartAction(Server server) {
+            this.server = server;
+        }
+        
+        @Override
+        public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
+            try {
+                System.out.println("Restarting...");
+                server.restartServer(server.getServerOptions());
+            } catch (Exception e1) {
+                displayMessage("Error", e1.getMessage());
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e2) {
+                }
             }
         }
     }
@@ -649,21 +684,21 @@ public class LaunchUtil {
         }
         try {
             Pos position = OS.isMacOsX() ? Pos.TOP_RIGHT : Pos.BOTTOM_RIGHT;
-            notify = Notify.create()
-                .title(title)
-                .text(text)
-                .hideAfter(5000)
-                .position(position)
-                // .setScreen(0)
-                .darkStyle()
-                //.shake(1300, 10)
-                // .hideCloseButton()
-                .onAction(new ActionHandler<Notify>() {
-                    @Override
-                    public void handle(final Notify arg0) {
+            Notify notify = Notify.create()
+                    .title(title)
+                    .text(text)
+                    .hideAfter(5000)
+                    .position(position)
+                    // .setScreen(0)
+                    .darkStyle()
+                    //.shake(1300, 10)
+                    // .hideCloseButton()
+                    .onAction(new ActionHandler<Notify>() {
+                        @Override
+                        public void handle(final Notify arg0) {
 //                        System.out.println("Notification clicked on!");
-                    }
-                });
+                        }
+                    });
             switch (type) {
             case INFO:
                 notify.showInformation();
@@ -956,6 +991,17 @@ public class LaunchUtil {
 
         public boolean accept(File dir, String name) {
             return name.toLowerCase().startsWith(prefix);
+        }
+    }
+
+    public static void assertJavaVersion8() {
+        String version = System.getProperty("java.version");
+        System.out.println("Java version " + version);
+        if (version.charAt(0) == '1' && Integer.parseInt(version.charAt(2) + "") < 8) {
+            System.out.println("** Requires Java 1.8 or later");
+            System.out.println("The HTTP2 spec requires certain cyphers that are not present in older JVM's");
+            System.out.println("See section 9.2.2 of the HTTP2 specification for details");
+            System.exit(1);
         }
     }
 

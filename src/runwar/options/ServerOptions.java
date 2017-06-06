@@ -13,7 +13,7 @@ import runwar.Server;
 public class ServerOptions {
 	private String serverName = "default", processName = "RunWAR", loglevel = "WARN";
     private String host = "127.0.0.1", contextPath = "/";
-    private int portNumber = 8088, ajpPort = 8009, sslPort = 443, socketNumber = 8779;
+    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
     private boolean debug = false, isBackground = true, keepRequestLog = false, openbrowser = false;
     private String pidFile, openbrowserURL, cfmlDirs, libDirs = null;
@@ -51,7 +51,8 @@ public class ServerOptions {
     private boolean enableBasicAuth = false;
     private boolean directBuffers = true;
     int bufferSize,ioThreads,workerThreads = 0;
-    private boolean proxyPeerAddressEnabled = true;
+    private boolean proxyPeerAddressEnabled = false;
+    private boolean http2enabled = false;
 
     static {
         userPasswordList = new HashMap<String, String>();
@@ -673,6 +674,13 @@ public class ServerOptions {
     public boolean isProxyPeerAddressEnabled() {
         return this.proxyPeerAddressEnabled;
     }
-
+    
+    public ServerOptions setHTTP2Enabled(boolean enable) {
+        this.http2enabled = enable;
+        return this;
+    }
+    public boolean isHTTP2Enabled() {
+        return this.http2enabled;
+    }
 
 }

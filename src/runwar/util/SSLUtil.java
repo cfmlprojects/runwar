@@ -65,6 +65,8 @@ public class SSLUtil
     private static Logger log;
     private static final String SERVER_KEY_STORE = "runwar/runwar.keystore";
     private static final String SERVER_TRUST_STORE = "runwar/runwar.truststore";
+    private static final String CLIENT_KEY_STORE = "runwar/client.keystore";
+    private static final String CLIENT_TRUST_STORE = "runwar/client.truststore";
     private static final char[] DEFAULT_STORE_PASSWORD;
     
     static {
@@ -74,14 +76,19 @@ public class SSLUtil
     
     public static SSLContext createSSLContext() throws IOException {
         SSLUtil.log.debug("Creating SSL context from: runwar/runwar.keystore trust store: runwar/runwar.truststore");
-        return createSSLContext(loadKeyStore(SERVER_KEY_STORE), loadKeyStore(SERVER_TRUST_STORE), DEFAULT_STORE_PASSWORD, null);
+        return createSSLContext(loadKeyStore(SERVER_KEY_STORE), loadKeyStore(SERVER_TRUST_STORE), DEFAULT_STORE_PASSWORD.clone(), null);
     }
-    
+
+    public static SSLContext createClientSSLContext() throws IOException {
+        SSLUtil.log.debug("Creating Client SSL context from: runwar/client.keystore trust store: runwar/client.truststore");
+        return createSSLContext(loadKeyStore(CLIENT_KEY_STORE), loadKeyStore(CLIENT_TRUST_STORE), DEFAULT_STORE_PASSWORD.clone(), null);
+    }
+
     public static SSLContext createSSLContext(final File certfile, final File keyFile, char[] passphrase, final String[] addCertificatePaths) throws IOException {
         SSLUtil.log.debug("Creating SSL context from cert: [" + certfile + "]  key: [" + keyFile + "]");
         if (passphrase == null || passphrase.length == 0) {
             SSLUtil.log.debug("Using default store passphrase of '" + String.copyValueOf(DEFAULT_STORE_PASSWORD) + "'");
-            passphrase = DEFAULT_STORE_PASSWORD;
+            passphrase = DEFAULT_STORE_PASSWORD.clone();
         }
         SSLContext sslContext;
         try {

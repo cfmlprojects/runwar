@@ -344,6 +344,9 @@ public class ConfigParser {
             if (serverConfig.hasOption("proxypeeraddress") && serverConfig.getOptionValue("proxypeeraddress").length() > 0) {
                 serverOptions.setProxyPeerAddressEnabled(Boolean.valueOf(serverConfig.getOptionValue("proxypeeraddress")));
             }
+            if (serverConfig.hasOption("http2") && serverConfig.getOptionValue("http2").length() > 0) {
+                serverOptions.setHTTP2Enabled(Boolean.valueOf(serverConfig.getOptionValue("http2")));
+            }
 
             
             if(serverOptions.getLoglevel().equals("DEBUG")) {

@@ -470,8 +470,13 @@ public class CommandLineHandler {
                 .withDescription( "Enable peer address proxy headers" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("proxypeeraddress") );
-        
-        
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "http2-enable" )
+                .withDescription( "Enable HTTP2" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("http2") );
+
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 /*
@@ -793,6 +798,9 @@ public class CommandLineHandler {
             }
             if (line.hasOption("proxypeeraddress") && line.getOptionValue("proxypeeraddress").length() > 0) {
                 serverOptions.setProxyPeerAddressEnabled(Boolean.valueOf(line.getOptionValue("proxypeeraddress")));
+            }
+            if (line.hasOption("http2") && line.getOptionValue("http2").length() > 0) {
+                serverOptions.setHTTP2Enabled(Boolean.valueOf(line.getOptionValue("http2")));
             }
 
             if(serverOptions.getLoglevel().equals("DEBUG")) {

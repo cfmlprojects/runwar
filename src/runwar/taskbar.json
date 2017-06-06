@@ -4,6 +4,8 @@
 "items":
 	[
 	{"label":"Stop Server (${runwar.processName})", "action":"stopserver", "image":"resources/dialog-error.png"}
+	,{"label":"Restart Server", "action":"restartserver", "image":"resources/dialog-reload2.png"}
+	,{"label":"RestartS Server", "action":"restartserver", "image":"resources/dialog-reload.png"}
 	,{"label":"Open Browser", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/","image":"resources/dialog-information.png"}
 	]
 }

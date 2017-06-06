@@ -6,3 +6,4 @@
 /tests/resource/war
 /undertow
 /testlibs
+tests/war/simple.war/WEB-INF/logs

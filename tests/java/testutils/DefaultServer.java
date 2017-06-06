@@ -1,8 +1,11 @@
 package testutils;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.List;
 
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
@@ -28,11 +31,11 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
     public static final int BUFFER_SIZE = Integer.getInteger("test.bufferSize", 8192 * 3);
 
     private static boolean first = true;
-    private static Server server;
+    private static volatile Server server = null;
     private static final boolean https = Boolean.getBoolean("test.https");
     private static final int runs = Integer.getInteger("test.runs", 1);
 
-    private static final ServerOptions serverOptions = new ServerOptions();
+    private static ServerOptions serverOptions;
 
     public static String getDefaultServerURL() {
         return "http://" + NetworkUtils.formatPossibleIpv6Address(getHostAddress(DEFAULT)) + ":" + getHostPort(DEFAULT);
@@ -47,6 +50,11 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
                 + getHostSSLPort(DEFAULT);
     }
 
+    public static String getDefaultServerHTTP2Address() {
+        return "https://" + NetworkUtils.formatPossibleIpv6Address(getHostAddress(DEFAULT)) + ":"
+                + getHTTP2Port(DEFAULT);
+    }
+    
     public DefaultServer(Class<?> klass) throws InitializationError {
         super(klass);
     }
@@ -73,17 +81,41 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
                 super.testFinished(description);
             }
         });
-        runInternal(notifier);
-        super.run(notifier);
+
+        // run the beforeClass ones first so they can set the config, side result is they're run twice. :/
+        serverOptions = new ServerOptions();
+        serverOptions.setWarFile(new File("tests/war/simple.war")).setDebug(true).setBackground(false);
+
+        List<FrameworkMethod> methos = getTestClass().getAnnotatedMethods(BeforeClass.class);
+        runChild(methos.get(0), new RunNotifier());
+
+        try {
+            if(server == null) {
+                server = new Server();
+                server.startServer(serverOptions);
+            } else {
+                server.restartServer(serverOptions);
+            }
+            super.run(notifier);
+            server.stopServer();
+        } catch (Exception e) {
+           e.printStackTrace();
+        }
+
+ //       runInternal(notifier);
     }
 
     private static void runInternal(final RunNotifier notifier) {
-        if (first) {
-            first = false;
             try {
-                server = new Server();
+                server = server == null ? new Server() : server;
+                String state = server.getServerState();
                 serverOptions.setWarFile(new File("tests/war/simple.war")).setDebug(true).setBackground(false);
-                server.startServer(serverOptions);
+                if(server.getServerState() == Server.ServerState.STARTED){
+                    server.restartServer(serverOptions);
+                } else {
+                    server.startServer(serverOptions);
+                    
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -93,7 +125,6 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
                     server.stopServer();
                 }
             });
-        }
     }
 
     @Override
@@ -133,6 +164,12 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
         }
     }
 
+    @Override
+    protected Statement methodInvoker(FrameworkMethod method, Object test) {
+        System.out.println("invoking: " + method.toString());
+        return super.methodInvoker(method, test);
+    }
+    
     public static String getHostAddress(String serverName) {
         return System.getProperty(serverName + ".server.address", "localhost");
     }
@@ -143,6 +180,10 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
 
     public static int getHostPort(String serverName) {
         return Integer.getInteger(serverName + ".server.port", 8088);
+    }
+
+    public static int getHTTP2Port(String serverName) {
+        return Integer.getInteger(serverName + ".server.port", 1443);
     }
 
     public static int getHostPort() {

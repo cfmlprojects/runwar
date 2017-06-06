@@ -8,6 +8,7 @@ import io.undertow.util.Protocols;
 import io.undertow.util.StatusCodes;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
+import runwar.options.ServerOptions;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -22,7 +23,7 @@ import java.io.IOException;
 public class ProxyPeerAddressTest {
 
     @BeforeClass
-    public static void beforeClass() throws IOException {
+    public static void beforeClass() {
         DefaultServer.getServerOptions().setProxyPeerAddressEnabled(true);
     }
 
@@ -31,9 +32,10 @@ public class ProxyPeerAddressTest {
 
         String port = "8088";
         String forwardFor = "some.domain.forwarded";
+        Assert.assertTrue(DefaultServer.getServerOptions().isProxyPeerAddressEnabled());
         final TestHttpClient client = new TestHttpClient();
         try {
-            HttpGet get = new HttpGet(DefaultServer.getDefaultServerURL() + "/dumprequest");
+            HttpGet get = new HttpGet(DefaultServer.getDefaultServerURL() + "/dumprunwarrequest");
             get.addHeader(Headers.X_FORWARDED_FOR_STRING, forwardFor);
             HttpResponse result = client.execute(get);
             Assert.assertEquals(StatusCodes.OK, result.getStatusLine().getStatusCode());
@@ -53,6 +55,7 @@ public class ProxyPeerAddressTest {
         
         String forwardFor = "localhost";
         String forwardPort = "8765";
+        Assert.assertTrue(DefaultServer.getServerOptions().isProxyPeerAddressEnabled());
         final TestHttpClient client = new TestHttpClient();
         try {
             HttpGet get = new HttpGet(DefaultServer.getDefaultServerURL() + "/dumprunwarrequest");

@@ -83,7 +83,7 @@
     <runwar.initprops />
     <delete dir="${temp.dir}/jar"/>
     <copy todir="${runwar.bin.dir}/runwar/runwar/">
-      <fileset dir="${runwar.src.dir}/runwar/" includes="runwar.keystore, runwar.truststore, icon.png, taskbar.json, urlrewrite.xml" />
+      <fileset dir="${runwar.src.dir}/runwar/" includes="client.*, runwar.keystore, runwar.truststore, icon.png, taskbar.json, urlrewrite.xml" />
     </copy>
     <copy todir="${runwar.bin.dir}/runwar/runwar/" file="${runwar.src.dir}/runwar/version.properties">
       <filterchain>
@@ -97,7 +97,7 @@
       <fileset dir="${runwar.src.dir}/" includes="javax/**, META-INF/**" />
     </copy>
     <jar destfile="${runwar.jar.file}" duplicate="preserve" basedir="${runwar.bin.dir}/runwar/"
-      includes="**/*.class, **/*.png, **META-INF/services/*,**/runwar.*store, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.json, **/*.xml, javax/**"
+      includes="**/*.class, **/*.png, **META-INF/services/*,**/runwar.*store, **/client.*store, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.json, **/*.xml, javax/**"
       filesetmanifest="mergewithoutmain">
       <manifest>
         <attribute name="Main-Class" value="runwar.Start" />
@@ -272,13 +272,22 @@
     </dependency>
     <!-- regexpathinfofilter lets us handle *.cfm/* paths -->
     <dependency groupId="org.cfmlprojects" artifactId="regexpathinfofilter" version="1.0.1" unzip="false" type="jar" dest="${runwar.lib.dir}" />
-<!--
-    <dependency groupId="com.dorkbox" artifactId="SystemTray" version="2.21" unzip="false" type="jar" dest="${runwar.lib.dir}" />
-    <dependency groupId="com.dorkbox" artifactId="Notify" version="2.17" unzip="false" type="jar" dest="${runwar.lib.dir}" />
- -->
-    <dependency groupId="org.cfmlprojects" artifactId="SystemTray" version="2.24" unzip="false" type="jar" dest="${runwar.lib.dir}" />
-    <dependency groupId="org.cfmlprojects" artifactId="Notify" version="2.18" unzip="false" type="jar" dest="${runwar.lib.dir}" />
 
+<!--
+    <dependency groupId="com.dorkbox" artifactId="Notify" version="2.20" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+    <dependency groupId="com.dorkbox" artifactId="SystemTray" version="3.1" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+ -->
+    <dependency groupId="org.cfmlprojects" artifactId="Notify" version="2.18" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+    <dependency groupId="org.cfmlprojects" artifactId="SystemTray" version="2.24" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+
+    <!--  http2 (until java 9 maybe)
+    way too error prone, needs exact jvm, etc.
+    <dependency groupId="org.mortbay.jetty.alpn" artifactId="alpn-boot" version="8.1.11.v20170118" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+
+    <dependency groupId="io.netty" artifactId="netty-tcnative-boringssl-static" version="2.0.0.Final" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+    <dependency groupId="io.netty" artifactId="netty-handler" version="4.1.11.Final" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+    <dependency groupId="org.eclipse.jetty.alpn" artifactId="alpn-api" version="1.1.2.v20150522" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+     -->
 <!--  tests -->
     <dependency groupId="org.apache.httpcomponents" artifactId="httpclient" version="4.2.6" unzip="false" type="jar" dest="${runwar.tests.lib.dir}" />
     <dependency groupId="org.apache.httpcomponents" artifactId="httpmime" version="4.2.6" unzip="false" type="jar" dest="${runwar.tests.lib.dir}" />
