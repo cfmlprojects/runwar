@@ -392,14 +392,7 @@ public class Tray {
                 if (server.serverWentDown()) {
                     try {
                         log.debug("Shutting down tray");
-                        PrintStream originalOut = System.out;
-                        PrintStream originalErr = System.err;
-                        System.setOut(new NullPrintStream());
-                        System.setErr(new NullPrintStream());
                         systemTray.shutdown();
-                        System.setOut(originalOut);
-                        System.setErr(originalErr);
-                        log.debug("Shut down tray");
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
