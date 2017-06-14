@@ -274,11 +274,11 @@
     <dependency groupId="org.cfmlprojects" artifactId="regexpathinfofilter" version="1.0.1" unzip="false" type="jar" dest="${runwar.lib.dir}" />
 
 <!--
-    <dependency groupId="com.dorkbox" artifactId="Notify" version="2.20" unzip="false" type="jar" dest="${runwar.lib.dir}" />
-    <dependency groupId="com.dorkbox" artifactId="SystemTray" version="3.1" unzip="false" type="jar" dest="${runwar.lib.dir}" />
- -->
     <dependency groupId="org.cfmlprojects" artifactId="Notify" version="2.18" unzip="false" type="jar" dest="${runwar.lib.dir}" />
     <dependency groupId="org.cfmlprojects" artifactId="SystemTray" version="2.24" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+ -->
+    <dependency groupId="com.dorkbox" artifactId="Notify" version="2.20" unzip="false" type="jar" dest="${runwar.lib.dir}" />
+    <dependency groupId="com.dorkbox" artifactId="SystemTray" version="3.1" unzip="false" type="jar" dest="${runwar.lib.dir}" />
 
     <!--  http2 (until java 9 maybe)
     way too error prone, needs exact jvm, etc.

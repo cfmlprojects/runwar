@@ -1,17 +1,6 @@
 package runwar;
 
 import java.awt.GraphicsEnvironment;
-import java.awt.Image;
-import java.awt.Toolkit;
-
-import dorkbox.systemTray.MenuEntry;
-import dorkbox.systemTray.SystemTray;
-import dorkbox.systemTray.SystemTrayMenuAction;
-import dorkbox.util.ActionHandler;
-import dorkbox.util.OS;
-import dorkbox.notify.Notify;
-import dorkbox.notify.Pos;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -35,7 +24,6 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,15 +34,13 @@ import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Pack200;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
-import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
-import net.minidev.json.JSONValue;
+import dorkbox.notify.Notify;
+import dorkbox.notify.Pos;
+import dorkbox.util.ActionHandler;
+import dorkbox.util.OS;
 import runwar.logging.Logger;
 import runwar.options.ServerOptions;
 
@@ -63,9 +49,7 @@ public class LaunchUtil {
     private static Logger log = Logger.getLogger("RunwarLogger");
     private static boolean relaunching;
     private static final int KB = 1024;
-    private static SystemTray systemTray;
     private static String processName;
-    private static boolean trayIsHooked = false;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
 
@@ -299,358 +283,7 @@ public class LaunchUtil {
         return resultBuffer.toArray(result);
     }
 
-    public static void hookTray(Server server) {
-        if(trayIsHooked){
-            return;
-        }
-//        SystemTray.COMPATIBILITY_MODE = true;
-        SystemTray.FORCE_GTK2 = true;
-//        SystemTray.FORCE_LINUX_TYPE = SystemTray.LINUX_GTK;
-//        SystemTray.FORCE_SWT = true;
-        processName = Server.getServerOptions().getProcessName();
-////        System.setProperty("SWT_GTK3", "0");
-        if ( GraphicsEnvironment.isHeadless() ) {
-            log.debug("Server is in headless mode, System Tray is not supported");
-            return;
-        }
-        try{
-            systemTray = SystemTray.getSystemTray();
-        } catch (java.lang.ExceptionInInitializerError e) {
-            log.debug(e);
-        }
-        if ( systemTray == null ) {
-            log.warn("System Tray is not supported");
-            return;
-        }
-
-        ServerOptions serverOptions = Server.getServerOptions();
-        String iconImage = serverOptions.getIconImage();
-        String host = serverOptions.getHost();
-        int portNumber = serverOptions.getPortNumber();
-        final int stopSocket = serverOptions.getSocketNumber();
-        String processName = serverOptions.getProcessName();
-        String PID = server.getPID();
-
-        setIconImage(iconImage);
-        final String statusText = processName + " server on " + host + ":" + portNumber + " PID:" + PID;
-        
-        HashMap<String,String> variableMap = new HashMap<String,String>();
-        variableMap.put("defaultTitle", statusText);
-        variableMap.put("runwar.port", Integer.toString(portNumber));
-        variableMap.put("runwar.processName", processName);
-        variableMap.put("runwar.host", host);
-        variableMap.put("runwar.stopsocket", Integer.toString(stopSocket));
-
-        final String defaultMenu = "{\"title\" : \"${defaultTitle}\", \"items\": ["
-                + "{label:\"Stop Server (${runwar.processName})\", action:\"stopserver\"}"
-                + ",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
-                + "]}";
-
-        JSONObject menu;
-        if (serverOptions.getTrayConfig() != null) {
-            menu = getTrayConfig( readFile( serverOptions.getTrayConfig() ), statusText, variableMap );
-        } else {
-            menu = getTrayConfig( getResourceAsString("runwar/taskbar.json"), statusText, variableMap );
-        }
-        if (menu == null) {
-            log.error("Could not load taskbar properties");
-            menu = getTrayConfig( defaultMenu, statusText, variableMap );
-        }
-        
-        systemTray.setStatus( menu.get("title").toString() );
-        systemTray.setTooltipText( menu.get("tooltip").toString() );
-        
-        for (Object ob : (JSONArray) menu.get("items")) {
-            JSONObject itemInfo = (JSONObject) ob;
-            InputStream is = null;
-            String label = itemInfo.get("label").toString();
-            if(itemInfo.get("image") != null) {
-                is = getImageInputStream(itemInfo.get("image").toString());
-            }
-            String imgHash = Integer.toString(label.hashCode());
-            if(itemInfo.get("disabled") != null && itemInfo.get("disabled").toString().trim().toLowerCase() == "true"){
-                systemTray.addMenuEntry(label, imgHash, is, null);
-                systemTray.updateMenuEntry_Enabled(label,false);
-            }
-            else if(itemInfo.get("action") != null) {
-                String action = itemInfo.get("action").toString();
-                if (action.toLowerCase().equals("stopserver")) {
-                    systemTray.addMenuEntry(label, imgHash, is, new ExitAction(server));
-                } else if (action.toLowerCase().equals("restartserver")) {
-                    systemTray.addMenuEntry(label, imgHash, is, new RestartAction(server));
-                } else if (action.toLowerCase().equals("openbrowser")) {
-                    String url = itemInfo.get("url").toString();
-                    systemTray.addMenuEntry(label, imgHash, is, new OpenBrowserAction(url));
-                } else {
-                    log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
-                }
-            }
-            try {
-                if (is != null)
-                    is.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        trayIsHooked = true;
-    }
-    
-    public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {
-        JSONObject config;
-        JSONArray loadItems;
-        JSONArray items = new JSONArray();
-        if(jsonText == null) {
-            return null;
-        }
-        Object menuObject = JSONValue.parse(jsonText);
-        if(menuObject instanceof JSONArray) {
-            config = new JSONObject();
-            loadItems = (JSONArray) menuObject;
-        } else {
-            config = (JSONObject) JSONValue.parse(jsonText);
-            loadItems = (JSONArray) config.get("items");
-        }
-        config.put("title", config.get("title") != null ? config.get("title").toString() : defaultTitle );
-        config.put("title", replaceMenuTokens(config.get("title").toString(),variableMap));
-        config.put("tooltip", config.get("tooltip") != null ? config.get("tooltip").toString() : defaultTitle );
-        config.put("tooltip", replaceMenuTokens(config.get("tooltip").toString(),variableMap));
-        if (loadItems == null) {
-            loadItems = (JSONArray) JSONValue.parse("[]");
-        }
-
-        for (Object ob : loadItems) {
-            JSONObject itemInfo = (JSONObject) ob;
-            if(itemInfo.get("label") == null) {
-                log.error("No label for menu item: " + itemInfo.toJSONString());
-                continue;
-            }
-            String label = replaceMenuTokens(itemInfo.get("label").toString(), variableMap);
-            itemInfo.put("label",label);
-            if(itemInfo.get("action") != null) {
-                String action = itemInfo.get("action").toString();
-                if (action.toLowerCase().equals("stopserver") && action.toLowerCase().equals("openbrowser")) {
-                    log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
-                    itemInfo.put("action",null);
-                }
-            }
-            if(itemInfo.get("url") != null) {
-                itemInfo.put("action", itemInfo.get("action") != null ? itemInfo.get("action") : "openbrowser");
-                itemInfo.put("url", replaceMenuTokens( itemInfo.get("url").toString(), variableMap ));
-            }
-            items.add(itemInfo);
-        }
-        config.put("items",items);
-
-        return config;
-    }
-
-    private static String replaceMenuTokens(String string, HashMap<String,String> variableMap) {
-        for(String key : variableMap.keySet() ) {
-            string = string.replace("${" + key + "}", variableMap.get(key) );
-        }
-        return string;
-    }
-
-    public static void unhookTray() {
-        if (systemTray != null) {
-            try {
-                log.debug("Removing tray icon");
-                systemTray.shutdown();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public static Image getIconImage(String iconImage) {
-        Image image = null;
-        if (iconImage != null && iconImage.length() != 0) {
-            iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            log.debug("trying to load icon: " + iconImage);
-            if (iconImage.contains("!")) {
-                String[] zip = iconImage.split("!");
-                try {
-                    ZipFile zipFile = new ZipFile(zip[0]);
-                    ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
-                    InputStream entryStream = zipFile.getInputStream(zipEntry);
-                    image = ImageIO.read(entryStream);
-                    zipFile.close();
-                    log.debug("loaded image from archive: " + zip[0] + zip[1]);
-                } catch (IOException e2) {
-                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
-                }
-            } else if (new File(iconImage).exists()) {
-                try {
-                    image = ImageIO.read(new File(iconImage));
-                } catch (IOException e1) {
-                    log.debug("Could not get file resource: " + iconImage + "(" + e1.getMessage() + ")");
-                }
-            } else {
-                log.debug("trying parent loader for image: " + iconImage);
-                URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
-                if (imageURL == null) {
-                    log.debug("trying loader for image: " + iconImage);
-                    imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
-                }
-                if (imageURL != null) {
-                    log.debug("Trying getImage for: " + imageURL);
-                    image = Toolkit.getDefaultToolkit().getImage(imageURL);
-                }
-            }
-        } else {
-            image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
-        }
-        // if bad image, use default
-        if (image == null) {
-            log.debug("Bad image, using default.");
-            image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
-        }
-        return image;
-    }
-
-    public static void setIconImage(String iconImage) {
-        if (iconImage != null && iconImage.length() != 0) {
-            iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            log.debug("trying to load icon: " + iconImage);
-            if (iconImage.contains("!")) {
-                String[] zip = iconImage.split("!");
-                try {
-                    ZipFile zipFile = new ZipFile(zip[0]);
-                    ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
-                    systemTray.setIcon( "runwar", zipFile.getInputStream(zipEntry) );
-                    zipFile.close();
-                    log.debug("loaded image from archive: " + zip[0] + zip[1]);
-                    return;
-                } catch (IOException e2) {
-                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
-                }
-            } else if (new File(iconImage).exists()) {
-                systemTray.setIcon( iconImage );
-                return;
-            } else {
-                log.debug("trying parent loader for image: " + iconImage);
-                URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
-                if (imageURL == null) {
-                    log.debug("trying loader for image: " + iconImage);
-                    imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
-                }
-                if (imageURL != null) {
-                    log.debug("Trying getImage for: " + imageURL);
-                    systemTray.setIcon( imageURL );
-                    return;
-                }
-            }
-        }
-        // if bad image, use default
-        systemTray.setIcon( Start.class.getResource("/runwar/icon.png") );
-    }
-
-    public static InputStream getImageInputStream(String iconImage) {
-        if (iconImage != null && iconImage.length() != 0) {
-            iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            log.debug("trying to load icon: " + iconImage);
-            if (iconImage.contains("!")) {
-                String[] zip = iconImage.split("!");
-                try {
-                    ZipFile zipFile = new ZipFile(zip[0]);
-                    ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
-                    InputStream is = zipFile.getInputStream(zipEntry);
-                    zipFile.close();
-                    return is;
-                } catch (IOException e2) {
-                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
-                }
-            } else if (new File(iconImage).exists()) {
-                try {
-                    return new FileInputStream(iconImage);
-                } catch (FileNotFoundException e) {
-                    log.debug(e);
-                }
-            } else {
-                log.debug("trying parent loader for image: " + iconImage);
-                URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
-                if (imageURL == null) {
-                    log.debug("trying loader for image: " + iconImage);
-                    imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
-                }
-                if (imageURL != null) {
-                    try {
-                        return imageURL.openStream();
-                    } catch (IOException e) {
-                        log.debug(e);
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-
-    private static class OpenBrowserAction implements SystemTrayMenuAction {
-        private String url;
-
-        public OpenBrowserAction(String url) {
-            this.url = url;
-        }
-
-        @Override
-        public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
-            displayMessage("Info", "Opening browser to " + url);
-            openURL(url);
-        }
-    }
-
-    private static class ExitAction implements SystemTrayMenuAction {
-
-        private Server server;
-
-        public ExitAction(Server server) {
-            this.server = server;
-        }
-
-        @Override
-        public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
-            try {
-                System.out.println("Exiting...");
-                server.stopServer();
-                if(server.serverWentDown()) {
-                    systemTray.shutdown();
-                }
-                System.exit(0);
-            } catch (Exception e1) {
-                displayMessage("Error", e1.getMessage());
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e2) {
-                }
-                System.exit(1);
-            }
-        }
-    }
-    
-    private static class RestartAction implements SystemTrayMenuAction {
-        
-        private Server server;
-        
-        public RestartAction(Server server) {
-            this.server = server;
-        }
-        
-        @Override
-        public void onClick(SystemTray systemTray, final MenuEntry menuEntry) {
-            try {
-                System.out.println("Restarting...");
-                server.restartServer(server.getServerOptions());
-            } catch (Exception e1) {
-                displayMessage("Error", e1.getMessage());
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e2) {
-                }
-            }
-        }
-    }
-
+ 
     public enum MessageType {
         INFO, WARNING, ERROR
     }
@@ -682,12 +315,13 @@ public class LaunchUtil {
             printMessage(title, text, type);
             return;
         }
+        int hideAfter = 5000;
         try {
             Pos position = OS.isMacOsX() ? Pos.TOP_RIGHT : Pos.BOTTOM_RIGHT;
-            Notify notify = Notify.create()
+            final Notify notify = Notify.create()
                     .title(title)
                     .text(text)
-                    .hideAfter(5000)
+                    .hideAfter(hideAfter)
                     .position(position)
                     // .setScreen(0)
                     .darkStyle()
@@ -699,6 +333,12 @@ public class LaunchUtil {
 //                        System.out.println("Notification clicked on!");
                         }
                     });
+
+            // ensure the messages disappear
+            Timer timer = new Timer(true); timer.schedule(new TimerTask() { 
+                @Override public void run() { try{notify.close();} catch (Exception any) {};} }
+            , hideAfter*2);
+            
             switch (type) {
             case INFO:
                 notify.showInformation();

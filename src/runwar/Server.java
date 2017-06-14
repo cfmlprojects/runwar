@@ -51,6 +51,7 @@ import runwar.util.RequestDumper;
 import runwar.util.SSLUtil;
 import runwar.util.TeeOutputStream;
 import runwar.security.SecurityManager;
+import runwar.tray.Tray;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -187,6 +188,9 @@ public class Server {
         startServer(CommandLineHandler.parseArguments(args));
     }
 
+    public void restartServer() throws Exception {
+        restartServer(getServerOptions());
+    }
     public void restartServer(final ServerOptions options) throws Exception {
         LaunchUtil.displayMessage("info", "Restarting server...");
         System.out.println(bar);
@@ -284,7 +288,7 @@ public class Server {
         }
 
         if (osName != null && osName.startsWith("Mac OS X")) {
-            Image dockIcon = LaunchUtil.getIconImage(dockIconPath);
+            Image dockIcon = Tray.getIconImage(dockIconPath);
             System.setProperty("com.apple.mrj.application.apple.menu.about.name", processName);
             System.setProperty("com.apple.mrj.application.growbox.intrudes", "false");
             System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -783,7 +787,7 @@ public class Server {
 
         if(serverOptions.isTrayEnabled()) {
             try {
-                LaunchUtil.hookTray(this);
+                Tray.hookTray(this);
                 log.debug("hooked system tray");	
             } catch( Throwable e ) {
                 log.debug("system tray hook failed.");
@@ -1103,7 +1107,7 @@ public class Server {
         System.out.println(LaunchUtil.getResourceAsString("io/undertow/version.properties"));
     }
 
-    private static String getVersion() {
+    public static String getVersion() {
         String[] version = LaunchUtil.getResourceAsString("runwar/version.properties").split("=");
         return version[version.length - 1].trim();
     }
