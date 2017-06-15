@@ -8,10 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import runwar.Server;
+
 public class ServerOptions {
 	private String serverName = "default", processName = "RunWAR", loglevel = "WARN";
     private String host = "127.0.0.1", contextPath = "/";
-    private int portNumber = 8088, ajpPort = 8009, sslPort = 443, socketNumber = 8779;
+    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
     private boolean debug = false, isBackground = true, keepRequestLog = false, openbrowser = false;
     private String pidFile, openbrowserURL, cfmlDirs, libDirs = null;
@@ -19,7 +21,9 @@ public class ServerOptions {
     private URL jarURL = null;
     private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig, statusFile = null;
     private String iconImage = null;
+    private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
+    private boolean trayEnabled = true;
     private boolean directoryListingEnabled = true;
     private boolean directoryListingRefreshEnabled = false;
     private boolean cacheEnabled = false;
@@ -27,7 +31,7 @@ public class ServerOptions {
 	private File sslCertificate, sslKey, configFile;
 	private char[] sslKeyPass = null;
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
-	private String action;
+	private String action = "start";
 	private String cfengineName = "lucee";
 	private boolean customHTTPStatusEnabled = true;
 	private boolean gzipEnabled = false;
@@ -47,6 +51,8 @@ public class ServerOptions {
     private boolean enableBasicAuth = false;
     private boolean directBuffers = true;
     int bufferSize,ioThreads,workerThreads = 0;
+    private boolean proxyPeerAddressEnabled = false;
+    private boolean http2enabled = false;
 
     static {
         userPasswordList = new HashMap<String, String>();
@@ -62,6 +68,11 @@ public class ServerOptions {
     public String[] getCommandLineArgs() {
         // TODO: totally refactor argument handling so we can serialize and not muck around like this.
         List<String> argarray = new ArrayList<String>();
+        if(cmdlineArgs == null) {
+            cmdlineArgs = "".split("");
+            argarray.add("-war");
+            argarray.add(getWarFile().getAbsolutePath());
+        }
         for (String arg : cmdlineArgs) {
             if (arg.contains("background") || arg.startsWith("-b") || arg.contains("balance") 
                     || arg.startsWith("--port") || arg.startsWith("-p")
@@ -167,6 +178,23 @@ public class ServerOptions {
     public File getURLRewriteFile() {
         return this.urlRewriteFile;
     }
+    public ServerOptions setURLRewriteCheckInterval(String interval) {
+        this.urlRewriteCheckInterval = interval;
+        return this;
+    }
+    public String getURLRewriteCheckInterval() {
+        return this.urlRewriteCheckInterval;
+    }
+    public ServerOptions setURLRewriteStatusPath(String path) {
+        if(!path.startsWith("/")) {
+            path = '/' + path;
+        }
+        this.urlRewriteStatusPath= path;
+        return this;
+    }
+    public String getURLRewriteStatusPath() {
+        return this.urlRewriteStatusPath;
+    }
     public int getSocketNumber() {
         return socketNumber;
     }
@@ -175,6 +203,23 @@ public class ServerOptions {
         return this;
     }
     public File getLogDir() {
+        if(logDir == null) {
+            if(getWarFile() != null){
+                File warFile = getWarFile();
+                String defaultLogDir;
+                if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
+                  defaultLogDir = warFile.getPath() + "/WEB-INF/logs/";
+                } else {
+                  String serverConfigDir = System.getProperty("cfml.server.config.dir");
+                  if(serverConfigDir == null) {
+                    defaultLogDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
+                  } else {
+                    defaultLogDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
+                  }
+                }
+                logDir = new File(defaultLogDir);
+              }
+        }
         return logDir;
     }
     public ServerOptions setLogDir(String logDir) {
@@ -187,6 +232,9 @@ public class ServerOptions {
         return this;
     }
     public String getCfmlDirs() {
+        if(cfmlDirs == null && getWarFile() != null){
+            setCfmlDirs(getWarFile().getAbsolutePath());
+        }
         return cfmlDirs;
     }
     public ServerOptions setCfmlDirs(String cfmlDirs) {
@@ -268,6 +316,9 @@ public class ServerOptions {
     }
     public ServerOptions setDebug(boolean debug) {
         this.debug = debug;
+        if(loglevel == "WARN") {
+            loglevel = "DEBUG";
+        }
         return this;
     }
     public File getWarFile() {
@@ -299,6 +350,13 @@ public class ServerOptions {
     }
     public ServerOptions setTrayConfig(File trayConfig) {
         this.trayConfig = trayConfig;
+        return this;
+    }
+    public boolean isTrayEnabled() {
+        return trayEnabled;
+    }
+    public ServerOptions setTrayEnabled(boolean enabled) {
+        this.trayEnabled = enabled;
         return this;
     }
     public File getStatusFile() {
@@ -609,5 +667,20 @@ public class ServerOptions {
         return this.loadBalance;
     }
 
+    public ServerOptions setProxyPeerAddressEnabled(boolean enable) {
+        this.proxyPeerAddressEnabled = enable;
+        return this;
+    }
+    public boolean isProxyPeerAddressEnabled() {
+        return this.proxyPeerAddressEnabled;
+    }
+    
+    public ServerOptions setHTTP2Enabled(boolean enable) {
+        this.http2enabled = enable;
+        return this;
+    }
+    public boolean isHTTP2Enabled() {
+        return this.http2enabled;
+    }
 
 }

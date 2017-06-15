@@ -181,6 +181,12 @@ public class ConfigParser {
             if (serverConfig.hasOption("urlrewriteenable")) {
                 serverOptions.setEnableURLRewrite(Boolean.valueOf(serverConfig.getOptionValue("urlrewriteenable")));
             }
+            if (serverConfig.hasOption("urlrewritecheck") && serverConfig.getOptionValue("urlrewritecheck").length() > 0) {
+                serverOptions.setURLRewriteCheckInterval(serverConfig.getOptionValue("urlrewritecheck"));
+            }
+            if (serverConfig.hasOption("urlrewritestatuspath") && serverConfig.getOptionValue("urlrewritestatuspath").length() > 0) {
+                serverOptions.setURLRewriteStatusPath(serverConfig.getOptionValue("urlrewritestatuspath"));
+            }
             if (serverConfig.hasOption("logdir")) {
                 serverOptions.setLogDir(serverConfig.getOptionValue("logdir"));
             } else {
@@ -225,6 +231,12 @@ public class ConfigParser {
                 serverOptions.setProcessName(serverConfig.getOptionValue("processname"));
             }
 
+            if (serverConfig.hasOption("tray")) {
+                serverOptions.setTrayEnabled(Boolean.valueOf(serverConfig.getOptionValue("urlrewriteenable")));
+            }
+            if (serverConfig.hasOption("icon")) {
+                serverOptions.setIconImage(serverConfig.getOptionValue("icon"));
+            }
             if (serverConfig.hasOption("trayconfig")) {
                 serverOptions.setTrayConfig(getFile(serverConfig.getOptionValue("trayconfig")));
             }
@@ -233,9 +245,6 @@ public class ConfigParser {
                 serverOptions.setStatusFile(getFile(serverConfig.getOptionValue("statusfile")));
             }
             
-            if (serverConfig.hasOption("icon")) {
-                serverOptions.setIconImage(serverConfig.getOptionValue("icon"));
-            }
 
             if (serverConfig.hasOption("cfengine")) {
             	serverOptions.setCFEngineName(serverConfig.getOptionValue("cfengine"));
@@ -332,6 +341,13 @@ public class ConfigParser {
             if (serverConfig.hasOption("directoryrefresh") && serverConfig.getOptionValue("directoryrefresh").length() > 0) {
                 serverOptions.setDirectoryListingRefreshEnabled(Boolean.valueOf(serverConfig.getOptionValue("directoryrefresh")));
             }
+            if (serverConfig.hasOption("proxypeeraddress") && serverConfig.getOptionValue("proxypeeraddress").length() > 0) {
+                serverOptions.setProxyPeerAddressEnabled(Boolean.valueOf(serverConfig.getOptionValue("proxypeeraddress")));
+            }
+            if (serverConfig.hasOption("http2") && serverConfig.getOptionValue("http2").length() > 0) {
+                serverOptions.setHTTP2Enabled(Boolean.valueOf(serverConfig.getOptionValue("http2")));
+            }
+
             
             if(serverOptions.getLoglevel().equals("DEBUG")) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();

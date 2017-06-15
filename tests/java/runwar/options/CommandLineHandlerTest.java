@@ -28,7 +28,14 @@ public class CommandLineHandlerTest {
         assertEquals(serverOptions.getConfigFile().getPath(), "tests/resource/server.json");
         assertEquals(serverOptions.getPortNumber(), 9999);
     }
-    
+
+    @Test
+    public void testURLRewriteArguments() {
+        ServerOptions serverOptions = CommandLineHandler.parseArguments("-war tests/war/simple.war -urlrewritecheck 0 -urlrewritestatuspath stats".split(" "));
+        assertEquals(serverOptions.getURLRewriteCheckInterval(), "0");
+        assertEquals(serverOptions.getURLRewriteStatusPath(), "/stats");
+    }
+
     @Test
     public void testConfigParserConfigFile() {
         File configFile = new File("tests/resource/server.json");

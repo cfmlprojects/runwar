@@ -130,6 +130,18 @@ public class CommandLineHandler {
                 .create("urlrewritefile") );
 
         options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-check" )
+                .withDescription( "URL rewriting config file realod check interval, 0 for every request. (disabled)" )
+                .hasArg().withArgName("interval")
+                .create("urlrewritecheck") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-statuspath" )
+                .withDescription( "URL rewriting status path. (disabled)" )
+                .hasArg().withArgName("path")
+                .create("urlrewritestatuspath") );
+        
+        options.addOption( OptionBuilder
         		.withLongOpt( "ssl-enable" )
         		.withDescription( "Enable SSL.  Default is false.  When enabled, http is disabled by default." )
         		.hasArg().withArgName("true|false").withType(Boolean.class)
@@ -242,6 +254,12 @@ public class CommandLineHandler {
                 .withDescription( "Process name where applicable" )
                 .hasArg().withArgName("name")
                 .create("procname") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "tray-enable" )
+                .withDescription( "Enable/Disable system tray integration (true)" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("tray") );
 
         options.addOption( OptionBuilder
                 .withLongOpt( "tray-icon" )
@@ -435,7 +453,6 @@ public class CommandLineHandler {
                 .withDescription( "Enable direct buffers" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directbuffers") );
-        
         options.addOption( OptionBuilder
                 .withLongOpt( "load-balance" )
                 .withDescription( "Comma-separated list of servers to start and load balance." )
@@ -448,7 +465,18 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directoryrefresh") );
         
-        
+        options.addOption( OptionBuilder
+                .withLongOpt( "proxy-peeraddress" )
+                .withDescription( "Enable peer address proxy headers" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("proxypeeraddress") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "http2-enable" )
+                .withDescription( "Enable HTTP2" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("http2") );
+
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
 /*
@@ -631,27 +659,14 @@ public class CommandLineHandler {
             if (line.hasOption("urlrewriteenable")) {
                 serverOptions.setEnableURLRewrite(Boolean.valueOf(line.getOptionValue("urlrewriteenable")));
             }
+            if (line.hasOption("urlrewritecheck") && line.getOptionValue("urlrewritecheck").length() > 0) {
+                serverOptions.setURLRewriteCheckInterval(line.getOptionValue("urlrewritecheck"));
+            }
+            if (line.hasOption("urlrewritestatuspath") && line.getOptionValue("urlrewritestatuspath").length() > 0) {
+                serverOptions.setURLRewriteStatusPath(line.getOptionValue("urlrewritestatuspath"));
+            }
             if (line.hasOption("logdir")) {
                 serverOptions.setLogDir(line.getOptionValue("logdir"));
-            } else {
-                if(serverOptions.getWarFile() != null){
-                  File warFile = serverOptions.getWarFile();
-                  String logDir;
-                  if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
-                    logDir = warFile.getPath() + "/WEB-INF/logs/";
-                  } else {
-                    String serverConfigDir = System.getProperty("cfml.server.config.dir");
-                    if(serverConfigDir == null) {
-                      logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
-                    } else {
-                      logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
-                    }
-                  }
-                  serverOptions.setLogDir(logDir);
-                }
-            }
-            if(serverOptions.getWarFile() != null){
-              serverOptions.setCfmlDirs(serverOptions.getWarFile().getAbsolutePath());
             }
             if (line.hasOption("dirs")) {
                 serverOptions.setCfmlDirs(line.getOptionValue("dirs"));
@@ -675,14 +690,16 @@ public class CommandLineHandler {
                 serverOptions.setProcessName(line.getOptionValue("processname"));
             }
 
+            if (line.hasOption("tray")) {
+                serverOptions.setTrayEnabled(Boolean.valueOf(line.getOptionValue("urlrewriteenable")));
+            }
             if (line.hasOption("icon")) {
                 serverOptions.setIconImage(line.getOptionValue("icon"));
             }
-
             if (line.hasOption("trayconfig") && line.getOptionValue("trayconfig").length() > 0) {
                 serverOptions.setTrayConfig(getFile(line.getOptionValue("trayconfig")));
             }
-            
+
             if (line.hasOption("statusfile") && line.getOptionValue("statusfile").length() > 0) {
                 serverOptions.setStatusFile(getFile(line.getOptionValue("statusfile")));
             }
@@ -778,6 +795,12 @@ public class CommandLineHandler {
             }
             if (line.hasOption("directoryrefresh") && line.getOptionValue("directoryrefresh").length() > 0) {
                 serverOptions.setDirectoryListingRefreshEnabled(Boolean.valueOf(line.getOptionValue("directoryrefresh")));
+            }
+            if (line.hasOption("proxypeeraddress") && line.getOptionValue("proxypeeraddress").length() > 0) {
+                serverOptions.setProxyPeerAddressEnabled(Boolean.valueOf(line.getOptionValue("proxypeeraddress")));
+            }
+            if (line.hasOption("http2") && line.getOptionValue("http2").length() > 0) {
+                serverOptions.setHTTP2Enabled(Boolean.valueOf(line.getOptionValue("http2")));
             }
 
             if(serverOptions.getLoglevel().equals("DEBUG")) {
