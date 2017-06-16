@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
@@ -151,6 +152,16 @@ public class Tray {
                     String url = itemInfo.get("url").toString();
                     menuItem = new MenuItem(label, is, new OpenBrowserAction(url));
                     menuItem.setShortcut('o');
+                } else if (action.toLowerCase().equals("openfilesystem")) {
+                    try {
+                        String path;
+                        path = server.getServerOptions().getWarPath();
+                        menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path));
+                        menuItem.setShortcut('b');
+                    } catch (MalformedURLException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 } else {
                     log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                 }
@@ -448,5 +459,23 @@ public class Tray {
             }
         }
     }
+    
+    private static class BrowseFilesystemAction implements ActionListener {
+        private String path;
 
+        public BrowseFilesystemAction(String path) {
+            this.path = path;
+        }
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+                LaunchUtil.browseDirectory(path);
+            }
+            catch(Exception ex) {
+                if (!LaunchUtil.isLinux() || !LaunchUtil.execute(new String[] {"xdg-open", path})) {
+                    displayMessage("Error", "Sorry, unable to open the file browser: " + ex.getLocalizedMessage());
+                }
+            }
+        }
+    }
 }

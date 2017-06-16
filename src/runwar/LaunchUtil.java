@@ -1,5 +1,6 @@
 package runwar;
 
+import java.awt.Desktop;
 import java.awt.GraphicsEnvironment;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -52,6 +53,10 @@ public class LaunchUtil {
     private static String processName;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
+
+    private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
+    private static String uname;
+    private static String linuxRelease;
 
     public static File getJreExecutable() throws FileNotFoundException {
         String jreDirectory = System.getProperty("java.home");
@@ -362,6 +367,37 @@ public class LaunchUtil {
         }
     }
 
+    public static void browseDirectory(String path) throws IOException {
+        File directory = new File(path);
+        if (isMac()) {
+            // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
+            File[] files = directory.listFiles();
+            if (files.length > 0) {
+                // Get first child
+                File child = directory.listFiles()[0];
+                if (execute(new String[] {"open", "-R", child.getCanonicalPath()})) {
+                    return;
+                }
+            }
+        } else {
+            try {
+                // The default, java recommended usage
+                Desktop d = Desktop.getDesktop();
+                d.open(directory);
+                return;
+            } catch (IOException io) {
+                if (isLinux()) {
+                    // Fallback on xdg-open for Linux
+                    if (execute(new String[] {"xdg-open", path})) {
+                        return;
+                    }
+                }
+                throw io;
+            }
+        }
+        throw new IOException("Unable to open " + path);
+    }
+    
     public static void openURL(String url) {
         String osName = System.getProperty("os.name");
         if (url == null) {
@@ -645,4 +681,115 @@ public class LaunchUtil {
         }
     }
 
+    public static String getOS() {
+        return OS_NAME;
+    }
+    public static String getDataDirectory() {
+        String parent;
+        String folder = "runwar";
+        if (isWindows()) {
+            parent = System.getenv("APPDATA");
+        } else if (isMac()) {
+            parent = System.getProperty("user.home") + File.separator + "Library" + File.separator + "Application Support";
+        } else if (isUnix()) {
+            parent = System.getProperty("user.home");
+            folder = "." + folder;
+        } else {
+            parent = System.getProperty("user.dir");
+        }
+        return parent + File.separator + folder;
+    }
+    public static boolean isWindows() {
+        return (OS_NAME.contains("win"));
+    }
+    public static boolean isMac() {
+        return (OS_NAME.contains("mac"));
+    }
+    public static boolean isLinux() {
+        return (OS_NAME.contains("linux"));
+    }
+    public static boolean isUnix() {
+        return (OS_NAME.contains("nix") || OS_NAME.contains("nux") || OS_NAME.indexOf("aix") > 0 || OS_NAME.contains("sunos"));
+    }
+    public static boolean isSolaris() {
+        return (OS_NAME.contains("sunos"));
+    }
+    public static boolean isUbuntu() {
+        getUname();
+        return uname != null && uname.contains("Ubuntu");
+    }
+    public static boolean isFedora() {
+        getLinuxRelease();
+        return linuxRelease != null && linuxRelease.contains("Fedora");
+    }
+
+    public static String getLinuxRelease() {
+        if (isLinux() && linuxRelease == null) {
+            String[] releases = { "/etc/lsb-release", "/etc/redhat-release" };
+            for (String release : releases) {
+                String result = execute(new String[] { "cat", release }, null, false);
+                if (!result.isEmpty()) {
+                    linuxRelease = result;
+                    break;
+                }
+            }
+        }
+        return linuxRelease;
+    }
+
+    public static String getUname() {
+        if (isLinux() && uname == null) {
+            uname = execute(new String[] { "uname", "-a" }, null, false);
+        }
+        return uname;
+    }
+
+    public static String[] envp = null;
+
+    public static boolean execute(String[] commandArray) {
+        try {
+            // Create and execute our new process
+            Process p = Runtime.getRuntime().exec(commandArray, envp);
+            p.waitFor();
+            return p.exitValue() == 0;
+        } catch (InterruptedException ex) {
+        } catch (IOException ex) {
+        }
+        return false;
+    }
+
+    public static String execute(String[] commandArray, String[] searchFor, boolean caseSensitive) {
+        BufferedReader stdInput = null;
+        try {
+            Process p = Runtime.getRuntime().exec(commandArray, envp);
+            stdInput = new BufferedReader(new InputStreamReader(p.getInputStream(), "UTF-8"));
+            String s;
+            while ((s = stdInput.readLine()) != null) {
+                if (searchFor == null) {
+                    return s.trim();
+                }
+                for (String search : searchFor) {
+                    if (caseSensitive) {
+                        if (s.contains(search.trim())) {
+                            return s.trim();
+                        }
+                    } else {
+                        if (s.toLowerCase().contains(search.toLowerCase().trim())) {
+                            return s.trim();
+                        }
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            log.error(ex);
+        } finally {
+            if (stdInput != null) {
+                try {
+                    stdInput.close();
+                } catch (Exception ignore) {
+                }
+            }
+        }
+        return "";
+    }
 }

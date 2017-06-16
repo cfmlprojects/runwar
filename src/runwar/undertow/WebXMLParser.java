@@ -243,8 +243,13 @@ public class WebXMLParser {
 					String pValue = (lstNm.item(0)).getNodeValue().trim();
 					trace("Param value: %s", pValue);
 					// create the servlet
-					ServletInfo servlet = new ServletInfo(pName, (Class<? extends Servlet>) info.getClassLoader()
-							.loadClass(pValue));
+					Class<?> servletClass;
+					try{
+					    servletClass = info.getClassLoader().loadClass(pValue);
+					} catch (Exception e) {
+					    throw new RuntimeException("Could not load servlet class: " + pValue);
+					}
+					ServletInfo servlet = new ServletInfo(pName, (Class<? extends Servlet>) servletClass);
 					// parse load on startup
 					NodeList ldElmntLst = fstElmnt.getElementsByTagName("load-on-startup");
 					if (ldElmntLst != null) {
@@ -289,7 +294,7 @@ public class WebXMLParser {
 			if (!servletMap.isEmpty()) {
 				listOfElements = doc.getElementsByTagName("servlet-mapping");
 				totalElements = listOfElements.getLength();
-				log.warnf("Total no of servlet-mappings: %2", totalElements);
+				log.debugf("Total no of servlet-mappings: %s", totalElements);
 				for (int s = 0; s < totalElements; s++) {
 					Node fstNode = listOfElements.item(s);
 					if (fstNode.getNodeType() == Node.ELEMENT_NODE) {
