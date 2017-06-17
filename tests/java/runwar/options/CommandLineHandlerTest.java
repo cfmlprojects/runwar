@@ -9,6 +9,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import runwar.options.ServerOptions;
+import testutils.DefaultServer;
 
 public class CommandLineHandlerTest {
 
@@ -31,7 +32,8 @@ public class CommandLineHandlerTest {
 
     @Test
     public void testURLRewriteArguments() {
-        ServerOptions serverOptions = CommandLineHandler.parseArguments("-war tests/war/simple.war -urlrewritecheck 0 -urlrewritestatuspath stats".split(" "));
+        String argString = "-war " + DefaultServer.SIMPLEWARPATH + " -urlrewritecheck 0 -urlrewritestatuspath stats";
+        ServerOptions serverOptions = CommandLineHandler.parseArguments(argString.split(" "));
         assertEquals(serverOptions.getURLRewriteCheckInterval(), "0");
         assertEquals(serverOptions.getURLRewriteStatusPath(), "/stats");
     }

@@ -168,7 +168,7 @@ public class Server {
         return _classLoader;
     }
     
-    public void startServer(String[] args, URLClassLoader classLoader) throws Exception {
+    public synchronized void startServer(String[] args, URLClassLoader classLoader) throws Exception {
         setClassLoader(classLoader);
         startServer(args);
     }
@@ -184,26 +184,29 @@ public class Server {
         }
     }
     
-    public void startServer(final String[] args) throws Exception {
+    public synchronized void startServer(final String[] args) throws Exception {
         startServer(CommandLineHandler.parseArguments(args));
     }
 
-    public void restartServer() throws Exception {
+    public synchronized void restartServer() throws Exception {
         restartServer(getServerOptions());
     }
-    public void restartServer(final ServerOptions options) throws Exception {
+    public synchronized void restartServer(final ServerOptions options) throws Exception {
         LaunchUtil.displayMessage("info", "Restarting server...");
         System.out.println(bar);
         System.out.println("***  Restarting server");
         System.out.println(bar);
         stopServer();
         serverWentDown();
+        if(monitor != null) {
+            monitor.stopListening();
+        }
+        monitor = null;
         startServer(options);
     }
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void startServer(final ServerOptions options) throws Exception {
-        ensureJavaVersion();
+    public synchronized void startServer(final ServerOptions options) throws Exception {
         serverOptions = options;
         serverState = ServerState.STARTING;
         if(serverOptions.getAction().equals("stop")){
@@ -226,6 +229,7 @@ public class Server {
         Long transferMinSize= serverOptions.getTransferMinSize();
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
+        ensureJavaVersion();
 
         if (serverOptions.isBackground()) {
             setServerState(ServerState.STARTING_BACKGROUND);
@@ -315,6 +319,7 @@ public class Server {
         //System.out.println("background: " + background);
         System.out.println(bar);
         addShutDownHook();
+        System.out.println(bar);
         portNumber = getPortOrErrorOut(portNumber, host);
         socketNumber = getPortOrErrorOut(socketNumber, host);
         String cfmlServletConfigWebDir = serverOptions.getCFMLServletConfigWebDir();
@@ -858,7 +863,7 @@ public class Server {
                 public void run() {
                     log.debug("Running shutdown hook");
                     try {
-                        if(!getServerState().equals(ServerState.STOPPING)) {
+                        if(!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
                             log.debug("shutdown hook:stopServer()");
                             stopServer();
                         }
@@ -870,11 +875,10 @@ public class Server {
                             mainThread.interrupt();
                             mainThread.join();
                         }
-                        log.debug("shutdown hook finished");
                     } catch ( Exception e) {
                         e.printStackTrace();
                     }
-                    log.debug("Ran shutdown hook");
+                    log.debug("Shutdown hook finished");
                 }
             };
             Runtime.getRuntime().addShutdownHook(shutDownThread);
@@ -882,49 +886,57 @@ public class Server {
         }
     }
 
-    public void stopServer() {
+    public synchronized void stopServer() {
         int exitCode = 0;
-        try{
-            setServerState(ServerState.STOPPING);
-            System.out.println();
-            System.out.println(bar);
-            System.out.println("*** stopping server");
-            if (serverOptions.isMariaDB4jEnabled()) {
-                mariadb4jManager.stop();
-            }
-            try {
-                switch(manager.getState()) {
+        if(getServerState() == ServerState.STOPPING) {
+            log.warn("Stop server called, however the server is already stopping.");
+        } else if(getServerState() == ServerState.STOPPED) {
+            log.warn("Stop server called, however the server has already stopped.");
+        } else {
+            try{
+                setServerState(ServerState.STOPPING);
+                System.out.println();
+                System.out.println(bar);
+                System.out.println("*** stopping server");
+                if (serverOptions.isMariaDB4jEnabled()) {
+                    mariadb4jManager.stop();
+                }
+                try {
+                    switch(manager.getState()) {
                     case UNDEPLOYED:
                         break;
                     default:
                         manager.undeploy();
-                }
-                undertow.stop();
+                    }
+                    undertow.stop();
 //                Thread.sleep(1000);
-            } catch (Exception notRunning) {
-                System.out.println("*** server did not appear to be running");
+                } catch (Exception notRunning) {
+                    System.out.println("*** server did not appear to be running");
+                }
+                System.out.println(bar);
+                setServerState(ServerState.STOPPED);
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                setServerState(ServerState.UNKNOWN);
+                log.error(e);
+                exitCode = 1;
             }
-            System.out.println(bar);
+            try {
+                if (tee != null) {
+                    tee.flush();
+                    tee.closeBranch();
+                }
+            } catch (Exception e) {
+                System.err.println("Redirect:  Unable to close this log file!");
+            }
+            
+            if(exitCode != 0) {
+                System.exit(exitCode);
+            }
             if(monitor != null) {
-                monitor.stopListening();
+                //monitor.stopListening();
             }
-            setServerState(ServerState.STOPPED);
-        } catch (Exception e) {
-            e.printStackTrace();
-            setServerState(ServerState.UNKNOWN);
-            log.error(e);
-            exitCode = 1;
-        }
-        try {
-            if (tee != null) {
-                tee.flush();
-                tee.closeBranch();
-            }
-        } catch (Exception e) {
-            System.err.println("Redirect:  Unable to close this log file!");
-        }
-        if(exitCode != 0) {
-            System.exit(exitCode);
         }
 
     }
@@ -1163,12 +1175,16 @@ public class Server {
                     }
                 }
                 serverSocket.close();
+                if(mainThread.isAlive()) {
+                    log.debug("shutdown hook joining main thread");
+                    mainThread.interrupt();
+                    mainThread.join();
+                }
             } catch (Exception e) {
                 exitCode = 1;
                 e.printStackTrace();
             }
-//            stopServer();
-//            System.exit(exitCode);
+            System.exit(exitCode); // this will call our shutdown hook
 //            Thread.currentThread().interrupt();
             return;
         }
@@ -1180,7 +1196,7 @@ public class Server {
 
     public boolean serverWentDown() {
         try {
-            return serverWentDown(serverOptions.getLaunchTimeout(), 3000, InetAddress.getByName(serverOptions.getHost()), serverOptions.getSocketNumber());
+            return serverWentDown(serverOptions.getLaunchTimeout(), 3000, InetAddress.getByName(serverOptions.getHost()), serverOptions.getPortNumber());
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

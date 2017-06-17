@@ -7,7 +7,9 @@
 	,{"label":"Stop Server (${runwar.processName})", "hotkey":"S", "action":"stopserver", "image":"resources/dialog-error.png"}
 	,{"label":"Restart Server", "hotkey":"R", "action":"restartserver", "image":"resources/dialog-reload.png"}
 	,{"label":"Open Browser", "hotkey":"O", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/","image":"resources/dialog-information.png"}
-	,{"label":"Browse File System", "hotkey":"B", "action":"openfilesystem", "path":"", "image":"resources/dialog-information.png"}
-	,{"label":"About","items": [{"label":"Version", "action":"getversion", "image":"resources/dialog-reload.png"},{"label":"Start on boot", "checkbox":"true", "image":"resources/dialog-information.png", "disabled":"true"}] }
+	,{"label":"Advanced","items": [
+			{"label":"Version", "action":"getversion", "image":"resources/dialog-reload.png"},{"label":"Start on boot", "checkbox":"true", "image":"resources/dialog-information.png", "disabled":"true"}
+			,{"label":"Browse File System", "hotkey":"B", "action":"openfilesystem", "path":"", "image":"resources/dialog-information.png"}
+			] }
 	]
 }
