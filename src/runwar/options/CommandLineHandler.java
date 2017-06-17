@@ -691,7 +691,7 @@ public class CommandLineHandler {
             }
 
             if (line.hasOption("tray")) {
-                serverOptions.setTrayEnabled(Boolean.valueOf(line.getOptionValue("urlrewriteenable")));
+                serverOptions.setTrayEnabled(Boolean.valueOf(line.getOptionValue("tray")));
             }
             if (line.hasOption("icon")) {
                 serverOptions.setIconImage(line.getOptionValue("icon"));
