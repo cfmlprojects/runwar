@@ -1,21 +1,15 @@
 package runwar.undertow;
 
 import static io.undertow.servlet.Servlets.deployment;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.undertow.servlet.api.DeploymentInfo;
 import lucee.loader.servlet.CFMLServlet;
-import runwar.logging.LogSubverter;
 
 public class WebXMLParserTest {
     private DeploymentInfo deploymentInfo;

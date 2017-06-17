@@ -1,5 +1,10 @@
 package runwar.tray;
 
+import static runwar.LaunchUtil.displayMessage;
+import static runwar.LaunchUtil.getResourceAsString;
+import static runwar.LaunchUtil.openURL;
+import static runwar.LaunchUtil.readFile;
+
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.Toolkit;
@@ -10,8 +15,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -33,12 +36,6 @@ import runwar.Server;
 import runwar.Start;
 import runwar.logging.Logger;
 import runwar.options.ServerOptions;
-import runwar.util.NullPrintStream;
-
-import static runwar.LaunchUtil.openURL;
-import static runwar.LaunchUtil.readFile;
-import static runwar.LaunchUtil.getResourceAsString;
-import static runwar.LaunchUtil.displayMessage;
 
 public class Tray {
 
@@ -155,7 +152,7 @@ public class Tray {
                 } else if (action.toLowerCase().equals("openfilesystem")) {
                     try {
                         String path;
-                        path = server.getServerOptions().getWarPath();
+                        path = Server.getServerOptions().getWarPath();
                         menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path));
                         menuItem.setShortcut('b');
                     } catch (MalformedURLException e) {
@@ -400,13 +397,12 @@ public class Tray {
             try {
                 System.out.println("Exiting...");
                 server.stopServer();
-                if (server.serverWentDown()) {
-                    try {
-                        log.debug("Shutting down tray");
-                        systemTray.shutdown();
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
+                String message = "Server shut down " + (server.serverWentDown() ? "" : "un") + "successfully, shutting down tray";
+                log.debug( message );
+                try {
+                    systemTray.shutdown();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
                 System.exit(0);
             } catch (Exception e1) {
@@ -416,6 +412,13 @@ public class Tray {
                 } catch (InterruptedException e2) {
                 }
                 System.exit(1);
+            } finally {
+                try {
+                    systemTray.shutdown();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                System.exit(0);
             }
         }
     }

@@ -29,6 +29,7 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
     public static final int APACHE_PORT = 9080;
     public static final int APACHE_SSL_PORT = 9443;
     public static final int BUFFER_SIZE = Integer.getInteger("test.bufferSize", 8192 * 3);
+    public static final String SIMPLEWARPATH = "tests/resource/war/simple.war";
 
     private static boolean first = true;
     private static volatile Server server = null;
@@ -84,7 +85,7 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
 
         // run the beforeClass ones first so they can set the config, side result is they're run twice. :/
         serverOptions = new ServerOptions();
-        serverOptions.setWarFile(new File("tests/war/simple.war")).setDebug(true).setBackground(false);
+        serverOptions.setWarFile(new File(SIMPLEWARPATH)).setDebug(true).setBackground(false);
 
         List<FrameworkMethod> methos = getTestClass().getAnnotatedMethods(BeforeClass.class);
         runChild(methos.get(0), new RunNotifier());
@@ -109,7 +110,7 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
             try {
                 server = server == null ? new Server() : server;
                 String state = server.getServerState();
-                serverOptions.setWarFile(new File("tests/war/simple.war")).setDebug(true).setBackground(false);
+                serverOptions.setWarFile(new File(SIMPLEWARPATH)).setDebug(true).setBackground(false);
                 if(server.getServerState() == Server.ServerState.STARTED){
                     server.restartServer(serverOptions);
                 } else {
