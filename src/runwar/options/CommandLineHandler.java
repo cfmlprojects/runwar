@@ -803,7 +803,7 @@ public class CommandLineHandler {
                 serverOptions.setHTTP2Enabled(Boolean.valueOf(line.getOptionValue("http2")));
             }
 
-            if(serverOptions.getLoglevel().equals("DEBUG")) {
+            if(serverOptions.getLoglevel().equals("TRACE")) {
                 for (Option arg : line.getOptions()) {
                     log.debug(arg);
                     log.debug(arg.getValue());
