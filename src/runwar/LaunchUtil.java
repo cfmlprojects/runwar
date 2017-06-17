@@ -115,7 +115,22 @@ public class LaunchUtil {
         InputStream is = process.getInputStream();
         InputStreamReader isr = new InputStreamReader(is);
         BufferedReader br = new BufferedReader(isr);
-        log.debug("launching: " + cmdarray.toString());
+
+        log.debug("launching background process with these args: ");
+        // Pretty print out all the process args being sent to the background server.
+        StringBuilder formattedArgs = new StringBuilder();
+    	formattedArgs.append( "\n  " );
+        for( String arg : cmdarray ) {
+        	// Don't print these.  They don't do anything and are just clutter.
+        	if( arg.startsWith( "--jvm-args" ) ) { continue; }
+        	
+        	if( arg.startsWith( "-" ) ) {
+            	formattedArgs.append( "\n  " );        		
+        	}
+        	formattedArgs.append( "  "+ arg );
+        }
+        log.debug( formattedArgs.toString() );
+        
         log.debug("timeout of " + timeout / 1000 + " seconds");
         String line;
         int exit = -1;
@@ -127,6 +142,7 @@ public class LaunchUtil {
                 try {
                     exit = process.exitValue();
                     if (exit == 0) {
+                        log.debug(line);
                         // Process finished
                         while ((line = br.readLine()) != null) {
                             log.debug(line);
@@ -150,7 +166,6 @@ public class LaunchUtil {
                     serverIsUp = processOutout(line, process, andExit);
                 }
             }
-            Thread.sleep(100);
         }
         if ((System.currentTimeMillis() - start) > timeout && !serverIsUp) {
             process.destroy();
