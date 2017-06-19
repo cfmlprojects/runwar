@@ -183,6 +183,7 @@ public class Tray {
         JSONObject config;
         JSONArray loadItems;
         JSONArray items = new JSONArray();
+        String tooltip;
         if(jsonText == null) {
             return null;
         }
@@ -196,8 +197,14 @@ public class Tray {
         }
         config.put("title", config.get("title") != null ? config.get("title").toString() : defaultTitle );
         config.put("title", replaceMenuTokens(config.get("title").toString(),variableMap));
-        config.put("tooltip", config.get("tooltip") != null ? config.get("tooltip").toString() : defaultTitle );
-        config.put("tooltip", replaceMenuTokens(config.get("tooltip").toString(),variableMap));
+        tooltip = config.get("tooltip") != null ? config.get("tooltip").toString() : defaultTitle;
+        tooltip = replaceMenuTokens(tooltip,variableMap);
+        // SystemTray limits tooltip to 64, so enforce that and maybe clean up a cut-off word
+        if(tooltip.length() > 64){
+            tooltip = tooltip.substring(0, 61);
+            tooltip = tooltip.substring(0, Math.min(tooltip.length(), tooltip.lastIndexOf(" "))) + "...";
+        }
+        config.put("tooltip", tooltip );
         if (loadItems == null) {
             loadItems = (JSONArray) JSONValue.parse("[]");
         }
