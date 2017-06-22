@@ -195,17 +195,22 @@ public class Server {
         restartServer(getServerOptions());
     }
     public synchronized void restartServer(final ServerOptions options) throws Exception {
-        LaunchUtil.displayMessage("info", "Restarting server...");
+        LaunchUtil.displayMessage("Info", "Restarting server...");
         System.out.println(bar);
         System.out.println("***  Restarting server");
         System.out.println(bar);
         stopServer();
-        serverWentDown();
-        if(monitor != null) {
-            monitor.stopListening();
-        }
-        monitor = null;
-        startServer(options);
+        LaunchUtil.restartApplication(new Runnable(){
+            @Override
+            public void run() {
+                log.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
+//                stopServer();
+//                serverWentDown();
+//                if(monitor != null) {
+//                    monitor.stopListening();
+//                }
+//                monitor = null;
+            }});
     }
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -938,13 +943,12 @@ public class Server {
                 System.exit(exitCode);
             }
             if(monitor != null) {
-                //monitor.stopListening();
+                //monitor.stopListening();  // this will system.exit()
             }
         }
 
     }
 
-    
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void configureURLRewrite(DeploymentInfo servletBuilder, File webInfDir) throws ClassNotFoundException, IOException {
         if(serverOptions.isEnableURLRewrite()) {

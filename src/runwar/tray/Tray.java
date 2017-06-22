@@ -162,8 +162,8 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new OpenBrowserAction(url));
                     menuItem.setShortcut('o');
                 } else if (action.toLowerCase().equals("openfilesystem")) {
-                    String path = Server.getServerOptions().getWarPath();
-                    menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path));
+                    File path = new File(getString(itemInfo, "path", Server.getServerOptions().getWarPath()));
+                    menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
                 } else {
                     log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
@@ -489,6 +489,7 @@ public class Tray {
         }
         @Override
         public void actionPerformed(ActionEvent e) {
+            log.debug("Trying to open file browser to: " + path);
             try {
                 LaunchUtil.browseDirectory(path);
             }
