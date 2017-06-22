@@ -10,9 +10,12 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
+import java.net.ConnectException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -319,7 +322,6 @@ public class Server {
         //System.out.println("background: " + background);
         System.out.println(bar);
         addShutDownHook();
-        System.out.println(bar);
         portNumber = getPortOrErrorOut(portNumber, host);
         socketNumber = getPortOrErrorOut(socketNumber, host);
         String cfmlServletConfigWebDir = serverOptions.getCFMLServletConfigWebDir();
@@ -803,6 +805,7 @@ public class Server {
         }
 
         if (serverOptions.isOpenbrowser()) {
+            log.debug("Starting open browser action");
             new Server(3);
         }
         
@@ -1083,12 +1086,16 @@ public class Server {
                 continue;
             }
             for (File item : file.listFiles()) {
-                String fileName = item.getAbsolutePath();
+                String fileName = item.getAbsolutePath().toLowerCase();
                 if (!item.isDirectory()) {
-                    if (fileName.toLowerCase().endsWith(".jar") || fileName.toLowerCase().endsWith(".zip")) {
-                        URL url = item.toURI().toURL();
-                        classpath.add(url);
-                        log.trace("lib: added to classpath: " + fileName);
+                    if (fileName.endsWith(".jar") || fileName.endsWith(".zip")) {
+                        if(fileName.contains("slf4j")) {
+                            log.debug("lib: Skipping slf4j jar: " + item.getAbsolutePath());
+                        } else {
+                            URL url = item.toURI().toURL();
+                            classpath.add(url);
+                            log.trace("lib: added to classpath: " + item.getAbsolutePath());
+                        }
                     }
                 }
             }
@@ -1240,11 +1247,16 @@ public class Server {
     public static boolean checkServerIsUp(InetAddress server, int port) {
         Socket sock = null;
         try {
-            sock = SocketFactory.getDefault().createSocket(server, port);
-            sock.setSoLinger(true, 0);
+            sock = new Socket();
+            InetSocketAddress sa = new InetSocketAddress(server, port);
+            sock.connect(sa, 500);
             return true;
+        } catch (ConnectException e) {
+            log.debug("Error while connecting. " + e.getMessage());
+        } catch (SocketTimeoutException e) {
+            log.debug("Connection: " + e.getMessage() + ".");
         } catch (IOException e) {
-            return false;
+            e.printStackTrace();
         } finally {
             if (sock != null) {
                 try {
@@ -1254,6 +1266,7 @@ public class Server {
                 }
             }
         }
+        return false;
     }
 
     class OpenBrowserTask extends TimerTask {
@@ -1311,7 +1324,7 @@ public class Server {
     public String getServerState() {
         return serverState;
     }
-    
+
     public static class ServerState {
         public static final String STARTING = "STARTING";
         public static final String STARTED = "STARTED";
