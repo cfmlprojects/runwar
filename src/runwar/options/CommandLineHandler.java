@@ -529,7 +529,10 @@ public class CommandLineHandler {
             if (line.hasOption("debug")) {
                 Boolean debug= Boolean.valueOf(line.getOptionValue("debug"));
                 serverOptions.setDebug(debug);
-                if(debug)serverOptions.setLoglevel("DEBUG");
+                if(debug) {
+                    serverOptions.setLoglevel("DEBUG");
+                    log.debug("Enabling debug mode");
+                }
             }
 
             if (line.hasOption("level") && line.getOptionValue("level").length() > 0) {
@@ -674,12 +677,14 @@ public class CommandLineHandler {
             if (line.hasOption("requestlog")) {
                 serverOptions.setKeepRequestLog(Boolean.valueOf(line.getOptionValue("requestlog")));
             }
-            
+
             if (line.hasOption("open-browser")) {
                 serverOptions.setOpenbrowser(Boolean.valueOf(line.getOptionValue("open")));
             }
             if (line.hasOption("open-url")) {
                 serverOptions.setOpenbrowserURL(line.getOptionValue("open-url"));
+                if(!line.hasOption("open-browser"))
+                    serverOptions.setOpenbrowser(true);
             }
 
             if (line.hasOption("pidfile")) {
