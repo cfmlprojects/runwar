@@ -62,9 +62,13 @@ public class MappedResourceManager extends FileResourceManager {
         }
         cfmlDirsFiles = dirs.toArray(new File[dirs.size()]);
     };
-    
+
     public Resource getResource(String path) {
         log.trace("* requested:" + path);
+        if(path == null) {
+            log.error("getResource got a null path!");
+            return null;
+        }
         File reqFile = null;
         try {
             if (WEBINF != null && (path.startsWith("/WEB-INF") || path.startsWith("./WEB-INF"))) {

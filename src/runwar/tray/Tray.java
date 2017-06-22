@@ -15,7 +15,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
@@ -44,7 +43,14 @@ public class Tray {
     private static SystemTray systemTray;
     private static boolean trayIsHooked = false;
 
-    public static void hookTray(Server server) {
+    final static String defaultMenu = "{\"title\" : \"${defaultTitle}\", \"items\": ["
+            + "{label:\"Stop Server (${runwar.processName})\", action:\"stopserver\"}"
+            + ",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
+            + "]}";
+
+    private static HashMap<String,String> variableMap;
+
+    public static void hookTray(final Server server) {
         if(trayIsHooked){
             return;
         }
@@ -60,6 +66,7 @@ public class Tray {
         } catch (java.lang.ExceptionInInitializerError e) {
             log.debug(e);
         }
+
         if ( systemTray == null ) {
             log.warn("System Tray is not supported");
             return;
@@ -72,49 +79,54 @@ public class Tray {
         final int stopSocket = serverOptions.getSocketNumber();
         String processName = serverOptions.getProcessName();
         String PID = server.getPID();
+        String warpath = serverOptions.getWarPath();
 
         final String statusText = processName + " server on " + host + ":" + portNumber + " PID:" + PID;
-        
-        HashMap<String,String> variableMap = new HashMap<String,String>();
+
+        variableMap = new HashMap<String,String>();
         variableMap.put("defaultTitle", statusText);
+        variableMap.put("webroot", warpath);
         variableMap.put("runwar.port", Integer.toString(portNumber));
         variableMap.put("runwar.processName", processName);
+        variableMap.put("runwar.PID", PID);
         variableMap.put("runwar.host", host);
         variableMap.put("runwar.stopsocket", Integer.toString(stopSocket));
 
-        final String defaultMenu = "{\"title\" : \"${defaultTitle}\", \"items\": ["
-                + "{label:\"Stop Server (${runwar.processName})\", action:\"stopserver\"}"
-                + ",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
-                + "]}";
-
-        JSONObject menu;
+        String trayConfigJSON;
         if (serverOptions.getTrayConfig() != null) {
-            menu = getTrayConfig( readFile( serverOptions.getTrayConfig() ), statusText, variableMap );
+            trayConfigJSON = readFile( serverOptions.getTrayConfig() );
         } else {
-            menu = getTrayConfig( getResourceAsString("runwar/taskbar.json"), statusText, variableMap );
+            trayConfigJSON = getResourceAsString("runwar/taskbar.json");
         }
-        if (menu == null) {
-            log.error("Could not load taskbar properties");
-            menu = getTrayConfig( defaultMenu, statusText, variableMap );
-        }
-        
-        systemTray.setStatus( menu.get("title").toString() );
-        systemTray.setTooltip( menu.get("tooltip").toString() );
-        setIconImage(iconImage);
-        
-        Menu mainMenu = systemTray.getMenu();
-        addMenuItems((JSONArray) menu.get("items"),mainMenu,server);
+
+        instantiateMenu(trayConfigJSON, statusText, iconImage, variableMap, server);
 
         trayIsHooked = true;
     }
     
+    private static void instantiateMenu(String trayConfigJSON, String statusText, String iconImage, HashMap<String, String> variableMap, Server server ) {
+        JSONObject menu;
+        menu = getTrayConfig( trayConfigJSON, statusText, variableMap );
+        if (menu == null) {
+            log.error("Could not load tray config json, using default");
+            menu = getTrayConfig( defaultMenu, statusText, variableMap );
+        }
+        systemTray.setStatus( getString(menu, "title", "") );
+        systemTray.setTooltip( getString(menu, "tooltip", "") );
+        setIconImage(iconImage);
+
+        Menu mainMenu = systemTray.getMenu();
+        addMenuItems((JSONArray) menu.get("items"), mainMenu, server);
+        
+    }
+
     public static void addMenuItems(JSONArray items, Menu menu, Server server) {
         for (Object ob : items) {
             JSONObject itemInfo = (JSONObject) ob;
             InputStream is = null;
-            String label = itemInfo.get("label").toString();
-            String hotkey = itemInfo.get("hotkey") != null ? itemInfo.get("hotkey").toString() : "";
-            boolean isDisabled = itemInfo.get("disabled") != null && Boolean.parseBoolean(itemInfo.get("disabled").toString());
+            String label = getString(itemInfo, "label", "");
+            String hotkey = getString(itemInfo, "hotkey", "");
+            boolean isDisabled = Boolean.parseBoolean(getString(itemInfo, "disabled", "false"));
             if(itemInfo.get("image") != null) {
                 is = getImageInputStream(itemInfo.get("image").toString());
             }
@@ -135,7 +147,7 @@ public class Tray {
                 menu.add(checkbox);
             }
             else if(itemInfo.get("action") != null) {
-                String action = itemInfo.get("action").toString();
+                String action = getString(itemInfo, "action", "");
                 if (action.toLowerCase().equals("stopserver")) {
                     menuItem = new MenuItem(label, is, new ExitAction(server));
                     menuItem.setShortcut('s');
@@ -150,18 +162,14 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new OpenBrowserAction(url));
                     menuItem.setShortcut('o');
                 } else if (action.toLowerCase().equals("openfilesystem")) {
-                    try {
-                        String path;
-                        path = Server.getServerOptions().getWarPath();
-                        menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path));
-                        menuItem.setShortcut('b');
-                    } catch (MalformedURLException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
+                    String path = Server.getServerOptions().getWarPath();
+                    menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path));
+                    menuItem.setShortcut('b');
                 } else {
                     log.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                 }
+            } else {
+                menuItem = new MenuItem(label, is);
             }
             if (menuItem != null) {
                 if (hotkey.length() > 0) {
@@ -183,7 +191,6 @@ public class Tray {
         JSONObject config;
         JSONArray loadItems;
         JSONArray items = new JSONArray();
-        String tooltip;
         if(jsonText == null) {
             return null;
         }
@@ -195,10 +202,9 @@ public class Tray {
             config = (JSONObject) JSONValue.parse(jsonText);
             loadItems = (JSONArray) config.get("items");
         }
-        config.put("title", config.get("title") != null ? config.get("title").toString() : defaultTitle );
-        config.put("title", replaceMenuTokens(config.get("title").toString(),variableMap));
-        tooltip = config.get("tooltip") != null ? config.get("tooltip").toString() : defaultTitle;
-        tooltip = replaceMenuTokens(tooltip,variableMap);
+        String title = getString(config, "title", defaultTitle);
+        config.put("title", title );
+        String tooltip = getString(config, "tooltip", defaultTitle);
         // SystemTray limits tooltip to 64, so enforce that and maybe clean up a cut-off word
         if(tooltip.length() > 64){
             tooltip = tooltip.substring(0, 61);
@@ -215,7 +221,7 @@ public class Tray {
                 log.error("No label for menu item: " + itemInfo.toJSONString());
                 continue;
             }
-            String label = replaceMenuTokens(itemInfo.get("label").toString(), variableMap);
+            String label = getString(itemInfo, "label", "");
             itemInfo.put("label",label);
             if(itemInfo.get("action") != null) {
                 String action = itemInfo.get("action").toString();
@@ -225,8 +231,8 @@ public class Tray {
                 }
             }
             if(itemInfo.get("url") != null) {
-                itemInfo.put("action", itemInfo.get("action") != null ? itemInfo.get("action") : "openbrowser");
-                itemInfo.put("url", replaceMenuTokens( itemInfo.get("url").toString(), variableMap ));
+                itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
+                itemInfo.put("url", getString(itemInfo, "url", ""));
             }
             items.add(itemInfo);
         }
@@ -235,7 +241,12 @@ public class Tray {
         return config;
     }
 
-    private static String replaceMenuTokens(String string, HashMap<String,String> variableMap) {
+    private static String getString(JSONObject menu, String key, String defaultValue) {
+        String value = menu.get(key) != null ? menu.get(key).toString() : defaultValue;
+        return replaceMenuTokens(value);
+    }
+
+    private static String replaceMenuTokens(String string) {
         for(String key : variableMap.keySet() ) {
             string = string.replace("${" + key + "}", variableMap.get(key) );
         }
