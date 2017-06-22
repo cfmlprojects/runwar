@@ -316,7 +316,7 @@ public class ServerOptions {
     }
     public ServerOptions setDebug(boolean debug) {
         this.debug = debug;
-        if(loglevel == "WARN") {
+        if(debug && loglevel == "WARN") {
             loglevel = "DEBUG";
         }
         return this;
@@ -408,8 +408,13 @@ public class ServerOptions {
         this.welcomeFiles = welcomeFiles;
         return this;
     }
-    public String getWarPath() throws MalformedURLException {
-        return getWarFile().toURI().toURL().toString();
+    public String getWarPath() {
+        try {
+            return getWarFile().toURI().toURL().toString();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return "";
+        }
     }
 	public ServerOptions setSSLCertificate(File file) {
 		this.sslCertificate = file;
