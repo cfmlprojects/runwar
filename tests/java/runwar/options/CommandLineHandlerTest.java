@@ -72,5 +72,13 @@ public class CommandLineHandlerTest {
         assertEquals(upMap.get("alice"), "fun");
         assertEquals(upMap.get("equals"), "blah=inpass");
     }
-    
+
+    @Test
+    public void testDebugIsFalse() throws IOException {
+        ServerOptions serverOptions = CommandLineHandler.parseArguments("-c tests/resource/server.json --debug-enable false".split(" "));
+        assertFalse(serverOptions.isDebug());
+        serverOptions = CommandLineHandler.parseArguments("-c tests/resource/server.json -debug false".split(" "));
+        assertFalse(serverOptions.isDebug());
+    }
+
 }
