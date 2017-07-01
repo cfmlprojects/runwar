@@ -19,13 +19,13 @@ As small as RunWAR is, it still packs a lot of features.  It can run any J2EE wa
 ## Standards Compliant
 
 Runwar is powered under the hood by a project called *Undertow* which actually does all the work.
-> "Undertow is a flexible performant web server written in java, providing both blocking and non-blocking API’s based on NIO."
+> Undertow is a flexible performant web server written in java, providing both blocking and non-blocking API’s based on NIO.
 > http://undertow.io
 
 Undertow is what powers JBoss WildFly and is a very active project with tons of support for stuff like web sockets and HTTP 2.0 and has excellent performance.  
 
 ## Usage
-Undertow can be run from the commandline like so.  This will give you all the available options:
+RunWAR can be run from the commandline like so.  This will give you all the available options:
 ```bash
 $> java -jar runwar-${version}.jar
 ```
