@@ -1,40 +1,47 @@
-#RunWAR
+# RunWAR
 
-RunWAR is a web server targeted at running CFML applications, with some added 
-features for Lucee (configurable web/admin context locations, and opening the
-Lucee admin web page from the taskbar).
+RunWAR is a web server targeted at running Java and  CFML applications, with some added features for Adobe ColdFusion and Lucee (configurable web/admin context locations, and opening the admin pages from the taskbar).
 
-It has a small memory footprint (7.5M on disk, ~5M min heap), while leveraging
-enterprise grade server technology-- and the inner workings are simple.
+## Lightweight
 
-It mainly provides a separation of your WAR from your project, without having 
-to use CFML mappings, or sub-par workarounds like overriding "/" via a mapping.
-Directories which you would like to serve content from can be arbitrary
-locations, just pass in a list of file system paths.
+RunWAR has a small memory footprint (10 MB on disk, ~5M min heap), while leveraging enterprise grade server technology-- and the inner workings are simple.  It starts up very fast and has very small overhead.  It's great for running sites on even limited hardware like a Raspberry Pi since it has a smaller footprint than, say, Tomcat.
 
-There's nothing really amazing about it -- I reckon it breaks the spec
-something fierce -- however it is pretty handy for development.
+## Extensible
 
-I take that back.  It has a taskbar widget with a configurable icon for starting
-and stopping the server instance, and a dock icon for OS X that's configurable 
-too-- which _is_ pretty amazing, really.  Quality stuff!  Heh.
+As small as RunWAR is, it still packs a lot of features.  It can run any J2EE war including all recent versions of Adobe ColdFusion, Railo, and Lucee Server.  It has a powerful Java-based web server built in that provides:
+* URL Rewriting
+* Virtual directories
+* Basic Authencitcation
+* Custom error pages
+* Full control of JVM args
+* System tray integration for managing servers
 
-*Undertow* actually does all the work-- _"Undertow is a flexible performant
-web server written in java, providing both blocking and non-blocking API’s 
-based on NIO."_ http://undertow.io/
+## Standards Compliant
 
---which is swell, as it has a small footprint while being featureful,
-performant, and configurabuhble in a lovely fashion.
+Runwar is powered under the hood by a project called *Undertow* which actually does all the work.
+> "Undertow is a flexible performant web server written in java, providing both blocking and non-blocking API’s based on NIO."
+> http://undertow.io
+Undertow is what powers JBoss WildFly and is a very active project with tons of support for stuff like web sockets and HTTP 2.0 and has excellent performance.  
 
-So, yeah, that's mostly it.  Running "java -jar runwar-${version}.jar"
-should give you a list of available options, the basics being:
+## Usage
+Undertow can be run from the commandline like so.  This will give you all the available options:
+```bash
+$> java -jar runwar-${version}.jar
+```
 
-`java -jar runwar.jar -war "path/to/war" --background false`
+To start a quick server, it would look like this:
+```bash
+$> java -jar runwar.jar -war "path/to/war" --background false
+```
 
 or
 
-`java -jar runwar.jar -war "path/to/war" --port 8787 --dirs "virtualdir=/path/to/dir,virtualdir2=/path/to/dir2" --background false`
+```bash
+java -jar runwar.jar -war "path/to/war" --port 8787 --dirs "virtualdir=/path/to/dir,virtualdir2=/path/to/dir2" --background false
+```
 
+## CommandBox
+Runwar also powers the servers for CommandBox, a CLI, REPL, package manager, and server for CFML developers.  
 
 ## License
 
