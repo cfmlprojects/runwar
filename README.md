@@ -21,6 +21,7 @@ As small as RunWAR is, it still packs a lot of features.  It can run any J2EE wa
 Runwar is powered under the hood by a project called *Undertow* which actually does all the work.
 > "Undertow is a flexible performant web server written in java, providing both blocking and non-blocking API’s based on NIO."
 > http://undertow.io
+
 Undertow is what powers JBoss WildFly and is a very active project with tons of support for stuff like web sockets and HTTP 2.0 and has excellent performance.  
 
 ## Usage
@@ -37,7 +38,7 @@ $> java -jar runwar.jar -war "path/to/war" --background false
 or
 
 ```bash
-java -jar runwar.jar -war "path/to/war" --port 8787 --dirs "virtualdir=/path/to/dir,virtualdir2=/path/to/dir2" --background false
+$> java -jar runwar.jar -war "path/to/war" --port 8787 --dirs "virtualdir=/path/to/dir,virtualdir2=/path/to/dir2" --background false
 ```
 
 ## CommandBox
