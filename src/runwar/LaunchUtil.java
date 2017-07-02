@@ -50,7 +50,6 @@ public class LaunchUtil {
     private static Logger log = Logger.getLogger("RunwarLogger");
     private static boolean relaunching;
     private static final int KB = 1024;
-    private static String processName = Server.getServerOptions().getProcessName();
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
 
@@ -309,6 +308,7 @@ public class LaunchUtil {
     }
 
     public static void displayMessage(String type, String text) {
+        String processName = Server.getServerOptions() != null ? Server.getServerOptions().getProcessName() : "RunWAR";
         try{
             if(type.toLowerCase().startsWith("warn")) {
                 displayMessage(processName, text, MessageType.WARNING);
@@ -331,6 +331,7 @@ public class LaunchUtil {
     }
     
     public static void displayMessage(String title, String text, MessageType type) {
+//        boolean trayEnable = Server.getServerOptions() != null ? Server.getServerOptions().isTrayEnabled() : false;
         if(GraphicsEnvironment.isHeadless()) {
             printMessage(title, text, type);
             return;
@@ -818,8 +819,6 @@ public class LaunchUtil {
      */
     public static void restartApplication(Runnable runBeforeRestart) throws IOException {
         try {
-            // java binary
-            String java = getJreExecutable().getAbsolutePath();
             // vm arguments
             List<String> vmArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
             StringBuffer vmArgsOneLine = new StringBuffer();

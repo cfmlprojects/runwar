@@ -3,8 +3,6 @@ package runwar.server;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
 import testutils.TestHttpClient;
-import io.undertow.util.Headers;
-import io.undertow.util.Protocols;
 import io.undertow.util.StatusCodes;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;

@@ -85,7 +85,10 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
 
         // run the beforeClass ones first so they can set the config, side result is they're run twice. :/
         serverOptions = new ServerOptions();
-        serverOptions.setWarFile(new File(SIMPLEWARPATH)).setDebug(true).setBackground(false);
+        serverOptions
+          .setWarFile(new File(SIMPLEWARPATH))
+          .setDebug(true).setBackground(false)
+          .setTrayEnabled(false);
 
         List<FrameworkMethod> methos = getTestClass().getAnnotatedMethods(BeforeClass.class);
         runChild(methos.get(0), new RunNotifier());
@@ -98,9 +101,10 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
                 server.restartServer(serverOptions);
             }
             super.run(notifier);
-            server.stopServer();
         } catch (Exception e) {
            e.printStackTrace();
+        } finally {
+            server.stopServer();
         }
 
  //       runInternal(notifier);

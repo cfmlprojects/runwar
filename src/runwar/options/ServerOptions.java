@@ -605,11 +605,15 @@ public class ServerOptions {
     }
     public ServerOptions setBasicAuth(String userPasswordList) {
         HashMap<String,String> ups = new HashMap<String,String>();
-        for(String up : userPasswordList.split("(?<!\\\\),")) {
-            up = up.replace("\\,", ",");
-            String u = up.split("(?<!\\\\)=")[0].replace("\\=", "=");
-            String p = up.split("(?<!\\\\)=")[1].replace("\\=", "=");
-            ups.put(u, p);
+        try{            
+            for(String up : userPasswordList.split("(?<!\\\\),")) {
+                up = up.replace("\\,", ",");
+                String u = up.split("(?<!\\\\)=")[0].replace("\\=", "=");
+                String p = up.split("(?<!\\\\)=")[1].replace("\\=", "=");
+                ups.put(u, p);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Incorrect 'users' format (user=pass,user2=pass2) : " + userPasswordList);
         }
         return setBasicAuth(ups);
     }

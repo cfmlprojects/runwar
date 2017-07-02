@@ -88,11 +88,13 @@ import io.undertow.server.protocol.http2.Http2UpgradeHandler;
 import io.undertow.server.session.InMemorySessionManager;
 import io.undertow.server.session.SessionAttachmentHandler;
 import io.undertow.server.session.SessionCookieConfig;
+import io.undertow.servlet.api.AuthMethodConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.DeploymentManager.State;
 import io.undertow.servlet.api.ErrorPage;
 import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
@@ -134,6 +136,7 @@ public class Server {
             "default.html", "default.htm" };
     private SSLContext sslContext;
     private Thread shutDownThread;
+    private SecurityManager securityManager;
 
     private static final int METADATA_MAX_AGE = 2000;
     private static final Thread mainThread = Thread.currentThread();
@@ -238,6 +241,8 @@ public class Server {
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
         ensureJavaVersion();
+
+        securityManager = new SecurityManager();
 
         if (serverOptions.isBackground()) {
             setServerState(ServerState.STARTING_BACKGROUND);
@@ -530,6 +535,10 @@ public class Server {
             }
         }
 
+        if(serverOptions.isEnableBasicAuth()) {
+            securityManager.configureAuth(servletBuilder, serverOptions);
+        }
+
         configureURLRewrite(servletBuilder, webinf);
         configurePathInfoFilter(servletBuilder);
 
@@ -602,6 +611,7 @@ public class Server {
                 }
             }
         }
+        
         
         // TODO: add buffer pool size (maybe-- direct is best at 16k), enable/disable be good I reckon tho
         servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
@@ -762,19 +772,12 @@ public class Server {
         }
 
         if(serverOptions.isEnableBasicAuth()) {
-            String realm = serverName + " Realm";
-            log.debug("Enabling Basic Auth: " + realm);
-            final Map<String, char[]> users = new HashMap<>(2);
-            for(Entry<String,String> userNpass : serverOptions.getBasicAuth().entrySet()) {
-                users.put(userNpass.getKey(), userNpass.getValue().toCharArray());
-                log.debug(String.format("User:%s password:%s",userNpass.getKey(),userNpass.getValue()));
-            }
-            serverBuilder.setHandler(SecurityManager.addSecurity(errPageHandler, users, realm));
+            securityManager.configureAuth(errPageHandler, serverBuilder, options);
+//            serverBuilder.setHandler(errPageHandler);
         } else {
             serverBuilder.setHandler(errPageHandler);
         }
 
-        
         try {
             PID = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
             String pidFile = serverOptions.getPidFile();
@@ -943,7 +946,7 @@ public class Server {
                 System.exit(exitCode);
             }
             if(monitor != null) {
-                //monitor.stopListening();  // this will system.exit()
+                monitor.stopListening(false);
             }
         }
 
@@ -1087,6 +1090,7 @@ public class Server {
             File file = new File(path); 
             // Ignore non-existent dirs
             if( !file.exists() ) {
+                log.debug("lib: Skipping non-existent: " + file.getAbsolutePath());
                 continue;
             }
             for (File item : file.listFiles()) {
@@ -1139,6 +1143,7 @@ public class Server {
 
         private char[] stoppassword;
         private volatile boolean listening = false;
+        private volatile boolean systemExitOnStop = true;
 
         public MonitorThread(char[] stoppassword) {
             this.stoppassword = stoppassword;
@@ -1158,7 +1163,7 @@ public class Server {
                 System.out.println("*** starting 'stop' listener thread - Host: " + serverOptions.getHost()
                         + " - Socket: " + socketNumber);
                 System.out.println(bar);
-                while (listening) {
+                while (listening && serverState != ServerState.STOPPED) {
                     final Socket clientSocket = serverSocket.accept();
                     int r, i = 0;
                     BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -1195,12 +1200,14 @@ public class Server {
                 exitCode = 1;
                 e.printStackTrace();
             }
-            System.exit(exitCode); // this will call our shutdown hook
+            if(systemExitOnStop)
+                System.exit(exitCode); // this will call our shutdown hook
 //            Thread.currentThread().interrupt();
             return;
         }
         
-        public void stopListening() {
+        public void stopListening(boolean systemExitOnStop) {
+            this.systemExitOnStop = systemExitOnStop;
             listening = false;
         }
     }

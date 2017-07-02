@@ -29,7 +29,7 @@ public class RequestDumper implements HttpHandler {
         if (sc != null) {
             if (sc.isAuthenticated()) {
                 jsonObject.put("authType",sc.getMechanismName());
-                jsonObject.put("principle",sc.getAuthenticatedAccount().getPrincipal());
+                jsonObject.put("principle",sc.getAuthenticatedAccount().getPrincipal().getName());
             } else {
                 jsonObject.put("authType","none");
             }
