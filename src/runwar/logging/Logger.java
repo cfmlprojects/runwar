@@ -51,7 +51,7 @@ public class Logger {
     public void error(String string, Exception e) {
         log(org.jboss.logging.Logger.Level.ERROR, string, e);
     }
-    public void errorf(String format, Object object) {
+    public void errorf(String format, Object... object) {
         logf(org.jboss.logging.Logger.Level.ERROR,format,object);
     }
 
@@ -61,7 +61,7 @@ public class Logger {
     public void warn(String string, Exception e) {
         log(org.jboss.logging.Logger.Level.WARN, string, e);
     }
-    public void warnf(String format, Object object) {
+    public void warnf(String format, Object... object) {
         logf(org.jboss.logging.Logger.Level.WARN,format,object);
     }
 
@@ -72,7 +72,7 @@ public class Logger {
     public void info(String string, Exception e) {
         log(org.jboss.logging.Logger.Level.INFO, string, e);
     }
-    public void info(String format, Object object) {
+    public void info(String format, Object... object) {
         logf(org.jboss.logging.Logger.Level.INFO,format,object);
     }
     
@@ -82,7 +82,7 @@ public class Logger {
     public void fatal(String string, Exception e) {
         log(org.jboss.logging.Logger.Level.FATAL, string, e);
     }
-    public void fatal(String format, Object object) {
+    public void fatal(String format, Object... object) {
         logf(org.jboss.logging.Logger.Level.FATAL,format,object);
     }
     
@@ -124,7 +124,7 @@ public class Logger {
             logger.debugf(format,object);
             break;
         case WARN:
-            logger.warnf(format,object);
+            logger.warnf(format,object,new Object[]{object,null});
             break;
         case ERROR:
             logger.errorf(format,object);
@@ -215,5 +215,5 @@ final class JDKLevel extends java.util.logging.Level {
     public static final JDKLevel WARN = new JDKLevel("WARN", 900);
     public static final JDKLevel INFO = new JDKLevel("INFO", 800);
     public static final JDKLevel DEBUG = new JDKLevel("DEBUG", 500);
-    public static final JDKLevel TRACE = new JDKLevel("TRACE", 400);
+    public static final JDKLevel TRACE = new JDKLevel("ALL", 0);
 }

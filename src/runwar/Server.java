@@ -10,9 +10,13 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
+import java.net.ConnectException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.UnknownHostException;
@@ -20,17 +24,18 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.awt.Image;
 
-import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
 import javax.servlet.DispatcherType;
+import org.xnio.BufferAllocator;
+import org.xnio.OptionMap;
+import org.xnio.Xnio;
 
 import runwar.logging.Logger;
 import runwar.logging.LogSubverter;
@@ -39,25 +44,42 @@ import runwar.options.CommandLineHandler;
 import runwar.options.ServerOptions;
 import runwar.undertow.MappedResourceManager;
 import runwar.undertow.WebXMLParser;
+import runwar.util.RequestDumper;
 import runwar.util.SSLUtil;
 import runwar.util.TeeOutputStream;
 import runwar.security.SecurityManager;
+import runwar.tray.Tray;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
+import io.undertow.UndertowOptions;
+import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicates;
+import io.undertow.protocols.ssl.UndertowXnioSsl;
 import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.LearningPushHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.PredicateHandler;
+import io.undertow.server.handlers.ProxyPeerAddressHandler;
+import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.SSLHeaderHandler;
 import io.undertow.server.handlers.cache.CacheHandler;
 import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
+import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
+import io.undertow.server.handlers.proxy.ProxyHandler;
+import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.handlers.resource.ResourceManager;
+import io.undertow.server.protocol.http2.Http2UpgradeHandler;
+import io.undertow.server.session.InMemorySessionManager;
+import io.undertow.server.session.SessionAttachmentHandler;
+import io.undertow.server.session.SessionCookieConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ErrorPage;
@@ -67,7 +89,12 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
+import io.undertow.util.StatusCodes;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
+
+import static io.undertow.Handlers.predicate;
+import static io.undertow.predicate.Predicates.secure;
+
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static io.undertow.servlet.Servlets.servlet;
@@ -77,16 +104,16 @@ public class Server {
 
     private static Logger log = Logger.getLogger("RunwarLogger");
     private TeeOutputStream tee;
-    private static ServerOptions serverOptions;
+    private volatile static ServerOptions serverOptions;
     private static MariaDB4jManager mariadb4jManager;
-    static volatile boolean listening;
     int portNumber;
     int socketNumber;
     private DeploymentManager manager;
     private Undertow undertow;
+    private MonitorThread monitor;
 
     private String PID;
-    private String serverState = ServerState.STOPPED;
+    private volatile String serverState = ServerState.STOPPED;
 
     private static ClassLoader _classLoader;
 
@@ -95,6 +122,12 @@ public class Server {
     public static final String bar = "******************************************************************************";
     private String[] defaultWelcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
             "default.html", "default.htm" };
+    private SSLContext sslContext;
+    private Thread shutDownThread;
+    private SecurityManager securityManager;
+
+    private static final int METADATA_MAX_AGE = 2000;
+    private static final Thread mainThread = Thread.currentThread();
 
     public Server() {
     }
@@ -129,7 +162,7 @@ public class Server {
         return _classLoader;
     }
     
-    public void startServer(String[] args, URLClassLoader classLoader) throws Exception {
+    public synchronized void startServer(String[] args, URLClassLoader classLoader) throws Exception {
         setClassLoader(classLoader);
         startServer(args);
     }
@@ -145,13 +178,38 @@ public class Server {
         }
     }
     
+    public synchronized void startServer(final String[] args) throws Exception {
+        startServer(CommandLineHandler.parseArguments(args));
+    }
+
+    public synchronized void restartServer() throws Exception {
+        restartServer(getServerOptions());
+    }
+    public synchronized void restartServer(final ServerOptions options) throws Exception {
+        LaunchUtil.displayMessage("Info", "Restarting server...");
+        System.out.println(bar);
+        System.out.println("***  Restarting server");
+        System.out.println(bar);
+        stopServer();
+        LaunchUtil.restartApplication(new Runnable(){
+            @Override
+            public void run() {
+                log.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
+//                stopServer();
+//                serverWentDown();
+//                if(monitor != null) {
+//                    monitor.stopListening();
+//                }
+//                monitor = null;
+            }});
+    }
+    
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void startServer(final String[] args) throws Exception {
-        ensureJavaVersion();
+    public synchronized void startServer(final ServerOptions options) throws Exception {
+        serverOptions = options;
         serverState = ServerState.STARTING;
-        serverOptions = CommandLineHandler.parseArguments(args);
         if(serverOptions.getAction().equals("stop")){
-            Stop.stopServer(args,true);
+            Stop.stopServer(serverOptions,true);
         }
         serverName = serverOptions.getServerName();
         portNumber = serverOptions.getPortNumber();
@@ -170,23 +228,14 @@ public class Server {
         Long transferMinSize= serverOptions.getTransferMinSize();
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
+        ensureJavaVersion();
+
+        securityManager = new SecurityManager();
 
         if (serverOptions.isBackground()) {
             setServerState(ServerState.STARTING_BACKGROUND);
             // this will eventually system.exit();
-            List<String> argarray = new ArrayList<String>();
-            for (String arg : args) {
-                if (arg.contains("background") || arg.startsWith("-b")) {
-                    continue;
-                } else {
-                    argarray.add(arg);
-                }
-            }
-            argarray.add("--background");
-            argarray.add("false");
-            int launchTimeout = serverOptions.getLaunchTimeout();
-            LaunchUtil.relaunchAsBackgroundProcess(launchTimeout, argarray.toArray(new String[argarray.size()]),
-                    serverOptions.getJVMArgs(), processName);
+            LaunchUtil.relaunchAsBackgroundProcess(serverOptions.setBackground(false),true);
             setServerState(ServerState.STARTED_BACKGROUND);
             // just in case
             Thread.sleep(200);
@@ -244,7 +293,7 @@ public class Server {
         }
 
         if (osName != null && osName.startsWith("Mac OS X")) {
-            Image dockIcon = LaunchUtil.getIconImage(dockIconPath);
+            Image dockIcon = Tray.getIconImage(dockIconPath);
             System.setProperty("com.apple.mrj.application.apple.menu.about.name", processName);
             System.setProperty("com.apple.mrj.application.growbox.intrudes", "false");
             System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -322,7 +371,8 @@ public class Server {
         final DeploymentInfo servletBuilder = deployment()
                 .setContextPath(contextPath.equals("/") ? "" : contextPath)
                 .setTempDir(new File(System.getProperty("java.io.tmpdir")))
-                .setDeploymentName(warPath);
+                .setDeploymentName(warPath)
+                .setServerName( "WildFly / Undertow" );
 
         if (!warFile.exists()) {
             throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
@@ -387,7 +437,7 @@ public class Server {
             // File(homeDir,"server/"), transferMinSize, cfmlDirs));
             File internalCFMLServerRoot = webinf;
             internalCFMLServerRoot.mkdirs();
-            servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot));
+            servletBuilder.setResourceManager(getResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot));
 
             if (webXmlFile != null) {
                 log.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
@@ -443,7 +493,7 @@ public class Server {
                 throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
             }
             servletBuilder.setClassLoader(_classLoader);
-            servletBuilder.setResourceManager(new MappedResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
+            servletBuilder.setResourceManager(getResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
             LogSubverter.subvertJDKLoggers(loglevel);
             WebXMLParser.parseWebXml(new File(webinf, "/web.xml"), servletBuilder, ignoreWelcomePages, ignoreRestMappings);
         } else {
@@ -463,10 +513,18 @@ public class Server {
             String cfclassesDir = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
             if(cfclassesDir == null || cfclassesDir.startsWith("/WEB-INF")){
                 // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
-                cfclassesDir = new File(webinf, "/cfclasses").getAbsolutePath();
+                File cfclassesDirFile = new File(webinf, "/cfclasses");
+                cfclassesDir = cfclassesDirFile.getAbsolutePath();
                 log.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
+                if( !cfclassesDirFile.exists() ) {
+                	cfclassesDirFile.mkdir();
+                }
                 servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
             }
+        }
+
+        if(serverOptions.isEnableBasicAuth()) {
+            securityManager.configureAuth(servletBuilder, serverOptions);
         }
 
         configureURLRewrite(servletBuilder, webinf);
@@ -528,18 +586,20 @@ public class Server {
         log.info("welcome pages in deployment manager: " + servletBuilder.getWelcomePages());
 
         if(ignoreRestMappings) {
-            log.info("Overriding web.xml rest mappings.");
+            log.info("Overriding web.xml rest mappings with " + Arrays.toString( serverOptions.getServletRestMappings() ) );
             Iterator<Entry<String, ServletInfo>> it = servletBuilder.getServlets().entrySet().iterator();
             while (it.hasNext()) {
                 ServletInfo restServlet = it.next().getValue();
-                if( restServlet.getName().equals("RestServlet") || restServlet.getName().equals("CFRestServlet") ) {
+                log.trace( "Checking servelet named: " + restServlet.getName() + "to see if it's a REST servlet." );
+                if( restServlet.getName().toLowerCase().equals("restservlet") || restServlet.getName().toLowerCase().equals("cfrestservlet") ) {
                     for(String path : serverOptions.getServletRestMappings()) {
                         restServlet.addMapping(path);
-                        log.info("Added rest mapping: " + path);
+                        log.info("Added rest mapping: " + path + " to " + restServlet.getName() );
                     }
                 }
             }
         }
+        
         
         // TODO: add buffer pool size (maybe-- direct is best at 16k), enable/disable be good I reckon tho
         servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
@@ -547,6 +607,7 @@ public class Server {
         log.debug("Added websocket context");
         
         manager = defaultContainer().addDeployment(servletBuilder);
+       
         
         manager.deploy();
         HttpHandler servletHandler = manager.start();
@@ -567,10 +628,22 @@ public class Server {
         if(serverOptions.isEnableHTTP()) {
             serverBuilder.addHttpListener(portNumber, host);
         }
-        
+
+        if(serverOptions.isHTTP2Enabled()) {
+            log.info("Enabling HTTP2 protocol");
+            LaunchUtil.assertJavaVersion8();
+            if(!serverOptions.isEnableSSL()) {
+                log.warn("SSL is required for HTTP2.  Enabling default SSL server.");
+                serverOptions.setEnableSSL(true);
+            }
+            serverOptions.setSSLPort(serverOptions.getSSLPort()+1);
+            serverBuilder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
+            //serverBuilder.setSocketOption(Options.REUSE_ADDRESSES, true);
+        }
+
         if (serverOptions.isEnableSSL()) {
             int sslPort = serverOptions.getSSLPort();
-            serverBuilder.setDirectBuffers(true);
+            serverOptions.setDirectBuffers(true);
             log.info("Enabling SSL protocol on port " + sslPort);
             try {
                 if (serverOptions.getSSLCertificate() != null) {
@@ -578,12 +651,13 @@ public class Server {
                     File keyfile = serverOptions.getSSLKey();
                     char[] keypass = serverOptions.getSSLKeyPass();
                     String[] sslAddCerts = serverOptions.getSSLAddCerts();
-                    serverBuilder.addHttpsListener(sslPort, host, SSLUtil.createSSLContext(certfile, keyfile, keypass, sslAddCerts));
+                    sslContext = SSLUtil.createSSLContext(certfile, keyfile, keypass, sslAddCerts);
                     if(keypass != null) 
                         Arrays.fill(keypass, '*');
                 } else {
-                    serverBuilder.addHttpsListener(sslPort, host, SSLUtil.createSSLContext());
+                    sslContext = SSLUtil.createSSLContext();
                 }
+                serverBuilder.addHttpsListener(sslPort, host, sslContext);
             } catch (Exception e) {
                 log.error("Unable to start SSL:" + e.getMessage());
                 e.printStackTrace();
@@ -611,11 +685,6 @@ public class Server {
         log.info("Direct Buffers: " + serverOptions.isDirectBuffers());
         serverBuilder.setDirectBuffers(serverOptions.isDirectBuffers());
 
-        
-        
-//        final PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
-//                .addPrefixPath(contextPath, servletHandler);
-
         final PathHandler pathHandler = new PathHandler(Handlers.redirect(contextPath)) {
             @Override
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
@@ -623,12 +692,16 @@ public class Server {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
                 }
                 //log.trace("pathhandler path:" + exchange.getRequestPath() + " querystring:" +exchange.getQueryString());
-                // clear any welcome-file info cached after initial request
-                if (serverOptions.isDirectoryListingEnabled() && exchange.getRequestPath().endsWith("/")) {
+                // clear any welcome-file info cached after initial request *NOT THREAD SAFE*
+                if (serverOptions.isDirectoryListingRefreshEnabled() && exchange.getRequestPath().endsWith("/")) {
                     //log.trace("*** Resetting servlet path info");
                     manager.getDeployment().getServletPaths().invalidate();
                 }
-                super.handleRequest(exchange);
+                if(serverOptions.isDebug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
+                    new RequestDumper().handleRequest(exchange);
+                } else {
+                    super.handleRequest(exchange);
+                }
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
@@ -647,23 +720,52 @@ public class Server {
                     .setNext(pathHandler);
             errPageHandler = new ErrorHandler(handler);
         } else {
-//            serverBuilder.setHandler(pathHandler);
             errPageHandler = new ErrorHandler(pathHandler);
         }
+
+//        if (serverOptions.isDebug()) {
+//            log.debug("Enabling request dumper");
+//            errPageHandler = new RequestDumpingHandler(errPageHandler);
+//        }
+
+        if (serverOptions.isProxyPeerAddressEnabled()) {
+            log.debug("Enabling Proxy Peer Address handling");
+            errPageHandler = new SSLHeaderHandler(new ProxyPeerAddressHandler(errPageHandler));
+        }
+
+        Undertow reverseProxy = null;
+        if (serverOptions.isHTTP2Enabled()) {
+            log.debug("Enabling HTTP2 Upgrade and LearningPushHandler");
+            /**
+             * To not be dependent on java9 or crazy requirements, we set up a proxy to enable http2, and swap it with the actual SSL server (thus the port++/port--)
+             */
+            errPageHandler = new Http2UpgradeHandler(errPageHandler);
+            errPageHandler = Handlers.header(predicate(secure(),errPageHandler,new HttpHandler() {
+                @Override
+                public void handleRequest(HttpServerExchange exchange) throws Exception {
+                    exchange.getResponseHeaders().add(Headers.LOCATION, "https://" + exchange.getHostName()
+                            + ":" + (serverOptions.getSSLPort()-1) + exchange.getRelativePath());
+                    exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT);
+                }
+            }), "x-undertow-transport", ExchangeAttributes.transportProtocol());
+            errPageHandler = new SessionAttachmentHandler(new LearningPushHandler(100, -1, errPageHandler),new InMemorySessionManager("runwarsessions"), new SessionCookieConfig());
+            LoadBalancingProxyClient proxy = new LoadBalancingProxyClient()
+                    .addHost(new URI("https://localhost:"+serverOptions.getSSLPort()), null, new UndertowXnioSsl(Xnio.getInstance(), OptionMap.EMPTY, SSLUtil.createClientSSLContext()), OptionMap.create(UndertowOptions.ENABLE_HTTP2, true))
+                    .setConnectionsPerThread(20);
+            reverseProxy = Undertow.builder()
+                    .setServerOption(UndertowOptions.ENABLE_HTTP2, true)
+                    .addHttpsListener(serverOptions.getSSLPort()-1, serverOptions.getHost(), sslContext)
+                    .setHandler(new ProxyHandler(proxy, 30000, ResponseCodeHandler.HANDLE_404))
+                    .build();
+        }
+
         if(serverOptions.isEnableBasicAuth()) {
-            String realm = serverName + " Realm";
-            log.debug("Enabling Basic Auth: " + realm);
-            final Map<String, char[]> users = new HashMap<>(2);
-            for(Entry<String,String> userNpass : serverOptions.getBasicAuth().entrySet()) {
-                users.put(userNpass.getKey(), userNpass.getValue().toCharArray());
-                log.debug(String.format("User:%s password:%s",userNpass.getKey(),userNpass.getValue()));
-            }
-            serverBuilder.setHandler(SecurityManager.addSecurity(errPageHandler, users, realm));
+            securityManager.configureAuth(errPageHandler, serverBuilder, options);
+//            serverBuilder.setHandler(errPageHandler);
         } else {
             serverBuilder.setHandler(errPageHandler);
         }
 
-        
         try {
             PID = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
             String pidFile = serverOptions.getPidFile();
@@ -682,23 +784,30 @@ public class Server {
         }
         // start the stop monitor thread
         undertow = serverBuilder.build();
-        Thread monitor = new MonitorThread(stoppassword);
+        monitor = new MonitorThread(stoppassword);
         monitor.start();
         log.debug("started stop monitor");
-        try {
-            LaunchUtil.hookTray(this);
-            log.debug("hooked system tray");	
-        } catch( Throwable e ) {
-            log.debug("system tray hook failed.");
-            log.error( e );        	
+
+        if(serverOptions.isTrayEnabled()) {
+            try {
+                Tray.hookTray(this);
+                log.debug("hooked system tray");	
+            } catch( Throwable e ) {
+                log.debug("system tray hook failed.");
+                log.error( e );
+            }
+        } else {
+            log.debug("System tray integration disabled");
         }
 
         if (serverOptions.isOpenbrowser()) {
+            log.debug("Starting open browser action");
             new Server(3);
         }
         
         // if this println changes be sure to update the LaunchUtil so it will know success
-        String msg = "Server is up - http-port:" + portNumber + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
+        String sslInfo = serverOptions.isEnableSSL() ? " https-port:" + serverOptions.getSSLPort() : "";
+        String msg = "Server is up - http-port:" + portNumber + sslInfo + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         log.debug(msg);
         LaunchUtil.displayMessage("info", msg);
         System.out.println(msg);
@@ -725,72 +834,112 @@ public class Server {
                 System.out.println("Error starting MariaDB4j: " + dbStartException.getMessage());
             }
         }
+        try{
 
-        undertow.start();
+            undertow.start();
+
+            if (serverOptions.isHTTP2Enabled()) {
+                log.debug("Starting HTTP2 proxy");
+                reverseProxy.start();
+            }
+
+        } 
+        catch (Exception any) {
+            if(any.getCause() instanceof java.net.SocketException) {
+                if(any.getCause().getMessage().equals("Permission denied")) {
+                    System.err.println("You need to be root or Administrator to bind to a port below 1024!");
+                }
+            } else {
+                any.printStackTrace();
+            }
+            System.exit(1);
+        }
     }
 
     private void addShutDownHook() {
-        final Thread mainThread = Thread.currentThread();
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                log.debug("Running shutdown hook");
-                try {
-                    stopServer();
+        if(shutDownThread == null) {
+            shutDownThread = new Thread() {
+                public void run() {
+                    log.debug("Running shutdown hook");
+                    try {
+                        if(!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
+                            log.debug("shutdown hook:stopServer()");
+                            stopServer();
+                        }
 //                    if(tempWarDir != null) {
 //                        LaunchUtil.deleteRecursive(tempWarDir);
 //                    }
-                    if(mainThread.isAlive()) {
-                        mainThread.interrupt();
-                        mainThread.join();
+                        if(mainThread.isAlive()) {
+                            log.debug("shutdown hook joining main thread");
+                            mainThread.interrupt();
+                            mainThread.join();
+                        }
+                    } catch ( Exception e) {
+                        e.printStackTrace();
                     }
-                } catch ( Exception e) {
-                    e.printStackTrace();
+                    log.debug("Shutdown hook finished");
                 }
-                log.debug("Ran shutdown hook");
-            }
-        });
-        log.debug("Added shutdown hook");
+            };
+            Runtime.getRuntime().addShutdownHook(shutDownThread);
+            log.debug("Added shutdown hook");
+        }
     }
 
-    public void stopServer() {
+    public synchronized void stopServer() {
         int exitCode = 0;
-        try{
-            System.out.println();
-            System.out.println(bar);
-            System.out.println("*** stopping server");
-            if (serverOptions.isMariaDB4jEnabled()) {
-                mariadb4jManager.stop();
+        if(getServerState() == ServerState.STOPPING) {
+            log.warn("Stop server called, however the server is already stopping.");
+        } else if(getServerState() == ServerState.STOPPED) {
+            log.warn("Stop server called, however the server has already stopped.");
+        } else {
+            try{
+                setServerState(ServerState.STOPPING);
+                System.out.println();
+                System.out.println(bar);
+                System.out.println("*** stopping server");
+                if (serverOptions.isMariaDB4jEnabled()) {
+                    mariadb4jManager.stop();
+                }
+                try {
+                    switch(manager.getState()) {
+                    case UNDEPLOYED:
+                        break;
+                    default:
+                        manager.undeploy();
+                    }
+                    undertow.stop();
+//                Thread.sleep(1000);
+                } catch (Exception notRunning) {
+                    System.out.println("*** server did not appear to be running");
+                }
+                System.out.println(bar);
+                setServerState(ServerState.STOPPED);
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                setServerState(ServerState.UNKNOWN);
+                log.error(e);
+                exitCode = 1;
             }
             try {
-                manager.undeploy();
-                undertow.stop();
-                Thread.sleep(1000);
-            } catch (Exception notRunning) {
-                System.out.println("*** server did not appear to be running");
+                if (tee != null) {
+                    tee.flush();
+                    tee.closeBranch();
+                }
+            } catch (Exception e) {
+                System.err.println("Redirect:  Unable to close this log file!");
             }
-            System.out.println(bar);
-            setServerState(ServerState.STOPPED);
-        } catch (Exception e) {
-            e.printStackTrace();
-            setServerState(ServerState.UNKNOWN);
-            log.error(e);
-            exitCode = 1;
-        }
-        try {
-            if (tee != null) {
-                tee.flush();
-                tee.closeBranch();
+            
+            if(exitCode != 0) {
+                System.exit(exitCode);
             }
-        } catch (Exception e) {
-            System.err.println("Redirect:  Unable to close this log file!");
-        }
-        if(exitCode != 0) {
-            System.exit(exitCode);
+            if(monitor != null) {
+                monitor.stopListening(false);
+            }
         }
 
     }
 
-    
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void configureURLRewrite(DeploymentInfo servletBuilder, File webInfDir) throws ClassNotFoundException, IOException {
         if(serverOptions.isEnableURLRewrite()) {
@@ -812,12 +961,23 @@ public class Server {
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
             }
+            
             String rewriteformat = serverOptions.isURLRewriteApacheFormat() ? "modRewrite-style" : "XML";
             log.debug(rewriteformat + " rewrite config file: " + urlRewriteFile);
-            servletBuilder.addFilter(new FilterInfo("UrlRewriteFilter", rewriteFilter)
-                .addInitParam("confPath", urlRewriteFile)
-                .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
-                .addInitParam("modRewriteConf", Boolean.toString(serverOptions.isURLRewriteApacheFormat())));
+            FilterInfo rewriteFilterInfo = new FilterInfo("UrlRewriteFilter", rewriteFilter)
+                    .addInitParam("confPath", urlRewriteFile)
+                    .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
+                    .addInitParam("modRewriteConf", Boolean.toString(serverOptions.isURLRewriteApacheFormat()));
+            if(serverOptions.getURLRewriteCheckInterval() != null) {
+                rewriteFilterInfo.addInitParam("confReloadCheckInterval", serverOptions.getURLRewriteCheckInterval());
+            }
+            if(serverOptions.getURLRewriteStatusPath() != null && serverOptions.getURLRewriteStatusPath().length() != 0) {
+                rewriteFilterInfo.addInitParam("statusPath", serverOptions.getURLRewriteStatusPath());
+            }
+            if(serverOptions.getLoglevel() != "WARN") {
+                rewriteFilterInfo.addInitParam("logLevel", serverOptions.getLoglevel());
+            }
+            servletBuilder.addFilter(rewriteFilterInfo);
             servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
         } else {
             log.debug("URL rewriting is disabled");
@@ -867,10 +1027,19 @@ public class Server {
                 suffixes = suffixList.toArray(suffixes);
                 // simple cacheHandler, someday maybe make this configurable
                 final CacheHandler cacheHandler = new CacheHandler(new DirectBufferCache(1024, 10, 10480), resourceHandler);
-                final PredicateHandler predicateHandler = new PredicateHandler(Predicates.suffixes(suffixes), cacheHandler, handler);
+                final PredicateHandler predicateHandler = predicate(Predicates.suffixes(suffixes), cacheHandler, handler);
                 return predicateHandler;
             }
         });
+    }
+    
+    private ResourceManager getResourceManager(File warFile, Long transferMinSize, String cfmlDirs, File internalCFMLServerRoot) {
+        MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot);
+        if(serverOptions.isDirectoryListingRefreshEnabled()) return mappedResourceManager;
+        final DirectBufferCache dataCache = new DirectBufferCache(1000, 10, 1000 * 10 * 1000, BufferAllocator.DIRECT_BYTE_BUFFER_ALLOCATOR, METADATA_MAX_AGE);
+        final int metadataCacheSize = 100;
+        final long maxFileSize = 10000;
+        return new CachingResourceManager(metadataCacheSize,maxFileSize, dataCache, mappedResourceManager, METADATA_MAX_AGE);
     }
 
     public static File getThisJarLocation() {
@@ -909,15 +1078,20 @@ public class Server {
             File file = new File(path); 
             // Ignore non-existent dirs
             if( !file.exists() ) {
+                log.debug("lib: Skipping non-existent: " + file.getAbsolutePath());
                 continue;
             }
             for (File item : file.listFiles()) {
-                String fileName = item.getAbsolutePath();
+                String fileName = item.getAbsolutePath().toLowerCase();
                 if (!item.isDirectory()) {
-                    if (fileName.toLowerCase().endsWith(".jar") || fileName.toLowerCase().endsWith(".zip")) {
-                        URL url = item.toURI().toURL();
-                        classpath.add(url);
-                        log.trace("lib: added to classpath: " + fileName);
+                    if (fileName.endsWith(".jar") || fileName.endsWith(".zip")) {
+                        if(fileName.contains("slf4j")) {
+                            log.debug("lib: Skipping slf4j jar: " + item.getAbsolutePath());
+                        } else {
+                            URL url = item.toURI().toURL();
+                            classpath.add(url);
+                            log.trace("lib: added to classpath: " + item.getAbsolutePath());
+                        }
                     }
                 }
             }
@@ -948,7 +1122,7 @@ public class Server {
         System.out.println(LaunchUtil.getResourceAsString("io/undertow/version.properties"));
     }
 
-    private static String getVersion() {
+    public static String getVersion() {
         String[] version = LaunchUtil.getResourceAsString("runwar/version.properties").split("=");
         return version[version.length - 1].trim();
     }
@@ -956,6 +1130,8 @@ public class Server {
     private class MonitorThread extends Thread {
 
         private char[] stoppassword;
+        private volatile boolean listening = false;
+        private volatile boolean systemExitOnStop = true;
 
         public MonitorThread(char[] stoppassword) {
             this.stoppassword = stoppassword;
@@ -968,14 +1144,14 @@ public class Server {
             // Executor exe = Executors.newCachedThreadPool();
             ServerSocket serverSocket = null;
             int exitCode = 0;
-            listening = true;
             try {
                 serverSocket = new ServerSocket(socketNumber, 1, InetAddress.getByName(serverOptions.getHost()));
+                listening = true;
                 System.out.println(bar);
                 System.out.println("*** starting 'stop' listener thread - Host: " + serverOptions.getHost()
                         + " - Socket: " + socketNumber);
                 System.out.println(bar);
-                while (listening) {
+                while (listening && serverState != ServerState.STOPPED) {
                     final Socket clientSocket = serverSocket.accept();
                     int r, i = 0;
                     BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -1003,25 +1179,46 @@ public class Server {
                     }
                 }
                 serverSocket.close();
+                if(mainThread.isAlive()) {
+                    log.debug("shutdown hook joining main thread");
+                    mainThread.interrupt();
+                    mainThread.join();
+                }
             } catch (Exception e) {
                 exitCode = 1;
                 e.printStackTrace();
             }
-//            stopServer();
-            System.exit(exitCode);
+            if(systemExitOnStop)
+                System.exit(exitCode); // this will call our shutdown hook
 //            Thread.currentThread().interrupt();
             return;
         }
+        
+        public void stopListening(boolean systemExitOnStop) {
+            this.systemExitOnStop = systemExitOnStop;
+            listening = false;
+        }
     }
 
+    public boolean serverWentDown() {
+        try {
+            return serverWentDown(serverOptions.getLaunchTimeout(), 3000, InetAddress.getByName(serverOptions.getHost()), serverOptions.getPortNumber());
+        } catch (UnknownHostException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
     public static boolean serverWentDown(int timeout, long sleepTime, InetAddress server, int port) {
         long start = System.currentTimeMillis();
-        while ((System.currentTimeMillis() - start) < timeout) {
+        long elapsed = (System.currentTimeMillis() - start);
+        while (elapsed < timeout) {
             if (checkServerIsUp(server, port)) {
                 try {
                     Thread.sleep(sleepTime);
+                    elapsed = (System.currentTimeMillis() - start);
                 } catch (InterruptedException e) {
-                    return false;
                 }
             } else {
                 return true;
@@ -1049,11 +1246,16 @@ public class Server {
     public static boolean checkServerIsUp(InetAddress server, int port) {
         Socket sock = null;
         try {
-            sock = SocketFactory.getDefault().createSocket(server, port);
-            sock.setSoLinger(true, 0);
+            sock = new Socket();
+            InetSocketAddress sa = new InetSocketAddress(server, port);
+            sock.connect(sa, 500);
             return true;
+        } catch (ConnectException e) {
+            log.debug("Error while connecting. " + e.getMessage());
+        } catch (SocketTimeoutException e) {
+            log.debug("Connection: " + e.getMessage() + ".");
         } catch (IOException e) {
-            return false;
+            e.printStackTrace();
         } finally {
             if (sock != null) {
                 try {
@@ -1063,6 +1265,7 @@ public class Server {
                 }
             }
         }
+        return false;
     }
 
     class OpenBrowserTask extends TimerTask {
@@ -1103,7 +1306,7 @@ public class Server {
         return serverOptions;
     }
 
-    private void setServerState(String state) {
+    synchronized void setServerState(String state) {
         serverState = state;
         if (statusFile != null) {
             try {
@@ -1120,7 +1323,7 @@ public class Server {
     public String getServerState() {
         return serverState;
     }
-    
+
     public static class ServerState {
         public static final String STARTING = "STARTING";
         public static final String STARTED = "STARTED";

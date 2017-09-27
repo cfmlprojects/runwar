@@ -1,6 +1,6 @@
 {
 	"name" : "runwar-default",
-	"war": "./tests/war/simple.war",
+	"war": "./tests/resource/war/simple.war",
 	"port": "8088",
 	"workspaces" : {
 	    "predefined" : ["otherWorkspace"],

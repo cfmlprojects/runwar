@@ -1,8 +1,10 @@
 package runwar.options;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 
 //import static java.io.File.*;
@@ -11,7 +13,6 @@ import java.util.Comparator;
 //import joptsimple.OptionParser;
 //import joptsimple.OptionSet;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -47,7 +48,7 @@ public class CommandLineHandler {
 //        parser.acceptsAll(asList("c","config")).withRequiredArg()
 //        .describedAs( "config file" )
 //        .ofType( File.class );
-
+        serverOptions.setCommandLineArgs(args);
         parser = new PosixParser();
         options.addOption( OptionBuilder
                 .withLongOpt( "config" )
@@ -92,23 +93,23 @@ public class CommandLineHandler {
                 .create("stopsocket") );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "stop-password" )
-        		.withDescription( "Pasword checked when stopping server\n" )
-        		.hasArg().withArgName("password")
-        		.create("password") );
-        
+                .withLongOpt( "stop-password" )
+                .withDescription( "Pasword checked when stopping server\n" )
+                .hasArg().withArgName("password")
+                .create("password") );
+
         options.addOption( OptionBuilder
                 .withDescription( "stop backgrounded.  Optional stop-port" )
                 .hasOptionalArg().withArgName("port")
                 .hasOptionalArg().withArgName("password")
                 .withValueSeparator(' ')
                 .create("stop") );
-        
+
         options.addOption( OptionBuilder
-        		.withLongOpt( "http-enable" )
-        		.withDescription( "Enable HTTP.  Default is true ,unless SSL or AJP are enabled." )
-        		.hasArg().withArgName("true|false").withType(Boolean.class)
-        		.create("httpenable") );
+                .withLongOpt( "http-enable" )
+                .withDescription( "Enable HTTP.  Default is true ,unless SSL or AJP are enabled." )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("httpenable") );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "ajp-enable" )
@@ -128,6 +129,18 @@ public class CommandLineHandler {
                 .hasArg().withArgName("path/to/urlrewrite/file")
                 .create("urlrewritefile") );
 
+        options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-check" )
+                .withDescription( "URL rewriting config file realod check interval, 0 for every request. (disabled)" )
+                .hasArg().withArgName("interval")
+                .create("urlrewritecheck") );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-statuspath" )
+                .withDescription( "URL rewriting status path. (disabled)" )
+                .hasArg().withArgName("path")
+                .create("urlrewritestatuspath") );
+        
         options.addOption( OptionBuilder
         		.withLongOpt( "ssl-enable" )
         		.withDescription( "Enable SSL.  Default is false.  When enabled, http is disabled by default." )
@@ -241,6 +254,12 @@ public class CommandLineHandler {
                 .withDescription( "Process name where applicable" )
                 .hasArg().withArgName("name")
                 .create("procname") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "tray-enable" )
+                .withDescription( "Enable/Disable system tray integration (true)" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("tray") );
 
         options.addOption( OptionBuilder
                 .withLongOpt( "tray-icon" )
@@ -434,11 +453,59 @@ public class CommandLineHandler {
                 .withDescription( "Enable direct buffers" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("directbuffers") );
+        options.addOption( OptionBuilder
+                .withLongOpt( "load-balance" )
+                .withDescription( "Comma-separated list of servers to start and load balance." )
+                .hasArg().withArgName("http://localhost:8081,http://localhost:8082")
+                .create("loadbalance") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "directory-refresh" )
+                .withDescription( "Refresh the direcotry list with each request. *DEV ONLY* not thread-safe" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("directoryrefresh") );
         
-        
+        options.addOption( OptionBuilder
+                .withLongOpt( "proxy-peeraddress" )
+                .withDescription( "Enable peer address proxy headers" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("proxypeeraddress") );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "http2-enable" )
+                .withDescription( "Enable HTTP2" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("http2") );
+
         options.addOption( new Option( "h", "help", false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
-
+/*
+        String json = "";
+        Object[] opts2 = options.getOptions().toArray();
+        Option[] opts = new Option[opts2.length];
+        for (int i = 0; i < opts2.length; i++) {
+            opts[i] = (Option) opts2[i];
+        }
+        
+        Arrays.sort(opts, new Comparator<Option>() {
+            public int compare(Option o1, Option o2) {
+                String name = o2.getLongOpt() != null ? o2.getLongOpt() : "";
+                String name2 = o1.getLongOpt() != null ? o1.getLongOpt() : "";
+                return name2.compareTo(name);
+            }
+        });
+        for (int i = 0; i < opts.length; i++) {
+            Option op = (Option) opts[i];
+            String argName, name, description, type, alias = "";
+            name = op.getLongOpt() != null ? op.getLongOpt() : "";
+            description = op.getDescription() != null ? op.getDescription().trim() : "";
+            type = op.getType() != null ? op.getType().toString() : "";
+            alias = op.getOpt() != null ? op.getOpt() : "";
+            argName = op.getArgName() != null ? op.getArgName() : "";
+            json += String.format("\"%s\": { \"description\": \"%s\", \"type\": \"%s\", \"alias\": \"%s\", \"arg\":\"%s\" },\n",name,description,type,alias,argName);
+        }
+        System.out.println("{" + json + "}");
+*/
         try {
             CommandLine line = parser.parse( options, args );
             // parse the command line arguments
@@ -462,7 +529,10 @@ public class CommandLineHandler {
             if (line.hasOption("debug")) {
                 Boolean debug= Boolean.valueOf(line.getOptionValue("debug"));
                 serverOptions.setDebug(debug);
-                if(debug)serverOptions.setLoglevel("DEBUG");
+                if(debug) {
+                    serverOptions.setLoglevel("DEBUG");
+                    log.debug("Enabling debug mode");
+                }
             }
 
             if (line.hasOption("level") && line.getOptionValue("level").length() > 0) {
@@ -504,7 +574,7 @@ public class CommandLineHandler {
             if (line.hasOption("war")) {
                 String warPath = line.getOptionValue("war");
                 serverOptions.setWarFile(getFile(warPath));
-            } else if (!line.hasOption("stop") && !line.hasOption("c")) {
+            } else if (!line.hasOption("stop") && !line.hasOption("c") && !line.hasOption("loadbalance")) {
                 printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
             } 
             if(line.hasOption("D")){
@@ -592,27 +662,14 @@ public class CommandLineHandler {
             if (line.hasOption("urlrewriteenable")) {
                 serverOptions.setEnableURLRewrite(Boolean.valueOf(line.getOptionValue("urlrewriteenable")));
             }
+            if (line.hasOption("urlrewritecheck") && line.getOptionValue("urlrewritecheck").length() > 0) {
+                serverOptions.setURLRewriteCheckInterval(line.getOptionValue("urlrewritecheck"));
+            }
+            if (line.hasOption("urlrewritestatuspath") && line.getOptionValue("urlrewritestatuspath").length() > 0) {
+                serverOptions.setURLRewriteStatusPath(line.getOptionValue("urlrewritestatuspath"));
+            }
             if (line.hasOption("logdir")) {
                 serverOptions.setLogDir(line.getOptionValue("logdir"));
-            } else {
-                if(serverOptions.getWarFile() != null){
-                	File warFile = serverOptions.getWarFile();
-                	String logDir;
-                	if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
-                		logDir = warFile.getPath() + "/WEB-INF/logs/";
-                	} else {
-                		String serverConfigDir = System.getProperty("cfml.server.config.dir");
-                		if(serverConfigDir == null) {
-                			logDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
-                		} else {
-                			logDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
-                		}
-                	}
-                	serverOptions.setLogDir(logDir);
-                }
-            }
-            if(serverOptions.getWarFile() != null){
-            	serverOptions.setCfmlDirs(serverOptions.getWarFile().getAbsolutePath());
             }
             if (line.hasOption("dirs")) {
                 serverOptions.setCfmlDirs(line.getOptionValue("dirs"));
@@ -620,12 +677,14 @@ public class CommandLineHandler {
             if (line.hasOption("requestlog")) {
                 serverOptions.setKeepRequestLog(Boolean.valueOf(line.getOptionValue("requestlog")));
             }
-            
+
             if (line.hasOption("open-browser")) {
                 serverOptions.setOpenbrowser(Boolean.valueOf(line.getOptionValue("open")));
             }
             if (line.hasOption("open-url")) {
                 serverOptions.setOpenbrowserURL(line.getOptionValue("open-url"));
+                if(!line.hasOption("open-browser"))
+                    serverOptions.setOpenbrowser(true);
             }
 
             if (line.hasOption("pidfile")) {
@@ -636,20 +695,22 @@ public class CommandLineHandler {
                 serverOptions.setProcessName(line.getOptionValue("processname"));
             }
 
+            if (line.hasOption("tray")) {
+                serverOptions.setTrayEnabled(Boolean.valueOf(line.getOptionValue("tray")));
+            }
             if (line.hasOption("icon")) {
                 serverOptions.setIconImage(line.getOptionValue("icon"));
             }
-
             if (line.hasOption("trayconfig") && line.getOptionValue("trayconfig").length() > 0) {
                 serverOptions.setTrayConfig(getFile(line.getOptionValue("trayconfig")));
             }
-            
+
             if (line.hasOption("statusfile") && line.getOptionValue("statusfile").length() > 0) {
                 serverOptions.setStatusFile(getFile(line.getOptionValue("statusfile")));
             }
             
             if (line.hasOption("cfengine")) {
-            	serverOptions.setCFEngineName(line.getOptionValue("cfengine"));
+              serverOptions.setCFEngineName(line.getOptionValue("cfengine"));
             }
             if (line.hasOption("cfserverconf")) {
                 serverOptions.setCFMLServletConfigServerDir(line.getOptionValue("cfserverconf"));
@@ -658,13 +719,13 @@ public class CommandLineHandler {
                 serverOptions.setCFMLServletConfigWebDir(line.getOptionValue("cfwebconf"));
             }
             if (line.hasOption("directoryindex")) {
-            	serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue("directoryindex")));
+              serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue("directoryindex")));
             }
             if (line.hasOption("cache")) {
-            	serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue("cache")));
+              serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue("cache")));
             }
             if (line.hasOption("customstatus")) {
-            	serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue("customstatus")));
+              serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue("customstatus")));
             }
             if (line.hasOption("transferminsize")) {
                 serverOptions.setTransferMinSize(Long.valueOf(line.getOptionValue("transferminsize")));
@@ -734,8 +795,20 @@ public class CommandLineHandler {
             if (line.hasOption("directbuffers")) {
                 serverOptions.setDirectBuffers(Boolean.valueOf(line.getOptionValue("directbuffers")));
             }
+            if (line.hasOption("loadbalance") && line.getOptionValue("loadbalance").length() > 0) {
+                serverOptions.setLoadBalance(line.getOptionValue("loadbalance"));
+            }
+            if (line.hasOption("directoryrefresh") && line.getOptionValue("directoryrefresh").length() > 0) {
+                serverOptions.setDirectoryListingRefreshEnabled(Boolean.valueOf(line.getOptionValue("directoryrefresh")));
+            }
+            if (line.hasOption("proxypeeraddress") && line.getOptionValue("proxypeeraddress").length() > 0) {
+                serverOptions.setProxyPeerAddressEnabled(Boolean.valueOf(line.getOptionValue("proxypeeraddress")));
+            }
+            if (line.hasOption("http2") && line.getOptionValue("http2").length() > 0) {
+                serverOptions.setHTTP2Enabled(Boolean.valueOf(line.getOptionValue("http2")));
+            }
 
-            if(serverOptions.getLoglevel().equals("DEBUG")) {
+            if(serverOptions.getLoglevel().equals("TRACE")) {
                 for (Option arg : line.getOptions()) {
                     log.debug(arg);
                     log.debug(arg.getValue());
@@ -757,40 +830,69 @@ public class CommandLineHandler {
             printUsage(msg,1);
         }
         return null;
-    }    
-    
+    }
+
     static File getFile(String path) {
         File file = new File(path);
         if(!file.exists() || file == null) {
             throw new RuntimeException("File not found: " + path +" (" + file.getAbsolutePath() + ")");
         }
-    	return file;
+      return file;
     }
 
     static void printUsage(String message, int exitCode) {
+        PrintWriter pw = new PrintWriter(System.out);
         HelpFormatter formatter = new HelpFormatter();
-        formatter.setOptionComparator(new Comparator<Option>() {
-            public int compare(Option o1, Option o2) {
-                if(o1.getOpt().equals("war")) {return -1;} else if(o2.getOpt().equals("war")) {return 1;}
-                if(o1.getOpt().equals("p")) {return -1;} else if(o2.getOpt().equals("p")) {return 1;}
-                if(o1.getOpt().equals("c")) { return -1; } else if(o2.getOpt().equals("c")) {return 1;}
-                if(o1.getOpt().equals("context")) { return -1; } else if(o2.getOpt().equals("context")) {return 1;}
-                if(o1.getOpt().equals("d")) { return -1; } else if(o2.getOpt().equals("d")) {return 1;}
-                if(o1.getOpt().equals("b")) { return -1; } else if(o2.getOpt().equals("b")) {return 1;}
-                if(o1.getOpt().equals("h")) {return 1;} else if(o2.getOpt().equals("h")) {return -1;}
-                if(o1.getOpt().equals("url")) {return 1;} else if(o2.getOpt().equals("url")) {return -1;}
-                if(o1.getOpt().equals("open")) {return 1;} else if(o2.getOpt().equals("open")) {return -1;}
-                if(o1.getOpt().equals("stopsocket")) {return 1;} else if(o2.getOpt().equals("stopsocket")) {return -1;}
-                if(o1.getOpt().equals("stop")) {return 1;} else if(o2.getOpt().equals("stop")) {return -1;}
-                return o1.getOpt().compareTo(o2.getOpt());
-            }
-        });
-        formatter.setWidth(80);
-        formatter.setSyntaxPrefix("USAGE:");
-        formatter.setLongOptPrefix("--");
         //formatter.printHelp( SYNTAX, options,false);
         if(exitCode == 0) {
-            formatter.printHelp(80, SYNTAX, message + '\n' + HEADER, options, FOOTER, false);
+            pw.println("USAGE   " + SYNTAX);
+            pw.println(HEADER + '\n');
+            pw.println(message);
+            @SuppressWarnings("unchecked")
+            List<Option> optList = new ArrayList<Option>(options.getOptions());
+            Collections.sort(optList, new Comparator<Option>() {
+                public int compare(Option o1, Option o2) {
+                    if(o1.getOpt().equals("war")) {return -1;} else if(o2.getOpt().equals("war")) {return 1;}
+                    if(o1.getOpt().equals("p")) {return -1;} else if(o2.getOpt().equals("p")) {return 1;}
+                    if(o1.getOpt().equals("c")) { return -1; } else if(o2.getOpt().equals("c")) {return 1;}
+                    if(o1.getOpt().equals("context")) { return -1; } else if(o2.getOpt().equals("context")) {return 1;}
+                    if(o1.getOpt().equals("d")) { return -1; } else if(o2.getOpt().equals("d")) {return 1;}
+                    if(o1.getOpt().equals("b")) { return -1; } else if(o2.getOpt().equals("b")) {return 1;}
+                    if(o1.getOpt().equals("h")) {return 1;} else if(o2.getOpt().equals("h")) {return -1;}
+                    if(o1.getOpt().equals("url")) {return 1;} else if(o2.getOpt().equals("url")) {return -1;}
+                    if(o1.getOpt().equals("open")) {return 1;} else if(o2.getOpt().equals("open")) {return -1;}
+                    if(o1.getOpt().equals("stopsocket")) {return 1;} else if(o2.getOpt().equals("stopsocket")) {return -1;}
+                    if(o1.getOpt().equals("stop")) {return 1;} else if(o2.getOpt().equals("stop")) {return -1;}
+                    return o1.getOpt().compareTo(o2.getOpt());
+                }});
+            for (java.util.Iterator<Option> it = optList.iterator(); it.hasNext();) {
+                Option option = it.next();
+                StringBuffer optBuf = new StringBuffer();
+                if (option.getOpt() == null) {
+                    optBuf.append("  ").append("   ").append("--").append(option.getLongOpt());
+                } else {
+                    optBuf.append("  ").append("-").append(option.getOpt());
+                    if (option.hasLongOpt()) {
+                        optBuf.append(',').append("--").append(option.getLongOpt());
+                    }
+                }
+                if (option.hasArg()) {
+                    String argName = option.getArgName();
+                    if (argName != null && argName.length() == 0) {
+                        // if the option has a blank argname
+                        optBuf.append(' ');
+                    } else {
+                        optBuf.append(option.hasLongOpt() ? " " : " ");
+                        optBuf.append("<").append(argName != null ? option.getArgName() : "arg").append(">");
+                    }
+                }
+                pw.println(optBuf.toString());
+                formatter.printWrapped(pw, 78, 4, "    " + option.getDescription());
+                pw.println();
+            }
+            pw.println(FOOTER);
+            pw.flush();
+//            formatter.printHelp(80, SYNTAX, message + '\n' + HEADER, options, FOOTER, false);
         } else {
             System.out.println("USAGE:  " + SYNTAX + '\n' + message);
         }

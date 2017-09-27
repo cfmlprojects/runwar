@@ -3,5 +3,6 @@
 /lib
 /build/temp
 /build/cfdistro
-/tests/resource/war
 /undertow
+/testlibs
+tests/resource/war/simple.war/WEB-INF/logs

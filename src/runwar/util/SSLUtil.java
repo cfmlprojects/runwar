@@ -2,6 +2,7 @@ package runwar.util;
 
 import java.io.ByteArrayInputStream;
 import java.util.Enumeration;
+
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMKeyPair;
@@ -9,12 +10,16 @@ import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.bouncycastle.openssl.PEMParser;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.security.Security;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.io.DataInputStream;
 import java.io.FileInputStream;
+import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.KeyFactory;
 import java.util.Collection;
@@ -22,28 +27,46 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
+
 import org.xnio.IoUtils;
+
+import javax.crypto.Cipher;
+import javax.crypto.EncryptedPrivateKeyInfo;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.KeyManager;
+
 import java.util.Arrays;
 import java.security.KeyManagementException;
+
 import javax.net.ssl.TrustManagerFactory;
+
+import java.security.AlgorithmParameters;
+import java.security.Key;
 import java.security.KeyStoreException;
 import java.security.UnrecoverableKeyException;
 import java.security.NoSuchAlgorithmException;
+
 import javax.net.ssl.KeyManagerFactory;
+
 import java.io.InputStream;
 import java.security.KeyStore;
 import java.io.File;
 import java.io.IOException;
+
 import javax.net.ssl.SSLContext;
+
 import runwar.logging.Logger;
+import sun.security.x509.X509CertImpl;
 
 public class SSLUtil
 {
     private static Logger log;
     private static final String SERVER_KEY_STORE = "runwar/runwar.keystore";
     private static final String SERVER_TRUST_STORE = "runwar/runwar.truststore";
+    private static final String CLIENT_KEY_STORE = "runwar/client.keystore";
+    private static final String CLIENT_TRUST_STORE = "runwar/client.truststore";
     private static final char[] DEFAULT_STORE_PASSWORD;
     
     static {
@@ -53,14 +76,19 @@ public class SSLUtil
     
     public static SSLContext createSSLContext() throws IOException {
         SSLUtil.log.debug("Creating SSL context from: runwar/runwar.keystore trust store: runwar/runwar.truststore");
-        return createSSLContext(loadKeyStore(SERVER_KEY_STORE), loadKeyStore(SERVER_TRUST_STORE), DEFAULT_STORE_PASSWORD, null);
+        return createSSLContext(loadKeyStore(SERVER_KEY_STORE), loadKeyStore(SERVER_TRUST_STORE), DEFAULT_STORE_PASSWORD.clone(), null);
     }
-    
+
+    public static SSLContext createClientSSLContext() throws IOException {
+        SSLUtil.log.debug("Creating Client SSL context from: runwar/client.keystore trust store: runwar/client.truststore");
+        return createSSLContext(loadKeyStore(CLIENT_KEY_STORE), loadKeyStore(CLIENT_TRUST_STORE), DEFAULT_STORE_PASSWORD.clone(), null);
+    }
+
     public static SSLContext createSSLContext(final File certfile, final File keyFile, char[] passphrase, final String[] addCertificatePaths) throws IOException {
         SSLUtil.log.debug("Creating SSL context from cert: [" + certfile + "]  key: [" + keyFile + "]");
         if (passphrase == null || passphrase.length == 0) {
             SSLUtil.log.debug("Using default store passphrase of '" + String.copyValueOf(DEFAULT_STORE_PASSWORD) + "'");
-            passphrase = DEFAULT_STORE_PASSWORD;
+            passphrase = DEFAULT_STORE_PASSWORD.clone();
         }
         SSLContext sslContext;
         try {
@@ -80,6 +108,7 @@ public class SSLUtil
         }
         return sslContext;
     }
+    
     
     private static SSLContext createSSLContext(final KeyStore keyStore, final KeyStore trustStore, final char[] passphrase, final String[] addCertificatePaths) throws IOException {
         KeyManager[] keyManagers;
@@ -169,7 +198,17 @@ public class SSLUtil
         }
         else {
             SSLUtil.log.debug(String.valueOf(generateCertificates.size()) + " certificates in chain:");
-            certs = (Certificate[])generateCertificates.toArray();
+            int i = 0;
+            for(Object certObject : generateCertificates) {
+                if(certObject instanceof Certificate) {
+                    certs[i++] = (Certificate)certObject;
+                } else if(certObject instanceof X509CertImpl) {
+                    certs[i++] = (Certificate)certObject;
+                } else {
+                    throw new RuntimeException("Unknown certificate type: " + certObject.getClass().getName());
+                }
+            }
+//            certs = (Certificate[])generateCertificates.toArray();
         }
         for (int length = certs.length, i = 0; i < length; ++i) {
             final Certificate certificate = certs[i];
@@ -192,6 +231,20 @@ public class SSLUtil
         dataInputStream.readFully(array);
         dataInputStream.close();
         return loadPKCS8PrivateKey(array);
+    }
+    
+    
+    private static PrivateKey loadPKCS8PrivateKey(byte[] keyBytes, char[] passphrase) throws Exception {
+        EncryptedPrivateKeyInfo encryptPKInfo = new EncryptedPrivateKeyInfo(keyBytes);
+        Cipher cipher = Cipher.getInstance("RSA", "BC");
+        PBEKeySpec pbeKeySpec = new PBEKeySpec(passphrase);
+        SecretKeyFactory secFac = SecretKeyFactory.getInstance(encryptPKInfo.getAlgName(),"BC");
+        Key pbeKey = secFac.generateSecret(pbeKeySpec);
+        AlgorithmParameters algParams = encryptPKInfo.getAlgParameters();
+        cipher.init(Cipher.DECRYPT_MODE, pbeKey, algParams);
+        KeySpec pkcs8KeySpec = encryptPKInfo.getKeySpec(cipher);
+        KeyFactory kf = KeyFactory.getInstance("RSA", "BC");
+        return kf.generatePrivate(pkcs8KeySpec);
     }
     
     private static PrivateKey loadPemPrivateKey(final File file, final char[] passphrase) throws Exception {
@@ -236,6 +289,7 @@ public class SSLUtil
         pemParser.close();
         return privateKey;
     }
+
     
     private static void addCertificate(final KeyStore keyStore, final File file, String alias) {
         try {

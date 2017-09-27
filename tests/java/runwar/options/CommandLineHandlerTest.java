@@ -4,12 +4,12 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
 
 import runwar.options.ServerOptions;
+import testutils.DefaultServer;
 
 public class CommandLineHandlerTest {
 
@@ -29,7 +29,15 @@ public class CommandLineHandlerTest {
         assertEquals(serverOptions.getConfigFile().getPath(), "tests/resource/server.json");
         assertEquals(serverOptions.getPortNumber(), 9999);
     }
-    
+
+    @Test
+    public void testURLRewriteArguments() {
+        String argString = "-war " + DefaultServer.SIMPLEWARPATH + " -urlrewritecheck 0 -urlrewritestatuspath stats";
+        ServerOptions serverOptions = CommandLineHandler.parseArguments(argString.split(" "));
+        assertEquals(serverOptions.getURLRewriteCheckInterval(), "0");
+        assertEquals(serverOptions.getURLRewriteStatusPath(), "/stats");
+    }
+
     @Test
     public void testConfigParserConfigFile() {
         File configFile = new File("tests/resource/server.json");
@@ -64,5 +72,13 @@ public class CommandLineHandlerTest {
         assertEquals(upMap.get("alice"), "fun");
         assertEquals(upMap.get("equals"), "blah=inpass");
     }
-    
+
+    @Test
+    public void testDebugIsFalse() throws IOException {
+        ServerOptions serverOptions = CommandLineHandler.parseArguments("-c tests/resource/server.json --debug-enable false".split(" "));
+        assertFalse(serverOptions.isDebug());
+        serverOptions = CommandLineHandler.parseArguments("-c tests/resource/server.json -debug false".split(" "));
+        assertFalse(serverOptions.isDebug());
+    }
+
 }

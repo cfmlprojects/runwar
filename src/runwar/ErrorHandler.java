@@ -1,11 +1,9 @@
 package runwar;
 
 import runwar.logging.Logger;
-import io.undertow.io.Sender;
 import io.undertow.server.DefaultResponseListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 
 public class ErrorHandler implements HttpHandler {
 
@@ -22,7 +20,7 @@ public class ErrorHandler implements HttpHandler {
             @Override
             public boolean handleDefaultResponse(final HttpServerExchange exchange) {
                 if (!exchange.isResponseChannelAvailable()) {
-                    System.out.println("NOTIN");
+                    log.error("The response channel was closed prematurely.");
                     return false;
                 }
                 String message = "Location: " + exchange.getRequestPath() + " generated no content, maybe verify any errorPage locations? (status code: "

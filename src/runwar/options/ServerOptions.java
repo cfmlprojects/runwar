@@ -3,14 +3,17 @@ package runwar.options;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import runwar.Server;
+
 public class ServerOptions {
 	private String serverName = "default", processName = "RunWAR", loglevel = "WARN";
     private String host = "127.0.0.1", contextPath = "/";
-    private int portNumber = 8088, ajpPort = 8009, sslPort = 443, socketNumber = 8779;
+    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
     private boolean debug = false, isBackground = true, keepRequestLog = false, openbrowser = false;
     private String pidFile, openbrowserURL, cfmlDirs, libDirs = null;
@@ -18,14 +21,17 @@ public class ServerOptions {
     private URL jarURL = null;
     private File warFile, webXmlFile, logDir, urlRewriteFile, trayConfig, statusFile = null;
     private String iconImage = null;
+    private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
+    private boolean trayEnabled = true;
     private boolean directoryListingEnabled = true;
+    private boolean directoryListingRefreshEnabled = false;
     private boolean cacheEnabled = false;
     private String[] welcomeFiles;
 	private File sslCertificate, sslKey, configFile;
 	private char[] sslKeyPass = null;
 	private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
-	private String action;
+	private String action = "start";
 	private String cfengineName = "lucee";
 	private boolean customHTTPStatusEnabled = true;
 	private boolean gzipEnabled = false;
@@ -39,20 +45,55 @@ public class ServerOptions {
     private String[] servletRestMappings = { "/rest" };
     private boolean filterPathInfoEnabled = true;
     private String[] sslAddCerts = null;
+    private String[] cmdlineArgs = null;
+    private String[] loadBalance = null;
     private static Map<String,String> userPasswordList;
     private boolean enableBasicAuth = false;
-    private boolean directBuffers = false;
+    private boolean directBuffers = true;
     int bufferSize,ioThreads,workerThreads = 0;
+    private boolean proxyPeerAddressEnabled = false;
+    private boolean http2enabled = false;
 
     static {
         userPasswordList = new HashMap<String, String>();
         userPasswordList.put("bob", "12345");
         userPasswordList.put("alice", "secret");
     }
-    
-	public String getServerName() {
-	    return serverName;
-	}
+
+    public ServerOptions setCommandLineArgs(String[] args) {
+        this.cmdlineArgs = args;
+        return this;
+    }
+
+    public String[] getCommandLineArgs() {
+        // TODO: totally refactor argument handling so we can serialize and not muck around like this.
+        List<String> argarray = new ArrayList<String>();
+        if(cmdlineArgs == null) {
+            cmdlineArgs = "".split("");
+            argarray.add("-war");
+            argarray.add(getWarFile().getAbsolutePath());
+        }
+        for (String arg : cmdlineArgs) {
+            if (arg.contains("background") || arg.startsWith("-b") || arg.contains("balance") 
+                    || arg.startsWith("--port") || arg.startsWith("-p")
+                    || arg.startsWith("--stop-port") || arg.contains("stopsocket")) {
+                continue;
+            } else {
+                argarray.add(arg);
+            }
+        }
+        argarray.add("--background");
+        argarray.add(Boolean.toString(isBackground()));
+        argarray.add("--port");
+        argarray.add(Integer.toString(getPortNumber()));
+        argarray.add("--stop-port");
+        argarray.add(Integer.toString(getSocketNumber()));
+        return argarray.toArray(new String[argarray.size()]);
+    }
+
+    public String getServerName() {
+        return serverName;
+    }
     public ServerOptions setServerName(String serverName) {
         this.serverName = serverName;
         return this;
@@ -137,6 +178,23 @@ public class ServerOptions {
     public File getURLRewriteFile() {
         return this.urlRewriteFile;
     }
+    public ServerOptions setURLRewriteCheckInterval(String interval) {
+        this.urlRewriteCheckInterval = interval;
+        return this;
+    }
+    public String getURLRewriteCheckInterval() {
+        return this.urlRewriteCheckInterval;
+    }
+    public ServerOptions setURLRewriteStatusPath(String path) {
+        if(!path.startsWith("/")) {
+            path = '/' + path;
+        }
+        this.urlRewriteStatusPath= path;
+        return this;
+    }
+    public String getURLRewriteStatusPath() {
+        return this.urlRewriteStatusPath;
+    }
     public int getSocketNumber() {
         return socketNumber;
     }
@@ -145,6 +203,23 @@ public class ServerOptions {
         return this;
     }
     public File getLogDir() {
+        if(logDir == null) {
+            if(getWarFile() != null){
+                File warFile = getWarFile();
+                String defaultLogDir;
+                if(warFile.isDirectory() && new File(warFile,"WEB-INF").exists()) {
+                  defaultLogDir = warFile.getPath() + "/WEB-INF/logs/";
+                } else {
+                  String serverConfigDir = System.getProperty("cfml.server.config.dir");
+                  if(serverConfigDir == null) {
+                    defaultLogDir = new File(Server.getThisJarLocation().getParentFile(),"engine/cfml/server/log/").getAbsolutePath();
+                  } else {
+                    defaultLogDir = new File(serverConfigDir,"log/").getAbsolutePath();                        
+                  }
+                }
+                logDir = new File(defaultLogDir);
+              }
+        }
         return logDir;
     }
     public ServerOptions setLogDir(String logDir) {
@@ -157,6 +232,9 @@ public class ServerOptions {
         return this;
     }
     public String getCfmlDirs() {
+        if(cfmlDirs == null && getWarFile() != null){
+            setCfmlDirs(getWarFile().getAbsolutePath());
+        }
         return cfmlDirs;
     }
     public ServerOptions setCfmlDirs(String cfmlDirs) {
@@ -238,6 +316,9 @@ public class ServerOptions {
     }
     public ServerOptions setDebug(boolean debug) {
         this.debug = debug;
+        if(debug && loglevel == "WARN") {
+            loglevel = "DEBUG";
+        }
         return this;
     }
     public File getWarFile() {
@@ -269,6 +350,13 @@ public class ServerOptions {
     }
     public ServerOptions setTrayConfig(File trayConfig) {
         this.trayConfig = trayConfig;
+        return this;
+    }
+    public boolean isTrayEnabled() {
+        return trayEnabled;
+    }
+    public ServerOptions setTrayEnabled(boolean enabled) {
+        this.trayEnabled = enabled;
         return this;
     }
     public File getStatusFile() {
@@ -306,6 +394,13 @@ public class ServerOptions {
         this.directoryListingEnabled = directoryListingEnabled;
         return this;
     }
+    public boolean isDirectoryListingRefreshEnabled() {
+        return directoryListingRefreshEnabled;
+    }
+    public ServerOptions setDirectoryListingRefreshEnabled(boolean directoryListingRefreshEnabled) {
+        this.directoryListingRefreshEnabled = directoryListingRefreshEnabled;
+        return this;
+    }
     public String[] getWelcomeFiles() {
         return welcomeFiles;
     }
@@ -313,8 +408,13 @@ public class ServerOptions {
         this.welcomeFiles = welcomeFiles;
         return this;
     }
-    public String getWarPath() throws MalformedURLException {
-        return getWarFile().toURI().toURL().toString();
+    public String getWarPath() {
+        try {
+            return getWarFile().toURI().toURL().toString();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return "";
+        }
     }
 	public ServerOptions setSSLCertificate(File file) {
 		this.sslCertificate = file;
@@ -505,20 +605,24 @@ public class ServerOptions {
     }
     public ServerOptions setBasicAuth(String userPasswordList) {
         HashMap<String,String> ups = new HashMap<String,String>();
-        for(String up : userPasswordList.split("(?<!\\\\),")) {
-            up = up.replace("\\,", ",");
-            String u = up.split("(?<!\\\\)=")[0].replace("\\=", "=");
-            String p = up.split("(?<!\\\\)=")[1].replace("\\=", "=");
-            ups.put(u, p);
+        try{            
+            for(String up : userPasswordList.split("(?<!\\\\),")) {
+                up = up.replace("\\,", ",");
+                String u = up.split("(?<!\\\\)=")[0].replace("\\=", "=");
+                String p = up.split("(?<!\\\\)=")[1].replace("\\=", "=");
+                ups.put(u, p);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Incorrect 'users' format (user=pass,user2=pass2) : " + userPasswordList);
         }
         return setBasicAuth(ups);
     }
-    public ServerOptions  setBasicAuth(Map<String,String> userPasswordList) {
-        this.userPasswordList = userPasswordList;
+    public ServerOptions setBasicAuth(Map<String,String> userPassList) {
+        userPasswordList = userPassList;
         return this;
     }
     public Map<String,String> getBasicAuth() {
-        return this.userPasswordList;
+        return userPasswordList;
     }
 
     public ServerOptions setSSLAddCerts(String sslCerts) {
@@ -561,5 +665,31 @@ public class ServerOptions {
         return this.directBuffers;
     }
 
+    public ServerOptions setLoadBalance(String hosts) {
+        return setLoadBalance(hosts.split("(?<!\\\\),"));
+    }
+    public ServerOptions setLoadBalance(String[] hosts) {
+        this.loadBalance = hosts;
+        return this;
+    }
+    public String[] getLoadBalance() {
+        return this.loadBalance;
+    }
+
+    public ServerOptions setProxyPeerAddressEnabled(boolean enable) {
+        this.proxyPeerAddressEnabled = enable;
+        return this;
+    }
+    public boolean isProxyPeerAddressEnabled() {
+        return this.proxyPeerAddressEnabled;
+    }
+    
+    public ServerOptions setHTTP2Enabled(boolean enable) {
+        this.http2enabled = enable;
+        return this;
+    }
+    public boolean isHTTP2Enabled() {
+        return this.http2enabled;
+    }
 
 }
