@@ -854,10 +854,8 @@ public class Server {
 
         } 
         catch (Exception any) {
-            if(any.getCause() instanceof java.net.SocketException) {
-                if(any.getCause().getMessage().equals("Permission denied")) {
-                    System.err.println("You need to be root or Administrator to bind to a port below 1024!");
-                }
+            if(any.getCause() instanceof java.net.SocketException && any.getCause().getMessage().equals("Permission denied") ) {
+            	System.err.println("You need to be root or Administrator to bind to a port below 1024!");                
             } else {
                 any.printStackTrace();
             }
