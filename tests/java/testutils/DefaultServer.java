@@ -19,6 +19,7 @@ import org.junit.runners.model.Statement;
 import io.undertow.util.NetworkUtils;
 import runwar.Server;
 import runwar.options.ServerOptions;
+import runwar.options.ServerOptionsImpl;
 
 /**
  * A class that starts a server before the test suite.
@@ -84,7 +85,7 @@ public class DefaultServer extends BlockJUnit4ClassRunner {
         });
 
         // run the beforeClass ones first so they can set the config, side result is they're run twice. :/
-        serverOptions = new ServerOptions();
+        serverOptions = new ServerOptionsImpl();
         serverOptions
           .setWarFile(new File(SIMPLEWARPATH))
           .setDebug(true).setBackground(false)

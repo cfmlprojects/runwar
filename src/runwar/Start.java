@@ -10,6 +10,7 @@ import io.undertow.server.handlers.proxy.LoadBalancingProxyClient.Host;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.Headers;
 
+import java.io.File;
 import java.net.Socket;
 import java.net.URI;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.net.URLDecoder;
 
 import runwar.logging.Logger;
 import runwar.options.CommandLineHandler;
+import runwar.options.ConfigParser;
 import runwar.options.ServerOptions;
 
 public class Start {
@@ -44,7 +46,16 @@ public class Start {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		ServerOptions serverOptions = CommandLineHandler.parseArguments(args);
+	    ServerOptions serverOptions = null;
+	    if(args.length == 0) {
+	        if(new File("server.json").exists()) {
+                serverOptions = new ConfigParser(new File("server.json")).getServerOptions();
+	        } else {
+	            serverOptions = CommandLineHandler.parseArguments(args); // print usage
+	        }
+	    } else {
+	        serverOptions = CommandLineHandler.parseArguments(args);
+	    }
         if(serverOptions.getLoadBalance() != null && serverOptions.getLoadBalance().length > 0) {
             final List<String> balanceHosts = new ArrayList<String>();
             log.info("Initializing...");

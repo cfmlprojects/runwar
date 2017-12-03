@@ -37,7 +37,7 @@ public class CommandLineHandler {
     }
 
     public static ServerOptions parseArguments(String[] args) {
-        ServerOptions serverOptions = new ServerOptions();
+        ServerOptions serverOptions = new ServerOptionsImpl();
         serverOptions = parseArguments(args, serverOptions);
         return serverOptions;
     }
@@ -554,14 +554,13 @@ public class CommandLineHandler {
             if (line.hasOption("welcomefiles") && line.getOptionValue("welcomefiles").length() > 0) {
                 serverOptions.setWelcomeFiles(line.getOptionValue("welcomefiles").split(","));
             }
-
             if (line.hasOption("jar")) {
                  File jar = new File(line.getOptionValue("jar"));
                     if (!jar.exists() || jar.isDirectory())
                         printUsage("No such jar "+jar,1);
                     serverOptions.setJarURL(jar.toURI().toURL());
             }
-            
+
             if (line.hasOption("timeout")) {
                 serverOptions.setLaunchTimeout(((Number)line.getParsedOptionValue("timeout")).intValue() * 1000);
             }
@@ -675,7 +674,7 @@ public class CommandLineHandler {
                 serverOptions.setCfmlDirs(line.getOptionValue("dirs"));
             }
             if (line.hasOption("requestlog")) {
-                serverOptions.setKeepRequestLog(Boolean.valueOf(line.getOptionValue("requestlog")));
+                serverOptions.requestLogEnable(Boolean.valueOf(line.getOptionValue("requestlog")));
             }
 
             if (line.hasOption("open-browser")) {

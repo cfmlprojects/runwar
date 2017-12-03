@@ -8,7 +8,7 @@ import io.undertow.util.Protocols;
 import io.undertow.util.StatusCodes;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
-import runwar.options.ServerOptions;
+import runwar.options.ServerOptionsImpl;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;

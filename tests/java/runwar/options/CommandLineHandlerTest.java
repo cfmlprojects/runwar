@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 
 public class CommandLineHandlerTest {
@@ -23,6 +22,15 @@ public class CommandLineHandlerTest {
 
     @Test
     public void testParseArgumentsOverrideConfigArguments() {
+        ServerOptions serverOptions = CommandLineHandler.parseArguments("-c tests/resource/server.json -p 9999".split(" "));
+        assertNotNull(serverOptions);
+        assertNotNull(serverOptions.getConfigFile());
+        assertEquals(serverOptions.getConfigFile().getPath(), "tests/resource/server.json");
+        assertEquals(serverOptions.getPortNumber(), 9999);
+    }
+    
+    @Test
+    public void testParseConfig() {
         ServerOptions serverOptions = CommandLineHandler.parseArguments("-c tests/resource/server.json -p 9999".split(" "));
         assertNotNull(serverOptions);
         assertNotNull(serverOptions.getConfigFile());
@@ -65,7 +73,7 @@ public class CommandLineHandlerTest {
 
     @Test
     public void testSetBasicAuthUsers() throws IOException {
-        ServerOptions serverOptions = new ServerOptions();
+        ServerOptions serverOptions = new ServerOptionsImpl();
         serverOptions.setBasicAuth("bob=secret,alice=fun,equals=blah\\=inpass");
         Map<String,String> upMap = serverOptions.getBasicAuth();
         assertEquals(upMap.get("bob"), "secret");
