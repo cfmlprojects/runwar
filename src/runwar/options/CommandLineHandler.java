@@ -753,9 +753,9 @@ public class CommandLineHandler {
             }
             if (line.hasOption("jvmargs") && line.getOptionValue("jvmargs").length() > 0) {
                 List<String> jvmArgs = new ArrayList<String>();
-                String[] jvmArgArray = line.getOptionValue("jvmargs").split(";");
+                String[] jvmArgArray = serverConfig.getOptionValue("jvmargs").split("(?<!\\\\);");
                 for(String arg : jvmArgArray) {
-                    jvmArgs.add(arg);
+                    jvmArgs.add(arg.replaceAll("\\\\;", ";"));
                 }
                 serverOptions.setJVMArgs(jvmArgs);
             }
