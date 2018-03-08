@@ -6,7 +6,6 @@
 	<classpathentry kind="lib" path="lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-el-api_3.0_spec-1.0.0.Beta1.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-jsp-api_2.3_spec-1.0.0.Beta1.jar"/>
-	<classpathentry kind="lib" path="lib/jboss-servlet-api_3.1_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/undertow-jsp-1.0.0.Beta27.jar"/>
 	<classpathentry kind="lib" path="lib/json-smart-mini-1.0.8.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-logging-3.2.1.Final.jar"/>
@@ -14,7 +13,6 @@
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.9.jar"/>
 	<classpathentry kind="lib" path="lib/regexpathinfofilter-1.0.1.jar"/>
 	<classpathentry kind="lib" path="lib/urlrewritefilter-4.0.5.jar"/>
-	<classpathentry kind="lib" path="lib/jboss-websocket-api_1.1_spec-1.1.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-1.56.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk15on-1.56.jar"/>
 	<classpathentry kind="lib" path="lib/Notify-2.20.jar"/>
@@ -27,11 +25,13 @@
 	<classpathentry kind="lib" path="testlibs/httpmime-4.2.6.jar"/>
 	<classpathentry kind="lib" path="lib/SystemTray-3.1.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-simple-1.7.9.jar"/>
+	<classpathentry kind="lib" path="lib/jboss-servlet-api_3.1_spec-1.0.2.Final.jar"/>
+	<classpathentry kind="lib" path="lib/jboss-websocket-api_1.1_spec-1.1.3.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-core-1.4.23.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-servlet-1.4.23.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-websockets-jsr-1.4.23.Final.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java8"/>
-	<classpathentry kind="lib" path="lib/undertow-core-1.4.21.Final.jar" sourcepath="undertow"/>
-	<classpathentry kind="lib" path="lib/undertow-servlet-1.4.21.Final.jar"/>
-	<classpathentry kind="lib" path="lib/undertow-websockets-jsr-1.4.21.Final.jar"/>
 	<classpathentry kind="lib" path="lib/xnio-api-3.3.8.Final.jar"/>
 	<classpathentry kind="lib" path="lib/xnio-nio-3.3.8.Final.jar"/>
 	<classpathentry kind="output" path="bin"/>

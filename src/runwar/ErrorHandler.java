@@ -22,7 +22,7 @@ public class ErrorHandler implements HttpHandler {
             @Override
             public boolean handleDefaultResponse(final HttpServerExchange exchange) {
                 if (!exchange.isResponseChannelAvailable()) {
-                    log.error("The response channel was closed prematurely.");
+                    log.error("The response channel was closed prematurely.  Request path: " + exchange.getRequestPath() + " status-code: " + exchange.getStatusCode() );
                     return false;
                 }
                 String message = "Location: " + exchange.getRequestPath() + " generated no content, maybe verify any errorPage locations? (status code: "
