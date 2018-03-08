@@ -1,12 +1,10 @@
 package runwar;
 
 import io.undertow.Undertow;
-import io.undertow.client.UndertowClient;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
-import io.undertow.server.handlers.proxy.LoadBalancingProxyClient.Host;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.Headers;
 
@@ -14,17 +12,20 @@ import java.io.File;
 import java.net.Socket;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.URLDecoder;
 
-import runwar.logging.Logger;
 import runwar.options.CommandLineHandler;
 import runwar.options.ConfigParser;
 import runwar.options.ServerOptions;
 
 public class Start {
 
-    private static Logger log = Logger.getLogger("RunwarLogger");
 
     // for openBrowser 
 	public Start(int seconds) {
@@ -32,6 +33,7 @@ public class Start {
 	}
 
 	private static void launchServer(String balanceHost, ServerOptions serverOptions){
+        final Logger log = LoggerFactory.getLogger(Start.class);
         String[] schemeHostAndPort = balanceHost.split(":");
         if(schemeHostAndPort.length != 3) {
             throw new RuntimeException("hosts for balancehost should have scheme, host and port, e.g.: http://127.0.0.1:55555");
@@ -44,8 +46,18 @@ public class Start {
                 .setPortNumber(port).setSocketNumber(stopPort).setLoadBalance(""), false);
 	    
 	}
-	
+
+	public static boolean containsCaseInsensitive(List<String> l, String s){
+        return l.stream().anyMatch(x -> x.equalsIgnoreCase(s) || x.equalsIgnoreCase('-' + s));
+    }
+
 	public static void main(String[] args) throws Exception {
+	    if(containsCaseInsensitive(Arrays.asList(args),"debug")) {
+	        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
+	    } else if(containsCaseInsensitive(Arrays.asList(args),"loglevel")) {
+            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
+        }
+	    final Logger log = LoggerFactory.getLogger(Start.class);
 	    ServerOptions serverOptions = null;
 	    if(args.length == 0) {
 	        if(new File("server.json").exists()) {
@@ -75,8 +87,10 @@ public class Start {
             log.info("Hosts loaded");
 
             log.info("Starting load balancer on 127.0.0.1 port " + port + "...");
+            ProxyHandler proxyHandler = ProxyHandler.builder().setProxyClient(loadBalancer)
+                    .setMaxRequestTime(30000).setNext(ResponseCodeHandler.HANDLE_404).build();
             Undertow reverseProxy = Undertow.builder().addHttpListener(port, "localhost").setIoThreads(4)
-                    .setHandler(new ProxyHandler(loadBalancer, 30000, ResponseCodeHandler.HANDLE_404)).build();
+                    .setHandler(proxyHandler).build();
             reverseProxy.start();
             log.info("View balancer admin on http://127.0.0.1:9080");
             Undertow adminServer = Undertow.builder()

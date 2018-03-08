@@ -9,6 +9,89 @@ import java.util.Map;
 import net.minidev.json.JSONArray;
 
 public interface ServerOptions {
+    
+    public static final class Keys {
+        final static String CONFIG = "config";
+        final static String DIRS = "dirs";
+        final static String WAR = "war";
+        final static String NAME = "name";
+        final static String CONTEXT = "context";
+        final static String HOST = "host";
+        final static String HELP = "help";
+        final static String PORT = "port";
+        final static String STOPSOCKET = "stopsocket";
+        final static String DEBUG = "debug";
+        final static String PASSWORD = "password";
+        final static String STOP = "stop";
+        final static String HTTPENABLE = "httpenable";
+        final static String AJPENABLE = "ajpenable";
+        final static String URLREWRITEENABLE = "urlrewriteenable";
+        final static String LOGLEVEL = "loglevel";
+        final static String LOGDIR = "logDir";
+        final static String LOGREQUESTSBASENAME = "logrequestsbasename";
+        final static String LOGREQUESTSDIR = "logrequestsdir";
+        final static String LOGREQUESTS = "logrequests";
+        final static String LOGACCESSBASENAME = "logaccessbasename";
+        final static String LOGACCESSDIR = "logaccessdir";
+        final static String LOGACCESS = "logaccess";
+        final static String TRACE = "trace";
+        final static String BACKGROUND = "background";
+        final static String LIBDIRS = "libDirs";
+        final static String LIBS = "libs";
+        final static String WELCOMEFILES = "welcomefiles";
+        final static String JAR = "jar";
+        final static String STARTTIMEOUT = "startTimeout";
+        final static String TIMEOUT = "timeout";
+        final static String WEBXMLPATH = "webxmlpath";
+        final static String AJPPORT = "ajpport";
+        final static String REQUESTLOG = "requestlog";
+        final static String OPENBROWSER = "open-browser";
+        final static String OPENURL = "open-url";
+        final static String PIDFILE = "pidfile";
+        final static String PROCESSNAME = "processname";
+        final static String SSLPORT = "sslport";
+        final static String SSLCERT = "sslcert";
+        final static String SSLKEY = "sslkey";
+        final static String SSLKEYPASS = "sslkeypass";
+        final static String SSLENABLE = "sslenable";
+        final static String TRAY = "tray";
+        final static String TRAYCONFIG = "trayconfig";
+        final static String ICON = "icon";
+        final static String URLREWRITEFILE = "urlrewritefile";
+        final static String URLREWRITECHECK = "urlrewritecheck";
+        final static String URLREWRITESTATUSPATH = "urlrewritestatuspath";
+        final static String STATUSFILE = "statusfile";
+        final static String CFENGINE = "cfengine";
+        final static String CFSERVERCONF = "cfserverconf";
+        final static String CFWEBCONF = "cfwebconf";
+        final static String DIRECTORYINDEX = "directoryindex";
+        final static String CACHE = "cache";
+        final static String CUSTOMSTATUS = "customstatus";
+        final static String TRANSFERMINSIZE = "transferminsize";
+        final static String SENDFILE = "sendfile";
+        final static String GZIP = "gzip";
+        final static String MARIADB4J = "mariadb4j";
+        final static String MARIADB4JPORT = "mariadb4jport";
+        final static String MARIADB4JBASEDIR = "mariadb4jbasedir";
+        final static String MARIADB4JDATADIR = "mariadb4jdatadir";
+        final static String MARIADB4JIMPORT = "mariadb4jimport";
+        final static String JVMARGS = "jvmargs";
+        final static String ERRORPAGES = "errorpages";
+        final static String SERVLETREST = "servletrest";
+        final static String SERVLETRESTMAPPINGS = "servletrestmappings";
+        final static String FILTERPATHINFO = "filterpathinfo";
+        final static String SSLADDCERTS = "ssladdcerts";
+        final static String BASICAUTHENABLE = "basicauth";
+        final static String BUFFERSIZE = "buffersize";
+        final static String IOTHREADS = "iothreads";
+        final static String WORKERTHREADS = "workerthreads";
+        final static String DIRECTBUFFERS = "directbuffers";
+        final static String LOADBALANCE = "loadbalance";
+        final static String DIRECTORYREFRESH = "directoryrefresh";
+        final static String PROXYPEERADDRESS = "proxypeeraddress";
+        final static String HTTP2 = "http2";
+        final static String SECURECOOKIES = "securecookies";
+    }
 
     ServerOptions setCommandLineArgs(String[] args);
 
@@ -94,29 +177,45 @@ public interface ServerOptions {
 
     ServerOptions setBackground(boolean isBackground);
 
-    boolean requestLogEnable();
-
-    ServerOptions requestLogEnable(boolean keepRequestLog);
-
     /**
-     * Will be removed eventually.  Use requestLogEnabled() instead.
+     * Will be removed eventually.  Use logRequestsEnabled() instead.
      * @return
      */
     @Deprecated
     boolean isKeepRequestLog();
 
     /**
-     * Will be removed eventually.  Use requestLogEnabled() instead.
+     * Will be removed eventually.  Use logRequestsEnabled() instead.
      * @return
      */
     @Deprecated
     ServerOptions setKeepRequestLog(boolean keepRequestLog);
 
-    ServerOptions setRequestLogDir(File logDir);
+    boolean logRequestsEnable();
 
-    ServerOptions setLogRequestFileName(String name);
+    ServerOptions logRequestsEnable(boolean enable);
 
-    public String getLogRequestFileName();
+    boolean logAccessEnable();
+
+    ServerOptions logAccessEnable(boolean enable);
+
+    ServerOptions setLogAccessDir(File logDir);
+    ServerOptions setLogAccessDir(String logDir);
+
+    File getLogAccessDir();
+
+    ServerOptions setLogAccessBaseFileName(String name);
+
+    public String getLogAccessBaseFileName();
+
+    ServerOptions setLogRequestsDir(File logDir);
+    ServerOptions setLogRequestsDir(String logDir);
+
+    File getLogRequestsDir();
+
+    ServerOptions setLogRequestsBaseFileName(String name);
+
+    public String getLogRequestsBaseFileName();
 
     boolean isOpenbrowser();
 
@@ -336,6 +435,9 @@ public interface ServerOptions {
 
     ServerOptions setHTTP2Enabled(boolean enable);
 
-    boolean isHTTP2Enabled();
+    boolean isSecureCookies();
 
+    ServerOptions setSecureCookies(boolean enable);
+
+    boolean isHTTP2Enabled();
 }

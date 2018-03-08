@@ -16,11 +16,11 @@ public class ServerOptionsImpl implements ServerOptions {
     private String host = "127.0.0.1", contextPath = "/";
     private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
-    private boolean debug = false, isBackground = true, requestLogEnable = false, openbrowser = false;
-    private String pidFile, openbrowserURL, cfmlDirs, logFileName, logRequestFileName, libDirs = null;
+    private boolean debug = false, isBackground = true, logAccessEnable = false, logRequestsEnable = false, openbrowser = false;
+    private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server.", logRequestBaseFileName="requests.", logAccessBaseFileName="access.", libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
-    private File warFile, webXmlFile, logDir, logRequestDir, urlRewriteFile, trayConfig, statusFile = null;
+    private File warFile, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, trayConfig, statusFile = null;
     private String iconImage = null;
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
@@ -54,6 +54,7 @@ public class ServerOptionsImpl implements ServerOptions {
     int bufferSize, ioThreads, workerThreads = 0;
     private boolean proxyPeerAddressEnabled = false;
     private boolean http2enabled = false;
+    private boolean secureCookies = false;
     private JSONArray trayConfigJSON;
 
     static {
@@ -494,7 +495,7 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public ServerOptions setLogFileName(String name) {
-        this.logFileName = name;
+        this.logFileBaseName = name;
         return this;
     }
 
@@ -505,7 +506,7 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public String getLogFileName() {
-        return this.logFileName;
+        return this.logFileBaseName;
     }
 
     /*
@@ -556,24 +557,45 @@ public class ServerOptionsImpl implements ServerOptions {
     /*
      * (non-Javadoc)
      * 
-     * @see runwar.options.ServerOptions#requestLogEnabled()
+     * @see runwar.options.ServerOptions#logRequestsEnable()
      */
     @Override
-    public boolean requestLogEnable() {
-        return requestLogEnable;
+    public boolean logRequestsEnable() {
+        return logRequestsEnable;
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see runwar.options.ServerOptions#requestLogEnabled(boolean)
+     * @see runwar.options.ServerOptions#logRequestsEnable(boolean)
      */
     @Override
-    public ServerOptions requestLogEnable(boolean keepRequestLog) {
-        this.requestLogEnable = keepRequestLog;
+    public ServerOptions logRequestsEnable(boolean enable) {
+        this.logRequestsEnable = enable;
         return this;
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#logRequestsEnable()
+     */
+    @Override
+    public boolean logAccessEnable() {
+        return logAccessEnable;
+    }
+    
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#logRequestsEnable(boolean)
+     */
+    @Override
+    public ServerOptions logAccessEnable(boolean enable) {
+        this.logAccessEnable = enable;
+        return this;
+    }
+    
     /*
      * (non-Javadoc)
      * 
@@ -582,7 +604,7 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     @Deprecated
     public boolean isKeepRequestLog() {
-        return requestLogEnable;
+        return logRequestsEnable;
     }
 
     /*
@@ -593,42 +615,95 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     @Deprecated
     public ServerOptions setKeepRequestLog(boolean keepRequestLog) {
-        this.requestLogEnable = keepRequestLog;
+        this.logRequestsEnable = keepRequestLog;
         return this;
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see runwar.options.ServerOptions#setRequestLogDir(java.io.File)
+     * @see runwar.options.ServerOptions#setLogRequestsDir(java.io.File)
      */
     @Override
-    public ServerOptions setRequestLogDir(File logDir) {
-        this.logRequestDir = logDir;
+    public ServerOptions setLogRequestsDir(File logDir) {
+        this.logRequestsDir = logDir;
+        return this;
+    }
+    @Override
+    public ServerOptions setLogRequestsDir(String logDir) {
+        this.logRequestsDir = new File(logDir);
+        return this;
+    }
+    @Override
+    public File getLogRequestsDir() {
+        if(this.logRequestsDir == null)
+            return getLogDir();
+        return this.logRequestsDir;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setLogRequestsBaseFileName(java.lang.String)
+     */
+    @Override
+    public ServerOptions setLogRequestsBaseFileName(String name) {
+        this.logRequestBaseFileName= name;
         return this;
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see runwar.options.ServerOptions#setLogRequestFileName(java.lang.String)
+     * @see runwar.options.ServerOptions#getLogRequestsBaseFileName()
      */
     @Override
-    public ServerOptions setLogRequestFileName(String name) {
-        this.logRequestFileName = name;
+    public String getLogRequestsBaseFileName() {
+        return this.logRequestBaseFileName;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setLogAccessDir(java.io.File)
+     */
+    @Override
+    public ServerOptions setLogAccessDir(File logDir) {
+        this.logAccessDir = logDir;
+        return this;
+    }
+    @Override
+    public ServerOptions setLogAccessDir(String logDir) {
+        this.logAccessDir = new File(logDir);
+        return this;
+    }
+    @Override
+    public File getLogAccessDir() {
+        if(this.logAccessDir == null)
+            return getLogDir();
+        return this.logAccessDir;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setLogAccessBaseFileName(java.lang.String)
+     */
+    @Override
+    public ServerOptions setLogAccessBaseFileName(String name) {
+        this.logAccessBaseFileName = name;
         return this;
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see runwar.options.ServerOptions#getLogRequestFileName()
+     * @see runwar.options.ServerOptions#getLogAccessBaseFileName()
      */
     @Override
-    public String getLogRequestFileName() {
-        return this.logRequestFileName;
+    public String getLogAccessBaseFileName() {
+        return this.logAccessBaseFileName;
     }
-    
     /*
      * (non-Javadoc)
      * 
@@ -1832,6 +1907,27 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public boolean isHTTP2Enabled() {
         return this.http2enabled;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setHTTP2Enabled(boolean)
+     */
+    @Override
+    public ServerOptions setSecureCookies(boolean enable) {
+        this.secureCookies = enable;
+        return this;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#isHTTP2Enabled()
+     */
+    @Override
+    public boolean isSecureCookies() {
+        return this.secureCookies;
     }
 
 }

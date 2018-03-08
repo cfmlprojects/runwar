@@ -9,6 +9,8 @@ import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.bouncycastle.openssl.PEMParser;
 
 import java.io.BufferedReader;
@@ -57,7 +59,6 @@ import java.io.IOException;
 
 import javax.net.ssl.SSLContext;
 
-import runwar.logging.Logger;
 import sun.security.x509.X509CertImpl;
 
 public class SSLUtil
@@ -70,7 +71,7 @@ public class SSLUtil
     private static final char[] DEFAULT_STORE_PASSWORD;
     
     static {
-        SSLUtil.log = Logger.getLogger("RunwarLogger");
+        SSLUtil.log = LoggerFactory.getLogger(SSLUtil.class);
         DEFAULT_STORE_PASSWORD = "password".toCharArray();
     }
     

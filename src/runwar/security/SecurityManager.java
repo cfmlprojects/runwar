@@ -21,7 +21,6 @@ import io.undertow.servlet.api.SecurityConstraint;
 import io.undertow.servlet.api.WebResourceCollection;
 import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.util.HexConverter;
-import runwar.logging.Logger;
 import runwar.options.ServerOptions;
 
 import java.nio.charset.Charset;
@@ -36,13 +35,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map.Entry;
 
 public class SecurityManager implements IdentityManager {
 
     private static final Charset UTF_8 = StandardCharsets.UTF_8;
     private final Map<String, UserAccount> users = new HashMap<>();
-    private static Logger log = Logger.getLogger("SecurityManager");
+    private static final Logger log = LoggerFactory.getLogger("SecurityManager");
 
     public void configureAuth(DeploymentInfo servletBuilder, ServerOptions serverOptions) {
         String realm = serverOptions.getServerName() + " Realm";

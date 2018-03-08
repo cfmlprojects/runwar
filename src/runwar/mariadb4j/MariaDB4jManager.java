@@ -7,8 +7,10 @@ import java.io.InputStream;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import runwar.LaunchUtil;
-import runwar.logging.Logger;
 import static runwar.util.Reflection.invoke;
 import static runwar.util.Reflection.method;
 import static runwar.util.Reflection.load;
@@ -21,7 +23,7 @@ public class MariaDB4jManager {
     private String username, password, dbName = null;
     private int port;
     private ClassLoader classLoader;
-    private static Logger log = Logger.getLogger("RunwarLogger");
+    private static Logger log = LoggerFactory.getLogger("RunwarLogger");
     volatile boolean isShuttingDown;
 
     public MariaDB4jManager(ClassLoader _classLoader) {

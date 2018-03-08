@@ -6,14 +6,16 @@ import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import runwar.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.Resource;
 
 public class MappedResourceManager extends FileResourceManager {
 
-    private static Logger log = Logger.getLogger("RunwarLogger");
+    private static Logger log = LoggerFactory.getLogger("RunwarLogger");
     private HashMap<String, File> aliasMap = new HashMap<String, File>();
     private File[] cfmlDirsFiles;
     private File WEBINF = null;
@@ -89,7 +91,7 @@ public class MappedResourceManager extends FileResourceManager {
                     for (int x = 0; x < cfmlDirsFiles.length; x++) {
                         String absPath = cfmlDirsFiles[x].getCanonicalPath();
                         reqFile = new File(cfmlDirsFiles[x], path.replace(absPath, ""));
-                        log.tracef("checking:%s = %s",absPath,reqFile.getAbsolutePath());
+                        log.trace("checking:%s = %s",absPath,reqFile.getAbsolutePath());
                         if (reqFile.exists()) {
                             break;
                         }
@@ -98,10 +100,10 @@ public class MappedResourceManager extends FileResourceManager {
             }
             if (reqFile != null && reqFile.exists()) {
                 reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
-                log.tracef("path mapped to:%s", reqFile);
+                log.trace("path mapped to:%s", reqFile);
                 return new FileResource(reqFile, this, path);
             } else {
-                log.tracef("No mapped resource for:%s",path);
+                log.trace("No mapped resource for:%s",path);
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {

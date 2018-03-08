@@ -38,16 +38,18 @@ import java.util.zip.GZIPInputStream;
 
 import javax.swing.JOptionPane;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
 import dorkbox.util.ActionHandler;
 import dorkbox.util.OS;
-import runwar.logging.Logger;
 import runwar.options.ServerOptions;
 
 public class LaunchUtil {
 
-    private static Logger log = Logger.getLogger("RunwarLogger");
+    private static Logger log = LoggerFactory.getLogger("RunwarLogger");
     private static boolean relaunching;
     private static final int KB = 1024;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
@@ -580,7 +582,7 @@ public class LaunchUtil {
         try {
             copyStream(resource.openStream(), dest);
         } catch (IOException e) {
-            log.error(e);
+            log.error("Error copying file.", e);
         }
 
     }
@@ -613,7 +615,7 @@ public class LaunchUtil {
         try {
             return readStream(new FileInputStream(source));
         } catch (FileNotFoundException e) {
-            log.error(e);
+            log.error("Error reading file.", e);
         }
         return null;
     }
@@ -622,7 +624,7 @@ public class LaunchUtil {
         try {
             copyStream(new FileInputStream(source), dest);
         } catch (FileNotFoundException e) {
-            log.error(e);
+            log.error("Error copying file.", e);
         }
     }
 
@@ -631,10 +633,8 @@ public class LaunchUtil {
             FileOutputStream output = new FileOutputStream(dest);
             writeStreamTo(bis, output, 8 * KB);
             output.close();
-        } catch (FileNotFoundException e) {
-            log.error(e);
-        } catch (IOException e) {
-            log.error(e);
+        } catch (Exception e) {
+            log.error("Error copying stream.", e);
         }
 
     }
@@ -797,7 +797,7 @@ public class LaunchUtil {
                 }
             }
         } catch (IOException ex) {
-            log.error(ex);
+            log.error("Error executing command",ex);
         } finally {
             if (stdInput != null) {
                 try {

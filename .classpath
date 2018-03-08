@@ -12,16 +12,11 @@
 	<classpathentry kind="lib" path="lib/jboss-logging-3.2.1.Final.jar"/>
 	<classpathentry kind="lib" path="lib/jopt-simple-5.0-beta-1.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.9.jar"/>
-	<classpathentry kind="lib" path="lib/xnio-api-3.3.6.Final.jar"/>
-	<classpathentry kind="lib" path="lib/xnio-nio-3.3.6.Final.jar"/>
 	<classpathentry kind="lib" path="lib/regexpathinfofilter-1.0.1.jar"/>
 	<classpathentry kind="lib" path="lib/urlrewritefilter-4.0.5.jar"/>
 	<classpathentry kind="lib" path="lib/jboss-websocket-api_1.1_spec-1.1.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-1.56.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk15on-1.56.jar"/>
-	<classpathentry kind="lib" path="lib/undertow-core-1.4.15.Final.jar" sourcepath="undertow/core/src/main"/>
-	<classpathentry kind="lib" path="lib/undertow-servlet-1.4.15.Final.jar"/>
-	<classpathentry kind="lib" path="lib/undertow-websockets-jsr-1.4.15.Final.jar"/>
 	<classpathentry kind="lib" path="lib/Notify-2.20.jar"/>
 	<classpathentry kind="lib" path="lib/ObjectPool-2.8.jar"/>
 	<classpathentry kind="lib" path="lib/TweenEngine-7.15.jar"/>
@@ -31,7 +26,13 @@
 	<classpathentry kind="lib" path="testlibs/httpcore-4.2.5.jar"/>
 	<classpathentry kind="lib" path="testlibs/httpmime-4.2.6.jar"/>
 	<classpathentry kind="lib" path="lib/SystemTray-3.1.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-simple-1.7.9.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java8"/>
+	<classpathentry kind="lib" path="lib/undertow-core-1.4.21.Final.jar" sourcepath="undertow"/>
+	<classpathentry kind="lib" path="lib/undertow-servlet-1.4.21.Final.jar"/>
+	<classpathentry kind="lib" path="lib/undertow-websockets-jsr-1.4.21.Final.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-api-3.3.8.Final.jar"/>
+	<classpathentry kind="lib" path="lib/xnio-nio-3.3.8.Final.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

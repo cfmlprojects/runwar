@@ -22,6 +22,9 @@ import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dorkbox.systemTray.Checkbox;
 import dorkbox.systemTray.Menu;
 import dorkbox.systemTray.MenuItem;
@@ -33,12 +36,11 @@ import net.minidev.json.JSONValue;
 import runwar.LaunchUtil;
 import runwar.Server;
 import runwar.Start;
-import runwar.logging.Logger;
 import runwar.options.ServerOptions;
 
 public class Tray {
 
-    private static Logger log = Logger.getLogger("Tray");
+    private static Logger log = LoggerFactory.getLogger("Tray");
     
     private static SystemTray systemTray;
     private static boolean trayIsHooked = false;
@@ -64,7 +66,7 @@ public class Tray {
         try{
             systemTray = SystemTray.get();
         } catch (java.lang.ExceptionInInitializerError e) {
-            log.debug(e);
+            log.debug("Error initializing tray: %s", e.getMessage());
         }
 
         if ( systemTray == null ) {
@@ -366,7 +368,7 @@ public class Tray {
                 try {
                     return new FileInputStream(iconImage);
                 } catch (FileNotFoundException e) {
-                    log.debug(e);
+                    log.debug("Error getting image input stream: %s", e.getMessage());
                 }
             } else {
                 log.debug("trying parent loader for image: " + iconImage);
@@ -379,7 +381,7 @@ public class Tray {
                     try {
                         return imageURL.openStream();
                     } catch (IOException e) {
-                        log.debug(e);
+                        log.debug("Error getting image input stream: %s", e.getMessage());
                     }
                 }
             }

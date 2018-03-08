@@ -1,13 +1,15 @@
 package runwar;
 
-import runwar.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.undertow.server.DefaultResponseListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 public class ErrorHandler implements HttpHandler {
 
-    private static final Logger log = Logger.getLogger("RunwarLogger");
+    private static final Logger log = LoggerFactory.getLogger(ErrorHandler.class);
     private final HttpHandler next;
 
     public ErrorHandler(final HttpHandler next) {
@@ -43,8 +45,7 @@ public class ErrorHandler implements HttpHandler {
         try {
             next.handleRequest(exchange);
         } catch (Exception e) {
-            System.out.println("ErrorHandler handleRequest triggered");
-            log.error(e);
+            log.error("ErrorHandler handleRequest triggered", e);
             if (exchange.isResponseChannelAvailable()) {
             }
         }

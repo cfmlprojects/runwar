@@ -76,7 +76,7 @@
       classpathref="runwar.lib.path" compliance="1.7"/>
     -->
     <javac-ecj srcdir="${runwar.src.dir}/" destdir="${runwar.bin.dir}/runwar" classpath="${toString:runwar.lib.path}"
-      compliance="1.7" />
+      compliance="1.8" />
   </target>
 
   <target name="runwar.jar" depends="runwar.compile">

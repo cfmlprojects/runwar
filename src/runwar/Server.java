@@ -33,12 +33,15 @@ import java.awt.Image;
 
 import javax.net.ssl.SSLContext;
 import javax.servlet.DispatcherType;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xnio.BufferAllocator;
 import org.xnio.OptionMap;
+import org.xnio.Options;
 import org.xnio.Xnio;
+import org.xnio.XnioWorker;
 
-import runwar.logging.Logger;
-import runwar.logging.LogSubverter;
 import runwar.mariadb4j.MariaDB4jManager;
 import runwar.options.CommandLineHandler;
 import runwar.options.ServerOptions;
@@ -64,8 +67,11 @@ import io.undertow.server.handlers.LearningPushHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.PredicateHandler;
 import io.undertow.server.handlers.ProxyPeerAddressHandler;
+import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.SSLHeaderHandler;
+import io.undertow.server.handlers.accesslog.AccessLogHandler;
+import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
 import io.undertow.server.handlers.cache.CacheHandler;
 import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -102,8 +108,8 @@ import static java.nio.file.StandardCopyOption.*;
 
 public class Server {
 
-    private static Logger log = Logger.getLogger("RunwarLogger");
-    private TeeOutputStream tee;
+    private static final Logger log = LoggerFactory.getLogger(Server.class);
+    private TeeOutputStream sysOutTee, sysErrTee;
     private volatile static ServerOptions serverOptions;
     private static MariaDB4jManager mariadb4jManager;
     int portNumber;
@@ -128,6 +134,9 @@ public class Server {
 
     private static final int METADATA_MAX_AGE = 2000;
     private static final Thread mainThread = Thread.currentThread();
+    
+    private static XnioWorker worker;
+    private static Xnio xnio;
 
     public Server() {
     }
@@ -142,7 +151,7 @@ public class Server {
         if (_classLoader == null) {
             log.debug("Loading classes from lib dir");
             if( _classpath != null && _classpath.size() > 0) {
-                log.tracef("classpath: %s",_classpath);
+                log.trace("classpath: %s",_classpath);
                 _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
     //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
     //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
@@ -223,7 +232,6 @@ public class Server {
             statusFile = serverOptions.getStatusFile();
         }
         String warPath = serverOptions.getWarPath();
-        String loglevel = serverOptions.getLoglevel();
         char[] stoppassword = serverOptions.getStopPassword();
         Long transferMinSize= serverOptions.getTransferMinSize();
         boolean ignoreWelcomePages = false;
@@ -260,11 +268,14 @@ public class Server {
             }
         }
 
-        tee = null;
+        sysOutTee = null;
+        sysErrTee = null;
         if (serverOptions.getLogDir() != null) {
             File logDirectory = serverOptions.getLogDir();
             logDirectory.mkdir();
-            File outLog = new File(logDirectory,"server.out.txt");
+            String prefix = options.getLogFileName();
+            File outLog = new File(logDirectory,prefix + "out.txt");
+            File errLog = new File(logDirectory,prefix + "err.txt");
             if (logDirectory.exists()) {
                 if(outLog.exists()) {
                     if(Files.size(Paths.get(outLog.getPath())) > 10 * 1024 * 1024) {
@@ -272,11 +283,20 @@ public class Server {
                         Files.move(Paths.get(outLog.getPath()), Paths.get(outLog.getPath()+".bak"), REPLACE_EXISTING);
                     }
                 }
-                log.info("Logging to " + outLog.getPath());
-                tee = new TeeOutputStream(System.out, new FileOutputStream(outLog.getPath(), outLog.exists()));
-                PrintStream newOut = new PrintStream(tee, true);
+                if(errLog.exists()) {
+                    if(Files.size(Paths.get(errLog.getPath())) > 10 * 1024 * 1024) {
+                        log.info("Log is over 10MB, moving " + errLog.getPath() + " to " + errLog.getPath() + ".bak");
+                        Files.move(Paths.get(errLog.getPath()), Paths.get(errLog.getPath()+".bak"), REPLACE_EXISTING);
+                    }
+                }
+                log.info("Logging output to " + outLog.getPath());
+                log.info("Logging errors to " + errLog.getPath());
+                sysOutTee = new TeeOutputStream(System.out, new FileOutputStream(outLog.getPath(), outLog.exists()));
+                PrintStream newOut = new PrintStream(sysOutTee, true);
                 System.setOut(newOut);
-                System.setErr(newOut);
+                sysErrTee = new TeeOutputStream(System.err, new FileOutputStream(errLog.getPath(), errLog.exists()));
+                PrintStream newErr = new PrintStream(sysErrTee, true);
+                System.setErr(newErr);
             } else {
                 log.error("Could not create log: " + outLog.getPath());
             }
@@ -305,7 +325,7 @@ public class Server {
                 Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
                 dockMethod.invoke(appInstance, dockIcon);
             } catch (Exception e) {
-                log.warn(e);
+                log.warn("error setting dock icon image",e);
             }
         }
         String startingtext = "Starting - port:" + portNumber + " stop-port:" + socketNumber + " warpath:" + warPath;
@@ -368,12 +388,23 @@ public class Server {
 
         log.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
 
+        xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
+        worker = xnio.createWorker(OptionMap.builder()
+                .set(Options.WORKER_IO_THREADS, 8)
+                .set(Options.CONNECTION_HIGH_WATER, 1000000)
+                .set(Options.CONNECTION_LOW_WATER, 1000000)
+                .set(Options.WORKER_TASK_CORE_THREADS, 30)
+                .set(Options.WORKER_TASK_MAX_THREADS, 30)
+                .set(Options.TCP_NODELAY, true)
+                .set(Options.CORK, true)
+                .getMap());
+        
         final DeploymentInfo servletBuilder = deployment()
                 .setContextPath(contextPath.equals("/") ? "" : contextPath)
                 .setTempDir(new File(System.getProperty("java.io.tmpdir")))
                 .setDeploymentName(warPath)
                 .setServerName( "WildFly / Undertow" );
-
+        
         if (!warFile.exists()) {
             throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
         }
@@ -494,7 +525,7 @@ public class Server {
             }
             servletBuilder.setClassLoader(_classLoader);
             servletBuilder.setResourceManager(getResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
-            LogSubverter.subvertJDKLoggers(loglevel);
+//            LogSubverter.subvertJDKLoggers(loglevel);
             WebXMLParser.parseWebXml(new File(webinf, "/web.xml"), servletBuilder, ignoreWelcomePages, ignoreRestMappings);
         } else {
             throw new RuntimeException("Didn't know how to handle war:"+warFile.getAbsolutePath());
@@ -522,6 +553,7 @@ public class Server {
                 servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
             }
         }
+        
 
         if(serverOptions.isEnableBasicAuth()) {
             securityManager.configureAuth(servletBuilder, serverOptions);
@@ -600,10 +632,10 @@ public class Server {
             }
         }
         
-        
+        // TODO: probably best to create a new worker for websockets, if we want fastness, but for now we share
         // TODO: add buffer pool size (maybe-- direct is best at 16k), enable/disable be good I reckon tho
         servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
-          new WebSocketDeploymentInfo().setBuffers(new DefaultByteBufferPool(true, 1024 * 16)));
+          new WebSocketDeploymentInfo().setBuffers(new DefaultByteBufferPool(true, 1024 * 16)).setWorker(worker));
         log.debug("Added websocket context");
         
         manager = defaultContainer().addDeployment(servletBuilder);
@@ -685,9 +717,12 @@ public class Server {
         log.info("Direct Buffers: " + serverOptions.isDirectBuffers());
         serverBuilder.setDirectBuffers(serverOptions.isDirectBuffers());
 
+        final SessionCookieConfig sessionConfig = new SessionCookieConfig();
+        final SessionAttachmentHandler sessionAttachmentHandler = new SessionAttachmentHandler(new InMemorySessionManager("", 1, true), sessionConfig);
         final PathHandler pathHandler = new PathHandler(Handlers.redirect(contextPath)) {
             @Override
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
+//                sessionConfig.setSessionId(exchange, ""); // TODO: see if this suppresses jsessionid
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
                 }
@@ -706,11 +741,11 @@ public class Server {
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
 
-//        SessionManager sessionManager = new InMemorySessionManager("SESSION_MANAGER");
-//        SessionCookieConfig sessionConfig = new SessionCookieConfig();
-//        SessionAttachmentHandler sessionAttachmentHandler = new SessionAttachmentHandler(sessionManager, sessionConfig);
-//        // set as next handler your root handler
-//        sessionAttachmentHandler.setNext(pathHandler);
+        if(serverOptions.isSecureCookies()) {
+                sessionConfig.setHttpOnly(true);
+                sessionConfig.setSecure(true);
+        }
+        sessionAttachmentHandler.setNext(pathHandler);
 
         HttpHandler errPageHandler;
         
@@ -723,10 +758,25 @@ public class Server {
             errPageHandler = new ErrorHandler(pathHandler);
         }
 
-//        if (serverOptions.isDebug()) {
-//            log.debug("Enabling request dumper");
-//            errPageHandler = new RequestDumpingHandler(errPageHandler);
-//        }
+        if (serverOptions.logAccessEnable()) {
+//            final String PATTERN = "cs-uri cs(test-header) x-O(aa) x-H(secure)";
+            DefaultAccessLogReceiver logReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
+                .setOutputDirectory(options.getLogAccessDir().toPath())
+                .setLogBaseName(options.getLogAccessBaseFileName())
+//                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
+                .build();
+            log.info("Logging requests to " + options.getLogAccessDir());
+//            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
+//            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
+            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"combined", Server.class.getClassLoader());
+        }
+
+
+        if (serverOptions.logRequestsEnable()) {
+            log.error("Request log output currently goes to server.log");
+            log.debug("Enabling request dumper");
+            errPageHandler = new RequestDumpingHandler(errPageHandler);
+        }
 
         if (serverOptions.isProxyPeerAddressEnabled()) {
             log.debug("Enabling Proxy Peer Address handling");
@@ -752,10 +802,11 @@ public class Server {
             LoadBalancingProxyClient proxy = new LoadBalancingProxyClient()
                     .addHost(new URI("https://localhost:"+serverOptions.getSSLPort()), null, new UndertowXnioSsl(Xnio.getInstance(), OptionMap.EMPTY, SSLUtil.createClientSSLContext()), OptionMap.create(UndertowOptions.ENABLE_HTTP2, true))
                     .setConnectionsPerThread(20);
+            ProxyHandler proxyHandler = ProxyHandler.builder().setProxyClient(proxy).setMaxRequestTime(30000).setNext(ResponseCodeHandler.HANDLE_404).build();
             reverseProxy = Undertow.builder()
                     .setServerOption(UndertowOptions.ENABLE_HTTP2, true)
                     .addHttpsListener(serverOptions.getSSLPort()-1, serverOptions.getHost(), sslContext)
-                    .setHandler(new ProxyHandler(proxy, 30000, ResponseCodeHandler.HANDLE_404))
+                    .setHandler(proxyHandler)
                     .build();
         }
 
@@ -779,22 +830,22 @@ public class Server {
         } catch (Exception e) {
             log.error("Unable to get PID:" + e.getMessage());
         }
-        if (serverOptions.isKeepRequestLog()) {
-            log.error("request log currently unsupported");
-        }
-        // start the stop monitor thread
+
+        serverBuilder.setWorker(worker);
         undertow = serverBuilder.build();
+
+        // start the stop monitor thread
         monitor = new MonitorThread(stoppassword);
         monitor.start();
         log.debug("started stop monitor");
+
 
         if(serverOptions.isTrayEnabled()) {
             try {
                 Tray.hookTray(this);
                 log.debug("hooked system tray");	
             } catch( Throwable e ) {
-                log.debug("system tray hook failed.");
-                log.error( e );
+                log.error( "system tray hook failed", e );
             }
         } else {
             log.debug("System tray integration disabled");
@@ -829,8 +880,7 @@ public class Server {
                 mariadb4jManager.start(serverOptions.getMariaDB4jPort(), serverOptions.getMariaDB4jBaseDir(),
                         serverOptions.getMariaDB4jDataDir(), serverOptions.getMariaDB4jImportSQLFile());
             } catch (Exception dbStartException) {
-                log.error("Could not start MariaDB4j");
-                log.error(dbStartException);
+                log.error("Could not start MariaDB4j", dbStartException);
                 System.out.println("Error starting MariaDB4j: " + dbStartException.getMessage());
             }
         }
@@ -916,13 +966,17 @@ public class Server {
             } catch (Exception e) {
                 e.printStackTrace();
                 setServerState(ServerState.UNKNOWN);
-                log.error(e);
+                log.error("Errserver", e);
                 exitCode = 1;
             }
             try {
-                if (tee != null) {
-                    tee.flush();
-                    tee.closeBranch();
+                if (sysOutTee != null) {
+                    sysOutTee.flush();
+                    sysOutTee.closeBranch();
+                }
+                if (sysErrTee != null) {
+                    sysErrTee.flush();
+                    sysErrTee.closeBranch();
                 }
             } catch (Exception e) {
                 System.err.println("Redirect:  Unable to close this log file!");

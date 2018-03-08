@@ -6,6 +6,8 @@ import java.util.HashMap;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 
 import io.undertow.servlet.api.DeploymentInfo;
@@ -18,8 +20,6 @@ import io.undertow.servlet.api.ServletInfo;
 import java.util.EventListener;
 import java.util.Map;
 
-import runwar.logging.Logger;
-
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.DispatcherType;
@@ -30,7 +30,7 @@ import org.w3c.dom.NodeList;
 
 public class WebXMLParser {
 
-	private static Logger log = Logger.getLogger("RunwarLogger");
+	private static Logger log = LoggerFactory.getLogger("RunwarLogger");
 
 	/**
 	 * Parses the web.xml and configures the context.
@@ -218,7 +218,7 @@ public class WebXMLParser {
 								trace("Filter Servlet: " + pName + " for %s", pValue);
 							}
 						} else {
-							log.warnf("No servlet found for %s", pName);
+							log.warn("No servlet found for %s", pName);
 						}
 					}
 				}
@@ -294,7 +294,7 @@ public class WebXMLParser {
 			if (!servletMap.isEmpty()) {
 				listOfElements = doc.getElementsByTagName("servlet-mapping");
 				totalElements = listOfElements.getLength();
-				log.debugf("Total no of servlet-mappings: %s", totalElements);
+				log.debug("Total no of servlet-mappings: %s", totalElements);
 				for (int s = 0; s < totalElements; s++) {
 					Node fstNode = listOfElements.item(s);
 					if (fstNode.getNodeType() == Node.ELEMENT_NODE) {
@@ -322,7 +322,7 @@ public class WebXMLParser {
 
 							}
 						} else {
-							log.warnf("No servlet found for %s", pName);
+							log.warn("No servlet found for %s", pName);
 						}
 					}
 				}
@@ -359,7 +359,7 @@ public class WebXMLParser {
 			// do mime types files
 			listOfElements = doc.getElementsByTagName("mime-mapping");
 			totalElements = listOfElements.getLength();
-			log.debugf("Total no of mime-mapping: %s", totalElements);
+			log.debug("Total no of mime-mapping: %s", totalElements);
 			for (int i = 0; i < totalElements; i++) {
 				Node inNode = listOfElements.item(i);
 				if (inNode.getNodeType() == Node.ELEMENT_NODE) {
@@ -380,7 +380,7 @@ public class WebXMLParser {
 			// do error pages
 			listOfElements = doc.getElementsByTagName("error-page");
 			totalElements = listOfElements.getLength();
-			log.debugf("Total no of error-pages: %s", totalElements);
+			log.debug("Total no of error-pages: %s", totalElements);
 			for (int i = 0; i < totalElements; i++) {
 				Node inNode = listOfElements.item(i);
 				if (inNode.getNodeType() == Node.ELEMENT_NODE) {
@@ -421,7 +421,7 @@ public class WebXMLParser {
 	}
 
 	private static void trace(String string, Object elements) {
-		log.tracef(string,elements);
+		log.trace(string,elements);
 //		System.out.printf(string,elements);
 //		System.out.println();
 	}
