@@ -433,9 +433,9 @@ public class ConfigParser {
             }
             if (serverConfig.hasOption(Keys.JVMARGS) && serverConfig.getOptionValue(Keys.JVMARGS).length() > 0) {
                 List<String> jvmArgs = new ArrayList<String>();
-                String[] jvmArgArray = serverConfig.getOptionValue(Keys.JVMARGS).split(";");
+                String[] jvmArgArray = serverConfig.getOptionValue(Keys.JVMARGS).split("(?<!\\\\);");
                 for(String arg : jvmArgArray) {
-                    jvmArgs.add(arg);
+                    jvmArgs.add(arg.replaceAll("\\\\;", ";"));
                 }
                 serverOptions.setJVMArgs(jvmArgs);
             }
