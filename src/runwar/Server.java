@@ -1,12 +1,20 @@
 package runwar;
 
+import static io.undertow.Handlers.predicate;
+import static io.undertow.predicate.Predicates.secure;
+import static io.undertow.servlet.Servlets.defaultContainer;
+import static io.undertow.servlet.Servlets.deployment;
+import static io.undertow.servlet.Servlets.servlet;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
+import java.awt.Image;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
@@ -29,7 +37,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.awt.Image;
 
 import javax.net.ssl.SSLContext;
 import javax.servlet.DispatcherType;
@@ -42,16 +49,6 @@ import org.xnio.Options;
 import org.xnio.Xnio;
 import org.xnio.XnioWorker;
 
-import runwar.mariadb4j.MariaDB4jManager;
-import runwar.options.CommandLineHandler;
-import runwar.options.ServerOptions;
-import runwar.undertow.MappedResourceManager;
-import runwar.undertow.WebXMLParser;
-import runwar.util.RequestDumper;
-import runwar.util.SSLUtil;
-import runwar.util.TeeOutputStream;
-import runwar.security.SecurityManager;
-import runwar.tray.Tray;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -67,7 +64,6 @@ import io.undertow.server.handlers.LearningPushHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.PredicateHandler;
 import io.undertow.server.handlers.ProxyPeerAddressHandler;
-import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.SSLHeaderHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
@@ -97,14 +93,17 @@ import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
-
-import static io.undertow.Handlers.predicate;
-import static io.undertow.predicate.Predicates.secure;
-
-import static io.undertow.servlet.Servlets.defaultContainer;
-import static io.undertow.servlet.Servlets.deployment;
-import static io.undertow.servlet.Servlets.servlet;
-import static java.nio.file.StandardCopyOption.*;
+import runwar.mariadb4j.MariaDB4jManager;
+import runwar.options.CommandLineHandler;
+import runwar.options.ServerOptions;
+import runwar.security.SecurityManager;
+import runwar.tray.Tray;
+import runwar.undertow.MappedResourceManager;
+import runwar.undertow.RequestDebugHandler;
+import runwar.undertow.WebXMLParser;
+import runwar.util.RequestDumper;
+import runwar.util.SSLUtil;
+import runwar.util.TeeOutputStream;
 
 public class Server {
 
@@ -760,22 +759,26 @@ public class Server {
 
         if (serverOptions.logAccessEnable()) {
 //            final String PATTERN = "cs-uri cs(test-header) x-O(aa) x-H(secure)";
-            DefaultAccessLogReceiver logReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
+            DefaultAccessLogReceiver accessLogReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
                 .setOutputDirectory(options.getLogAccessDir().toPath())
                 .setLogBaseName(options.getLogAccessBaseFileName())
 //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
                 .build();
-            log.info("Logging requests to " + options.getLogAccessDir());
+            log.info("Logging combined access to " + options.getLogAccessDir());
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
-            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"combined", Server.class.getClassLoader());
+            errPageHandler = new AccessLogHandler(errPageHandler, accessLogReceiver,"combined", Server.class.getClassLoader());
         }
 
 
         if (serverOptions.logRequestsEnable()) {
             log.error("Request log output currently goes to server.log");
             log.debug("Enabling request dumper");
-            errPageHandler = new RequestDumpingHandler(errPageHandler);
+            DefaultAccessLogReceiver requestsLogReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
+                    .setOutputDirectory(options.getLogRequestsDir().toPath())
+                    .setLogBaseName(options.getLogRequestsBaseFileName())
+                    .build();
+            errPageHandler = new RequestDebugHandler(errPageHandler, requestsLogReceiver);
         }
 
         if (serverOptions.isProxyPeerAddressEnabled()) {
