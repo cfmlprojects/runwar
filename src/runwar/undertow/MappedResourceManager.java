@@ -22,14 +22,14 @@ public class MappedResourceManager extends FileResourceManager {
     
     private final boolean allowResourceChangeListeners;
 
-    public MappedResourceManager(File base, long transferMinSize, String cfmlDirList) {
+    public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, boolean allowResourceChangeListeners) {
         super(base, transferMinSize);
-        this.allowResourceChangeListeners = true;
+        this.allowResourceChangeListeners = allowResourceChangeListeners;
         processMappings(cfmlDirList);
     }
 
     public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, File file) {
-        this(base, transferMinSize, cfmlDirList);
+        this(base, transferMinSize, cfmlDirList, false);
         WEBINF = file;
         if (!WEBINF.exists()) {
             throw new RuntimeException("The specified WEB-INF does not exist: " + WEBINF.getAbsolutePath());
