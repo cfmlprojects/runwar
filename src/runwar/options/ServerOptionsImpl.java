@@ -324,7 +324,7 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public boolean isURLRewriteApacheFormat() {
-        return getURLRewriteFile() == null ? false : getURLRewriteFile().getPath().endsWith(".htaccess");
+        return getURLRewriteFile() == null ? false : getURLRewriteFile().getPath().endsWith(".htaccess") || getURLRewriteFile().getPath().endsWith(".conf");
     }
 
     /*

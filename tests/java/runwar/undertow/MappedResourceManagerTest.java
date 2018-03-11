@@ -23,7 +23,7 @@ public class MappedResourceManagerTest {
                 + "rel=../bar, "
                 + "relative=/root/na/../bar, "
                 + "foo=myFolder";
-        MappedResourceManager man = new MappedResourceManager(new File("/tmp"),111,mappings);
+        MappedResourceManager man = new MappedResourceManager(new File("/tmp"),111,mappings,false);
         aliasMap = man.getAliasMap();
         try {
             man.close();

@@ -1010,7 +1010,8 @@ public class Server {
                 if(!serverOptions.getURLRewriteFile().isFile()) {
                     log.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
                 } else {
-                    String rewriteFileName = "urlrewrite.xml";
+                    String rewriteFileName = "urlrewrite.";
+                    rewriteFileName += serverOptions.isURLRewriteApacheFormat() ? ".htaccess" : ".xml";
                     LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir, rewriteFileName));
                     log.debug("Copying URL rewrite file " + serverOptions.getURLRewriteFile().getPath() + " to WEB-INF: " + webInfDir.getPath() + "/"+rewriteFileName);
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
