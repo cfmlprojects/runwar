@@ -12,7 +12,6 @@
 	<classpathentry kind="lib" path="lib/jopt-simple-5.0-beta-1.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.9.jar"/>
 	<classpathentry kind="lib" path="lib/regexpathinfofilter-1.0.1.jar"/>
-	<classpathentry kind="lib" path="lib/urlrewritefilter-4.0.5.jar" sourcepath="/urlrewritefilter"/>
 	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-1.56.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk15on-1.56.jar"/>
 	<classpathentry kind="lib" path="lib/Notify-2.20.jar"/>
@@ -34,5 +33,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java8"/>
 	<classpathentry kind="lib" path="lib/xnio-api-3.3.8.Final.jar"/>
 	<classpathentry kind="lib" path="lib/xnio-nio-3.3.8.Final.jar"/>
+	<classpathentry kind="lib" path="lib/urlrewritefilter-5.0.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
