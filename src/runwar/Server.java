@@ -41,8 +41,7 @@ import java.util.TimerTask;
 import javax.net.ssl.SSLContext;
 import javax.servlet.DispatcherType;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import runwar.logging.Logger;
 import org.xnio.BufferAllocator;
 import org.xnio.OptionMap;
 import org.xnio.Options;
@@ -93,6 +92,7 @@ import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
+import runwar.logging.LoggerFactory;
 import runwar.mariadb4j.MariaDB4jManager;
 import runwar.options.CommandLineHandler;
 import runwar.options.ServerOptions;
@@ -116,6 +116,7 @@ public class Server {
     private DeploymentManager manager;
     private Undertow undertow;
     private MonitorThread monitor;
+    
 
     private String PID;
     private volatile String serverState = ServerState.STOPPED;
@@ -269,38 +270,7 @@ public class Server {
 
         sysOutTee = null;
         sysErrTee = null;
-        if (serverOptions.getLogDir() != null) {
-            File logDirectory = serverOptions.getLogDir();
-            logDirectory.mkdir();
-            String prefix = options.getLogFileName();
-            File outLog = new File(logDirectory,prefix + "out.txt");
-            File errLog = new File(logDirectory,prefix + "err.txt");
-            if (logDirectory.exists()) {
-                if(outLog.exists()) {
-                    if(Files.size(Paths.get(outLog.getPath())) > 10 * 1024 * 1024) {
-                        log.info("Log is over 10MB, moving " + outLog.getPath() + " to " + outLog.getPath() + ".bak");
-                        Files.move(Paths.get(outLog.getPath()), Paths.get(outLog.getPath()+".bak"), REPLACE_EXISTING);
-                    }
-                }
-                if(errLog.exists()) {
-                    if(Files.size(Paths.get(errLog.getPath())) > 10 * 1024 * 1024) {
-                        log.info("Log is over 10MB, moving " + errLog.getPath() + " to " + errLog.getPath() + ".bak");
-                        Files.move(Paths.get(errLog.getPath()), Paths.get(errLog.getPath()+".bak"), REPLACE_EXISTING);
-                    }
-                }
-                log.info("Logging output to " + outLog.getPath());
-                log.info("Logging errors to " + errLog.getPath());
-                sysOutTee = new TeeOutputStream(System.out, new FileOutputStream(outLog.getPath(), outLog.exists()));
-                PrintStream newOut = new PrintStream(sysOutTee, true);
-                System.setOut(newOut);
-                sysErrTee = new TeeOutputStream(System.err, new FileOutputStream(errLog.getPath(), errLog.exists()));
-                PrintStream newErr = new PrintStream(sysErrTee, true);
-                System.setErr(newErr);
-            } else {
-                log.error("Could not create log: " + outLog.getPath());
-            }
-        }
-        
+
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
         if( iconPNG != null && iconPNG.length() > 0) {
@@ -336,6 +306,8 @@ public class Server {
         startingtext += "\nLog Directory: " + serverOptions.getLogDir().getAbsolutePath();
         System.out.println(bar);
         System.out.println(startingtext);
+        log.info(bar);
+        log.info(startingtext);
         //System.out.println("background: " + background);
         System.out.println(bar);
         addShutDownHook();
@@ -862,9 +834,9 @@ public class Server {
         // if this println changes be sure to update the LaunchUtil so it will know success
         String sslInfo = serverOptions.isEnableSSL() ? " https-port:" + serverOptions.getSSLPort() : "";
         String msg = "Server is up - http-port:" + portNumber + sslInfo + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
-        log.debug(msg);
-        LaunchUtil.displayMessage("info", msg);
+        log.info(msg);
         System.out.println(msg);
+        LaunchUtil.displayMessage("info", msg);
         setServerState(ServerState.STARTED);
 //        ConfigWebAdmin admin = new ConfigWebAdmin(lucee.runtime.engine.ThreadLocalPageContext.getConfig(), null);
 //        admin._updateMapping(virtual, physical, archive, primary, inspect, toplevel);
@@ -1010,7 +982,7 @@ public class Server {
                 if(!serverOptions.getURLRewriteFile().isFile()) {
                     log.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
                 } else {
-                    String rewriteFileName = "urlrewrite.";
+                    String rewriteFileName = "urlrewrite";
                     rewriteFileName += serverOptions.isURLRewriteApacheFormat() ? ".htaccess" : ".xml";
                     LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir, rewriteFileName));
                     log.debug("Copying URL rewrite file " + serverOptions.getURLRewriteFile().getPath() + " to WEB-INF: " + webInfDir.getPath() + "/"+rewriteFileName);

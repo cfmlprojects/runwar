@@ -6,16 +6,16 @@ import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import runwar.logging.Logger;
 
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.Resource;
+import runwar.logging.LoggerFactory;
 
 public class MappedResourceManager extends FileResourceManager {
 
-    private static Logger log = LoggerFactory.getLogger("RunwarLogger");
+    private static Logger log = LoggerFactory.getLogger(MappedResourceManager.class);
     private HashMap<String, File> aliasMap = new HashMap<String, File>();
     private File[] cfmlDirsFiles;
     private File WEBINF = null;

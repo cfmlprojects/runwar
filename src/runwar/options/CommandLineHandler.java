@@ -22,37 +22,25 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import runwar.logging.Logger;
 
 import runwar.Server;
+import runwar.logging.LoggerFactory;
+
 import static runwar.options.ServerOptions.Keys;
 
 public class CommandLineHandler {
-    private static final Options options = new Options();
     private static PosixParser parser;
     private static final String SYNTAX = " java -jar runwar.jar [-war] path/to/war [options]";
     private static final String HEADER = " The runwar lib wraps undertow with more awwsome. Defaults (parenthetical)";
     private static final String FOOTER = " source: https://github.com/cfmlprojects/runwar.git";
-    private static final Logger log = LoggerFactory.getLogger(CommandLineHandler.class);
     
     public CommandLineHandler(){
     }
 
-    public static ServerOptions parseArguments(String[] args) {
-        ServerOptions serverOptions = new ServerOptionsImpl();
-        serverOptions = parseArguments(args, serverOptions);
-        return serverOptions;
-    }
-
     @SuppressWarnings("static-access")
-    public static ServerOptions parseArguments(String[] args, ServerOptions serverOptions) {
-//        parser = new OptionParser();
-//        parser.acceptsAll(asList("c",ServerOptions.CONFIG)).withRequiredArg()
-//        .describedAs( "config file" )
-//        .ofType( File.class );
-        serverOptions.setCommandLineArgs(args);
-        parser = new PosixParser();
+    private static Options getOptions() {
+        final Options options = new Options();
         options.addOption( OptionBuilder
                 .withLongOpt( Keys.CONFIG )
                 .withDescription( "config file" )
@@ -100,14 +88,14 @@ public class CommandLineHandler {
                 .withDescription( "Pasword checked when stopping server\n" )
                 .hasArg().withArgName(Keys.PASSWORD)
                 .create(Keys.PASSWORD) );
-
+        
         options.addOption( OptionBuilder
                 .withDescription( "stop backgrounded.  Optional stop-port" )
                 .hasOptionalArg().withArgName(Keys.PORT)
                 .hasOptionalArg().withArgName(Keys.PASSWORD)
                 .withValueSeparator(' ')
                 .create(Keys.STOP) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "http-enable" )
                 .withDescription( "Enable HTTP.  Default is true ,unless SSL or AJP are enabled." )
@@ -125,13 +113,13 @@ public class CommandLineHandler {
                 .withDescription( "Enable URL Rewriting.  Default is true." )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.URLREWRITEENABLE) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "urlrewrite-file" )
                 .withDescription( "URL rewriting config file." )
                 .hasArg().withArgName("path/to/urlrewrite/file")
                 .create(Keys.URLREWRITEFILE) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "urlrewrite-check" )
                 .withDescription( "URL rewriting config file realod check interval, 0 for every request. (disabled)" )
@@ -145,34 +133,34 @@ public class CommandLineHandler {
                 .create(Keys.URLREWRITESTATUSPATH) );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "ssl-enable" )
-        		.withDescription( "Enable SSL.  Default is false.  When enabled, http is disabled by default." )
-        		.hasArg().withArgName("true|false").withType(Boolean.class)
-        		.create("sslenable") );
+                .withLongOpt( "ssl-enable" )
+                .withDescription( "Enable SSL.  Default is false.  When enabled, http is disabled by default." )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create("sslenable") );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "ssl-port" )
-        		.withDescription( "SSL port.  Disabled if not set." )
-        		.hasArg().withArgName(Keys.PORT).withType(Number.class)
-        		.create(Keys.SSLPORT) );
+                .withLongOpt( "ssl-port" )
+                .withDescription( "SSL port.  Disabled if not set." )
+                .hasArg().withArgName(Keys.PORT).withType(Number.class)
+                .create(Keys.SSLPORT) );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "ssl-cert" )
-        		.withDescription( "SSL certificate file in x509 (PKS#12) format." )
-        		.hasArg().withArgName("certificate")
-        		.create(Keys.SSLCERT) );
+                .withLongOpt( "ssl-cert" )
+                .withDescription( "SSL certificate file in x509 (PKS#12) format." )
+                .hasArg().withArgName("certificate")
+                .create(Keys.SSLCERT) );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "ssl-key" )
-        		.withDescription( "SSL private key file in DER (PKS#8) format." )
-        		.hasArg().withArgName("key")
-        		.create(Keys.SSLKEY) );
+                .withLongOpt( "ssl-key" )
+                .withDescription( "SSL private key file in DER (PKS#8) format." )
+                .hasArg().withArgName("key")
+                .create(Keys.SSLKEY) );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "ssl-keypass" )
-        		.withDescription( "SSL key passphrase." )
-        		.hasArg().withArgName("passphrase")
-        		.create(Keys.SSLKEYPASS) );
+                .withLongOpt( "ssl-keypass" )
+                .withDescription( "SSL key passphrase." )
+                .hasArg().withArgName("passphrase")
+                .create(Keys.SSLKEYPASS) );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "ajp-port" )
@@ -185,25 +173,25 @@ public class CommandLineHandler {
                 .withDescription( "Log directory.  (WEB-INF/logs)" )
                 .hasArg().withArgName("path/to/log/dir")
                 .create(Keys.LOGDIR) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "log-basename" )
                 .withDescription( "Log file base name/prefix [default:server]" )
                 .hasArg().withArgName("basename")
-                .create("logbasename") );
-
+                .create(Keys.LOGBASENAME) );
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "logrequests-dir" )
                 .withDescription( "Log requests directory" )
                 .hasArg().withArgName("/path/to/dir")
                 .create(Keys.LOGREQUESTSDIR) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "logrequests-basename" )
                 .withDescription( "Requests log file base name/prefix  [default:request]" )
                 .hasArg().withArgName("basename")
                 .create(Keys.LOGREQUESTSBASENAME) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "logrequests-enable" )
                 .withDescription( "Enables or disable request logging [default:false]" )
@@ -215,7 +203,7 @@ public class CommandLineHandler {
                 .withDescription( "Log access directory" )
                 .hasArg().withArgName("/path/to/dir")
                 .create(Keys.LOGACCESSDIR) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "logaccess-basename" )
                 .withDescription( "Access log file base name/prefix [default:access]" )
@@ -257,7 +245,7 @@ public class CommandLineHandler {
                 .withDescription( "Open default web browser after start (false)" )
                 .hasArg().withArgName("true|false")
                 .create("open") );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( Keys.OPENURL )
                 .withDescription( "URL to open browser to. (http://$host:$port)\n" )
@@ -269,19 +257,19 @@ public class CommandLineHandler {
                 .withDescription( "Process ID file." )
                 .hasArg().withArgName(Keys.PIDFILE)
                 .create(Keys.PIDFILE) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( Keys.TIMEOUT )
                 .withDescription( "Startup timout for background process. (50)\n" )
                 .hasArg().withArgName("seconds").withType(Number.class)
                 .create("t") );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "log-level" )
                 .withDescription( "log level [DEBUG|INFO|WARN|ERROR] (WARN)" )
                 .hasArg().withArgName("level")
                 .create("level") );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "debug-enable" )
                 .withDescription( "set log level to debug" )
@@ -293,19 +281,19 @@ public class CommandLineHandler {
                 .withDescription( "Process name where applicable" )
                 .hasArg().withArgName(Keys.NAME)
                 .create("procname") );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "tray-enable" )
                 .withDescription( "Enable/Disable system tray integration (true)" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.TRAY) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "tray-icon" )
                 .withDescription( "tray icon and OS X dock icon png image" )
                 .hasArg().withArgName("path")
                 .create(Keys.ICON) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "tray-config" )
                 .withDescription( "tray menu config path" )
@@ -331,10 +319,10 @@ public class CommandLineHandler {
                 .create(Keys.CFENGINE) );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "cfml-web-config" )
-        		.withDescription( "full path to cfml web context config directory" )
-        		.hasArg().withArgName("path")
-        		.create(Keys.CFWEBCONF) );
+                .withLongOpt( "cfml-web-config" )
+                .withDescription( "full path to cfml web context config directory" )
+                .hasArg().withArgName("path")
+                .create(Keys.CFWEBCONF) );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "cfml-server-config" )
@@ -354,7 +342,7 @@ public class CommandLineHandler {
                 .withDescription( "comma delinated list of welcome files used if no web.xml file exists" )
                 .hasArg().withArgName("index.cfm,default.cfm,...")
                 .create(Keys.WELCOMEFILES) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "directory-index" )
                 .withDescription( "enable directory browsing" )
@@ -362,23 +350,23 @@ public class CommandLineHandler {
                 .create(Keys.DIRECTORYINDEX) );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "cache-enable" )
-        		.withDescription( "enable static asset cache" )
-        		.hasArg().withArgName("true|false").withType(Boolean.class)
-        		.create(Keys.CACHE) );
+                .withLongOpt( "cache-enable" )
+                .withDescription( "enable static asset cache" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.CACHE) );
         
         options.addOption( OptionBuilder
-        		.withLongOpt( "custom-httpstatus-enable" )
-        		.withDescription( "enable custom HTTP status code messages" )
-        		.hasArg().withArgName("true|false").withType(Boolean.class)
-        		.create(Keys.CUSTOMSTATUS) );
+                .withLongOpt( "custom-httpstatus-enable" )
+                .withDescription( "enable custom HTTP status code messages" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.CUSTOMSTATUS) );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "transfer-min-size" )
                 .withDescription( "Minimun transfer file size to offload to OS. (100)\n" )
                 .hasArg().withArgName(Keys.TRANSFERMINSIZE).withType(Long.class)
                 .create(Keys.TRANSFERMINSIZE) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "sendfile-enable" )
                 .withDescription( "enable sendfile" )
@@ -438,25 +426,25 @@ public class CommandLineHandler {
                 .withDescription( "Enable an embedded CFML server REST servlet" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.SERVLETREST) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "servlet-rest-mappings" )
                 .withDescription( "Embedded CFML server REST servlet URL mapping paths, comma separated [/rest/*]" )
                 .hasArg().withArgName("/rest/*,/api/*")
                 .create(Keys.SERVLETRESTMAPPINGS) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "filter-pathinfo-enable" )
                 .withDescription( "Enable (*.cf[c|m])(/.*) handling, setting cgi.PATH_INFO to $2" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.FILTERPATHINFO) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "ssl-add-certs" )
                 .withDescription( "Comma-separated list of additional SSL certificates to add to the store." )
                 .hasArg().withArgName("/path/to/cert,/path/to/cert")
                 .create(Keys.SSLADDCERTS) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "basicauth-enable" )
                 .withDescription( "Enable Basic Auth" )
@@ -468,13 +456,13 @@ public class CommandLineHandler {
                 .withDescription( "List of users and passwords, comma separated and equals separated." )
                 .hasArg().withArgName("bob=secret,alice=12345")
                 .create("users") );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "buffer-size" )
                 .withDescription( "buffer size" )
                 .hasArg().withArgName("size").withType(Number.class)
                 .create(Keys.BUFFERSIZE) );
-                
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "io-threads" )
                 .withDescription( "number of IO threads" )
@@ -497,7 +485,7 @@ public class CommandLineHandler {
                 .withDescription( "Comma-separated list of servers to start and load balance." )
                 .hasArg().withArgName("http://localhost:8081,http://localhost:8082")
                 .create(Keys.LOADBALANCE) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "directory-refresh" )
                 .withDescription( "Refresh the direcotry list with each request. *DEV ONLY* not thread-safe" )
@@ -509,13 +497,13 @@ public class CommandLineHandler {
                 .withDescription( "Enable peer address proxy headers" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.PROXYPEERADDRESS) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "http2-enable" )
                 .withDescription( "Enable HTTP2" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.HTTP2) );
-
+        
         options.addOption( OptionBuilder
                 .withLongOpt( "secure-cookies" )
                 .withDescription( "Set httpOnly and secure cookie flags" )
@@ -524,7 +512,75 @@ public class CommandLineHandler {
         
         options.addOption( new Option( "h", Keys.HELP, false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
-/*
+        
+        return options;
+    }
+
+    public static ServerOptions parseArguments(String[] args) {
+        ServerOptions serverOptions = new ServerOptionsImpl();
+        serverOptions = parseArguments(args, serverOptions);
+        return serverOptions;
+    }
+
+    public static ServerOptions parseLogArguments(String[] args) {
+        ServerOptions serverOptions = new ServerOptionsImpl();
+        serverOptions = parseLogArguments(args, serverOptions);
+        return serverOptions;
+    }
+
+    public static ServerOptions parseLogArguments(String[] args, ServerOptions serverOptions) {
+        parser = new PosixParser();
+
+        try {
+            CommandLine line = parser.parse( getOptions(), args );
+            // parse the command line arguments
+            if (line.hasOption("c")) {
+                String config = line.getOptionValue("c");
+                serverOptions = new ConfigParser(getFile(config)).getServerOptions();
+            }
+
+            if (line.hasOption(Keys.DEBUG)) {
+                Boolean debug= Boolean.valueOf(line.getOptionValue(Keys.DEBUG));
+                serverOptions.setDebug(debug);
+                if(debug) {
+                    serverOptions.setLoglevel(Keys.DEBUG);
+                }
+            }
+
+            if (line.hasOption("level") && line.getOptionValue("level").length() > 0) {
+                serverOptions.setLoglevel(line.getOptionValue("level"));
+            }
+            
+            if (line.hasOption(Keys.WAR)) {
+                String warPath = line.getOptionValue(Keys.WAR);
+                serverOptions.setWarFile(getFile(warPath));
+            } 
+            if (line.hasOption(Keys.LOGBASENAME)) {
+                serverOptions.setLogFileName(line.getOptionValue(Keys.LOGBASENAME));
+            }
+
+            if (line.hasOption(Keys.LOGDIR)) {
+                serverOptions.setLogDir(line.getOptionValue(Keys.LOGDIR));
+            }
+            return serverOptions;
+        }
+        catch( Exception exp ) {
+            exp.printStackTrace();
+        }
+        return null;
+    }
+
+    @SuppressWarnings("static-access")
+    public static ServerOptions parseArguments(String[] args, ServerOptions serverOptions) {
+//        parser = new OptionParser();
+//        parser.acceptsAll(asList("c",ServerOptions.CONFIG)).withRequiredArg()
+//        .describedAs( "config file" )
+//        .ofType( File.class );
+        Logger log = LoggerFactory.getLogger(CommandLineHandler.class);
+        serverOptions.setCommandLineArgs(args);
+        parser = new PosixParser();
+
+        /*
         String json = "";
         Object[] opts2 = options.getOptions().toArray();
         Option[] opts = new Option[opts2.length];
@@ -550,9 +606,9 @@ public class CommandLineHandler {
             json += String.format("\"%s\": { \"description\": \"%s\", \"type\": \"%s\", \"alias\": \"%s\", \"arg\":\"%s\" },\n",name,description,type,alias,argName);
         }
         System.out.println("{" + json + "}");
-*/
+         */
         try {
-            CommandLine line = parser.parse( options, args );
+            CommandLine line = parser.parse( getOptions(), args );
             // parse the command line arguments
             if (line.hasOption(Keys.HELP)) {
                 printUsage("Options",0);
@@ -570,7 +626,7 @@ public class CommandLineHandler {
             if (line.hasOption(Keys.NAME)) {
                 serverOptions.setServerName(line.getOptionValue(Keys.NAME));
             }
-
+            
             if (line.hasOption(Keys.DEBUG)) {
                 Boolean debug= Boolean.valueOf(line.getOptionValue(Keys.DEBUG));
                 serverOptions.setDebug(debug);
@@ -579,7 +635,7 @@ public class CommandLineHandler {
                     log.debug("Enabling debug mode");
                 }
             }
-
+            
             if (line.hasOption("level") && line.getOptionValue("level").length() > 0) {
                 serverOptions.setLoglevel(line.getOptionValue("level"));
             }
@@ -600,17 +656,17 @@ public class CommandLineHandler {
                 serverOptions.setWelcomeFiles(line.getOptionValue(Keys.WELCOMEFILES).split(","));
             }
             if (line.hasOption(Keys.JAR)) {
-                 File jar = new File(line.getOptionValue(Keys.JAR));
-                    if (!jar.exists() || jar.isDirectory())
-                        printUsage("No such jar "+jar,1);
-                    serverOptions.setJarURL(jar.toURI().toURL());
+                File jar = new File(line.getOptionValue(Keys.JAR));
+                if (!jar.exists() || jar.isDirectory())
+                    printUsage("No such jar "+jar,1);
+                serverOptions.setJarURL(jar.toURI().toURL());
             }
-
+            
             if (line.hasOption(Keys.TIMEOUT)) {
                 serverOptions.setLaunchTimeout(((Number)line.getParsedOptionValue(Keys.TIMEOUT)).intValue() * 1000);
             }
             if (line.hasOption(Keys.PASSWORD)) {
-            	serverOptions.setStopPassword(line.getOptionValue(Keys.PASSWORD).toCharArray());
+                serverOptions.setStopPassword(line.getOptionValue(Keys.PASSWORD).toCharArray());
             }
             if (line.hasOption(Keys.STOPSOCKET)) {
                 serverOptions.setSocketNumber(((Number)line.getParsedOptionValue(Keys.STOPSOCKET)).intValue());
@@ -629,7 +685,7 @@ public class CommandLineHandler {
                     i++;
                 }
             }
-
+            
             if (line.hasOption(Keys.WEBXMLPATH)) {
                 String webXmlPath = line.getOptionValue(Keys.WEBXMLPATH);
                 File webXmlFile = new File(webXmlPath);
@@ -639,7 +695,7 @@ public class CommandLineHandler {
                     throw new RuntimeException("Could not find web.xml! " + webXmlPath);
                 }
             }
-
+            
             if (line.hasOption(Keys.STOP)) {
                 serverOptions.setAction(Keys.STOP);
                 String[] values = line.getOptionValues(Keys.STOP);
@@ -647,12 +703,12 @@ public class CommandLineHandler {
                     serverOptions.setSocketNumber(Integer.parseInt(values[0])); 
                 }
                 if(values != null && values.length >= 1) {
-                	serverOptions.setStopPassword(values[1].toCharArray()); 
+                    serverOptions.setStopPassword(values[1].toCharArray()); 
                 }
             } else {
                 serverOptions.setAction("start");
             }
-
+            
             if (line.hasOption(Keys.CONTEXT)) {
                 serverOptions.setContextPath(line.getOptionValue(Keys.CONTEXT));
             }
@@ -677,19 +733,19 @@ public class CommandLineHandler {
                 if(!line.hasOption(Keys.SECURECOOKIES)) {
                     serverOptions.setSecureCookies(true);
                 }
-            	serverOptions.setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue(Keys.SSLPORT)).intValue());
+                serverOptions.setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue(Keys.SSLPORT)).intValue());
             }
             if (line.hasOption(Keys.SSLCERT)) {
-            	serverOptions.setSSLCertificate(getFile(line.getOptionValue(Keys.SSLCERT)));
+                serverOptions.setSSLCertificate(getFile(line.getOptionValue(Keys.SSLCERT)));
                 if (!line.hasOption(Keys.SSLKEY) || !line.hasOption(Keys.SSLKEY)) {
                     throw new RuntimeException("Using a SSL certificate requires -sslkey /path/to/file and -sslkeypass pass**** arguments!");  	
                 }
             }
             if (line.hasOption(Keys.SSLKEY)) {
-            	serverOptions.setSSLKey(getFile(line.getOptionValue(Keys.SSLKEY)));
+                serverOptions.setSSLKey(getFile(line.getOptionValue(Keys.SSLKEY)));
             }
             if (line.hasOption(Keys.SSLKEYPASS)) {
-            	serverOptions.setSSLKeyPass(line.getOptionValue(Keys.SSLKEYPASS).toCharArray());
+                serverOptions.setSSLKeyPass(line.getOptionValue(Keys.SSLKEYPASS).toCharArray());
             }
             if (line.hasOption(Keys.SSLENABLE)) {
                 if(!line.hasOption(Keys.HTTPENABLE)) {
@@ -701,7 +757,7 @@ public class CommandLineHandler {
                 serverOptions.setEnableSSL(Boolean.valueOf(line.getOptionValue(Keys.SSLENABLE)));
             }
             if (line.hasOption(Keys.HTTPENABLE)) {
-            	serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue(Keys.HTTPENABLE)));
+                serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue(Keys.HTTPENABLE)));
             }
             if (line.hasOption(Keys.URLREWRITEFILE)) {
                 serverOptions.setURLRewriteFile(getFile(line.getOptionValue(Keys.URLREWRITEFILE)));
@@ -720,6 +776,9 @@ public class CommandLineHandler {
             }
             if (line.hasOption(Keys.LOGDIR)) {
                 serverOptions.setLogDir(line.getOptionValue(Keys.LOGDIR));
+            }
+            if (line.hasOption(Keys.LOGBASENAME)) {
+                serverOptions.setLogFileName(line.getOptionValue(Keys.LOGBASENAME));
             }
             if (line.hasOption(Keys.DIRS)) {
                 serverOptions.setCfmlDirs(line.getOptionValue(Keys.DIRS));
@@ -746,7 +805,7 @@ public class CommandLineHandler {
             if (line.hasOption(Keys.LOGACCESS)) {
                 serverOptions.logAccessEnable(Boolean.valueOf(line.getOptionValue(Keys.LOGACCESS)));
             }
-
+            
             if (line.hasOption(Keys.OPENBROWSER)) {
                 serverOptions.setOpenbrowser(Boolean.valueOf(line.getOptionValue("open")));
             }
@@ -755,15 +814,15 @@ public class CommandLineHandler {
                 if(!line.hasOption(Keys.OPENBROWSER))
                     serverOptions.setOpenbrowser(true);
             }
-
+            
             if (line.hasOption(Keys.PIDFILE)) {
                 serverOptions.setPidFile(line.getOptionValue(Keys.PIDFILE));
             }
-
+            
             if (line.hasOption(Keys.PROCESSNAME)) {
                 serverOptions.setProcessName(line.getOptionValue(Keys.PROCESSNAME));
             }
-
+            
             if (line.hasOption(Keys.TRAY)) {
                 serverOptions.setTrayEnabled(Boolean.valueOf(line.getOptionValue(Keys.TRAY)));
             }
@@ -773,13 +832,13 @@ public class CommandLineHandler {
             if (line.hasOption(Keys.TRAYCONFIG) && line.getOptionValue(Keys.TRAYCONFIG).length() > 0) {
                 serverOptions.setTrayConfig(getFile(line.getOptionValue(Keys.TRAYCONFIG)));
             }
-
+            
             if (line.hasOption(Keys.STATUSFILE) && line.getOptionValue(Keys.STATUSFILE).length() > 0) {
                 serverOptions.setStatusFile(getFile(line.getOptionValue(Keys.STATUSFILE)));
             }
             
             if (line.hasOption(Keys.CFENGINE)) {
-              serverOptions.setCFEngineName(line.getOptionValue(Keys.CFENGINE));
+                serverOptions.setCFEngineName(line.getOptionValue(Keys.CFENGINE));
             }
             if (line.hasOption(Keys.CFSERVERCONF)) {
                 serverOptions.setCFMLServletConfigServerDir(line.getOptionValue(Keys.CFSERVERCONF));
@@ -788,13 +847,13 @@ public class CommandLineHandler {
                 serverOptions.setCFMLServletConfigWebDir(line.getOptionValue(Keys.CFWEBCONF));
             }
             if (line.hasOption(Keys.DIRECTORYINDEX)) {
-              serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue(Keys.DIRECTORYINDEX)));
+                serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue(Keys.DIRECTORYINDEX)));
             }
             if (line.hasOption(Keys.CACHE)) {
-              serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue(Keys.CACHE)));
+                serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue(Keys.CACHE)));
             }
             if (line.hasOption(Keys.CUSTOMSTATUS)) {
-              serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue(Keys.CUSTOMSTATUS)));
+                serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue(Keys.CUSTOMSTATUS)));
             }
             if (line.hasOption(Keys.TRANSFERMINSIZE)) {
                 serverOptions.setTransferMinSize(Long.valueOf(line.getOptionValue(Keys.TRANSFERMINSIZE)));
@@ -879,7 +938,7 @@ public class CommandLineHandler {
                 }
                 serverOptions.setHTTP2Enabled(Boolean.valueOf(line.getOptionValue(Keys.HTTP2)));
             }
-
+            
             if (line.hasOption(Keys.SECURECOOKIES) && line.getOptionValue(Keys.SECURECOOKIES).length() > 0) {
                 serverOptions.setSecureCookies(Boolean.valueOf(line.getOptionValue(Keys.SECURECOOKIES)));
             }
@@ -925,7 +984,7 @@ public class CommandLineHandler {
             pw.println(HEADER + '\n');
             pw.println(message);
             @SuppressWarnings("unchecked")
-            List<Option> optList = new ArrayList<Option>(options.getOptions());
+            List<Option> optList = new ArrayList<Option>(getOptions().getOptions());
             Collections.sort(optList, new Comparator<Option>() {
                 public int compare(Option o1, Option o2) {
                     if(o1.getOpt().equals(Keys.WAR)) {return -1;} else if(o2.getOpt().equals(Keys.WAR)) {return 1;}

@@ -1,11 +1,11 @@
 package runwar;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import runwar.logging.Logger;
 
 import io.undertow.server.DefaultResponseListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import runwar.logging.LoggerFactory;
 
 public class ErrorHandler implements HttpHandler {
 

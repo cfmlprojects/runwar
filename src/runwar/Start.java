@@ -12,14 +12,13 @@ import java.io.File;
 import java.net.Socket;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import runwar.logging.Logger;
 
 import java.net.URLDecoder;
 
+import runwar.logging.LoggerFactory;
 import runwar.options.CommandLineHandler;
 import runwar.options.ConfigParser;
 import runwar.options.ServerOptions;
@@ -52,22 +51,18 @@ public class Start {
     }
 
 	public static void main(String[] args) throws Exception {
-	    if(containsCaseInsensitive(Arrays.asList(args),"debug")) {
-	        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
-	    } else if(containsCaseInsensitive(Arrays.asList(args),"loglevel")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
-        }
-	    final Logger log = LoggerFactory.getLogger(Start.class);
-	    ServerOptions serverOptions = null;
-	    if(args.length == 0) {
-	        if(new File("server.json").exists()) {
+        ServerOptions serverOptions = CommandLineHandler.parseLogArguments(args);
+        LoggerFactory.init(serverOptions);
+        final Logger log = LoggerFactory.getLogger(Start.class);
+        if(args.length == 0) {
+            if(new File("server.json").exists()) {
                 serverOptions = new ConfigParser(new File("server.json")).getServerOptions();
-	        } else {
-	            serverOptions = CommandLineHandler.parseArguments(args); // print usage
-	        }
-	    } else {
-	        serverOptions = CommandLineHandler.parseArguments(args);
-	    }
+            } else {
+                serverOptions = CommandLineHandler.parseArguments(args); // print usage
+            }
+        } else {
+            serverOptions = CommandLineHandler.parseArguments(args);
+        }
         if(serverOptions.getLoadBalance() != null && serverOptions.getLoadBalance().length > 0) {
             final List<String> balanceHosts = new ArrayList<String>();
             log.info("Initializing...");

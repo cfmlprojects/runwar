@@ -12,7 +12,7 @@ import net.minidev.json.JSONArray;
 import runwar.Server;
 
 public class ServerOptionsImpl implements ServerOptions {
-    private String serverName = "default", processName = "RunWAR", loglevel = "WARN";
+    private String serverName = "default", processName = "RunWAR", loglevel = "INFO";
     private String host = "127.0.0.1", contextPath = "/";
     private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;

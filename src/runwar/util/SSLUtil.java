@@ -1,64 +1,54 @@
 package runwar.util;
 
-import java.io.ByteArrayInputStream;
-import java.util.Enumeration;
-
-import org.bouncycastle.openssl.PEMDecryptorProvider;
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.openssl.PEMKeyPair;
-import org.bouncycastle.openssl.PEMEncryptedKeyPair;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.bouncycastle.openssl.PEMParser;
-
 import java.io.BufferedReader;
-import java.io.FileReader;
-import java.security.Security;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
-import java.security.spec.KeySpec;
-import java.security.spec.PKCS8EncodedKeySpec;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.AlgorithmParameters;
+import java.security.Key;
 import java.security.KeyFactory;
-import java.util.Collection;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Security;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
-
-import org.xnio.IoUtils;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
 
 import javax.crypto.Cipher;
 import javax.crypto.EncryptedPrivateKeyInfo;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.KeyManager;
-
-import java.util.Arrays;
-import java.security.KeyManagementException;
-
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
-import java.security.AlgorithmParameters;
-import java.security.Key;
-import java.security.KeyStoreException;
-import java.security.UnrecoverableKeyException;
-import java.security.NoSuchAlgorithmException;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMDecryptorProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
+import runwar.logging.Logger;
+import org.xnio.IoUtils;
 
-import javax.net.ssl.KeyManagerFactory;
-
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.io.File;
-import java.io.IOException;
-
-import javax.net.ssl.SSLContext;
-
+import runwar.logging.LoggerFactory;
 import sun.security.x509.X509CertImpl;
 
 public class SSLUtil

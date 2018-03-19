@@ -38,18 +38,18 @@ import java.util.zip.GZIPInputStream;
 
 import javax.swing.JOptionPane;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import runwar.logging.Logger;
 
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
 import dorkbox.util.ActionHandler;
 import dorkbox.util.OS;
+import runwar.logging.LoggerFactory;
 import runwar.options.ServerOptions;
 
 public class LaunchUtil {
 
-    private static Logger log = LoggerFactory.getLogger("RunwarLogger");
+    private static Logger log = LoggerFactory.getLogger(LaunchUtil.class);
     private static boolean relaunching;
     private static final int KB = 1024;
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",

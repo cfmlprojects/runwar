@@ -27,6 +27,7 @@ public interface ServerOptions {
         final static String AJPENABLE = "ajpenable";
         final static String URLREWRITEENABLE = "urlrewriteenable";
         final static String LOGLEVEL = "loglevel";
+        final static String LOGBASENAME = "logbasename";
         final static String LOGDIR = "logDir";
         final static String LOGREQUESTSBASENAME = "logrequestsbasename";
         final static String LOGREQUESTSDIR = "logrequestsdir";
@@ -167,7 +168,7 @@ public interface ServerOptions {
 
     ServerOptions setLogFileName(String name);
 
-    public String getLogFileName();
+    String getLogFileName();
 
     String getCfmlDirs();
 

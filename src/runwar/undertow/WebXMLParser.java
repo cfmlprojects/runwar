@@ -6,8 +6,7 @@ import java.util.HashMap;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import runwar.logging.Logger;
 import org.w3c.dom.Document;
 
 import io.undertow.servlet.api.DeploymentInfo;
@@ -16,6 +15,7 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
+import runwar.logging.LoggerFactory;
 
 import java.util.EventListener;
 import java.util.Map;
@@ -30,7 +30,7 @@ import org.w3c.dom.NodeList;
 
 public class WebXMLParser {
 
-	private static Logger log = LoggerFactory.getLogger("RunwarLogger");
+	private static Logger log = LoggerFactory.getLogger(WebXMLParser.class);
 
 	/**
 	 * Parses the web.xml and configures the context.

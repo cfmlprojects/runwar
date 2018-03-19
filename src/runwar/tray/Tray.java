@@ -22,8 +22,7 @@ import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import runwar.logging.Logger;
 
 import dorkbox.systemTray.Checkbox;
 import dorkbox.systemTray.Menu;
@@ -36,11 +35,12 @@ import net.minidev.json.JSONValue;
 import runwar.LaunchUtil;
 import runwar.Server;
 import runwar.Start;
+import runwar.logging.LoggerFactory;
 import runwar.options.ServerOptions;
 
 public class Tray {
 
-    private static Logger log = LoggerFactory.getLogger("Tray");
+    private static Logger log = LoggerFactory.getLogger(Tray.class);
     
     private static SystemTray systemTray;
     private static boolean trayIsHooked = false;
@@ -56,6 +56,7 @@ public class Tray {
         if(trayIsHooked){
             return;
         }
+        SystemTray.AUTO_SIZE = true;
         SystemTray.FORCE_GTK2 = true;
         System.setProperty("SWT_GTK3", "0");
 //        SystemTray.FORCE_TRAY_TYPE = TrayType.;
@@ -64,7 +65,9 @@ public class Tray {
             return;
         }
         try{
+            log.trace("Initializing tray");
             systemTray = SystemTray.get();
+            log.trace("Initialized");
         } catch (java.lang.ExceptionInInitializerError e) {
             log.debug("Error initializing tray: %s", e.getMessage());
         }
@@ -270,7 +273,7 @@ public class Tray {
         Image image = null;
         if (iconImage != null && iconImage.length() != 0) {
             iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            log.debug("trying to load icon: " + iconImage);
+            log.trace("trying to load icon: " + iconImage);
             if (iconImage.contains("!")) {
                 String[] zip = iconImage.split("!");
                 try {
@@ -279,25 +282,25 @@ public class Tray {
                     InputStream entryStream = zipFile.getInputStream(zipEntry);
                     image = ImageIO.read(entryStream);
                     zipFile.close();
-                    log.debug("loaded image from archive: " + zip[0] + zip[1]);
+                    log.trace("loaded image from archive: " + zip[0] + zip[1]);
                 } catch (IOException e2) {
-                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
+                    log.trace("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
                 }
             } else if (new File(iconImage).exists()) {
                 try {
                     image = ImageIO.read(new File(iconImage));
                 } catch (IOException e1) {
-                    log.debug("Could not get file resource: " + iconImage + "(" + e1.getMessage() + ")");
+                    log.trace("Could not get file resource: " + iconImage + "(" + e1.getMessage() + ")");
                 }
             } else {
                 log.debug("trying parent loader for image: " + iconImage);
                 URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
                 if (imageURL == null) {
-                    log.debug("trying loader for image: " + iconImage);
+                    log.trace("trying loader for image: " + iconImage);
                     imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
                 }
                 if (imageURL != null) {
-                    log.debug("Trying getImage for: " + imageURL);
+                    log.trace("Trying getImage for: " + imageURL);
                     image = Toolkit.getDefaultToolkit().getImage(imageURL);
                 }
             }
@@ -306,7 +309,7 @@ public class Tray {
         }
         // if bad image, use default
         if (image == null) {
-            log.debug("Bad image, using default.");
+            log.debug("load icon '"+ iconImage+ "' failed, using default.");
             image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
         }
         return image;
@@ -315,7 +318,7 @@ public class Tray {
     public static void setIconImage(String iconImage) {
         if (iconImage != null && iconImage.length() != 0) {
             iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            log.debug("trying to load icon: " + iconImage);
+            log.trace("trying to load icon: " + iconImage);
             if (iconImage.contains("!")) {
                 String[] zip = iconImage.split("!");
                 try {
@@ -323,36 +326,38 @@ public class Tray {
                     ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
                     systemTray.setImage( zipFile.getInputStream(zipEntry) );
                     zipFile.close();
-                    log.debug("loaded image from archive: " + zip[0] + zip[1]);
+                    log.trace("loaded image from archive: " + zip[0] + zip[1]);
                     return;
                 } catch (IOException e2) {
-                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
+                    log.trace("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
                 }
             } else if (new File(iconImage).exists()) {
                 systemTray.setImage( iconImage );
                 return;
             } else {
-                log.debug("trying parent loader for image: " + iconImage);
+                log.trace("trying parent loader for image: " + iconImage);
                 URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
                 if (imageURL == null) {
-                    log.debug("trying loader for image: " + iconImage);
+                    log.trace("trying loader for image: " + iconImage);
                     imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
                 }
                 if (imageURL != null) {
-                    log.debug("Trying getImage for: " + imageURL);
+                    log.trace("Trying getImage for: " + imageURL);
                     systemTray.setImage( imageURL );
                     return;
                 }
             }
+        } else {
+            log.trace("no icon image specified");
         }
         // if bad image, use default
-        systemTray.setImage( Start.class.getResource("/runwar/icon.png") );
+        systemTray.setImage( Tray.class.getResource("/runwar/icon.png") );
     }
 
     public static InputStream getImageInputStream(String iconImage) {
         if (iconImage != null && iconImage.length() != 0) {
             iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            log.debug("trying to load icon: " + iconImage);
+            log.trace("trying to load icon: " + iconImage);
             if (iconImage.contains("!")) {
                 String[] zip = iconImage.split("!");
                 try {
@@ -362,26 +367,26 @@ public class Tray {
                     zipFile.close();
                     return is;
                 } catch (IOException e2) {
-                    log.debug("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
+                    log.error("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
                 }
             } else if (new File(iconImage).exists()) {
                 try {
                     return new FileInputStream(iconImage);
                 } catch (FileNotFoundException e) {
-                    log.debug("Error getting image input stream: %s", e.getMessage());
+                    log.error("Error getting image input stream: %s", e.getMessage());
                 }
             } else {
-                log.debug("trying parent loader for image: " + iconImage);
+                log.trace("trying parent loader for image: " + iconImage);
                 URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
                 if (imageURL == null) {
-                    log.debug("trying loader for image: " + iconImage);
+                    log.trace("trying loader for image: " + iconImage);
                     imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
                 }
                 if (imageURL != null) {
                     try {
                         return imageURL.openStream();
                     } catch (IOException e) {
-                        log.debug("Error getting image input stream: %s", e.getMessage());
+                        log.error("Error getting image input stream: %s", e.getMessage());
                     }
                 }
             }
