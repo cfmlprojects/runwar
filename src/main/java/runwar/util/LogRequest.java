@@ -11,8 +11,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-/**
- * A simple request logger 
+/*
+  A simple request logger 
   <rule enabled="true">
     <name>railoLocalOnly</name>
     <note>Only allow access to railo admin from localhost</note>
