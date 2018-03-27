@@ -7,7 +7,7 @@ buildscript {
 }
 
 task proguard(type: proguard.gradle.ProGuardTask) {
-    ext.outJar = "${project.buildDir}/proguard/${jar.baseName}-${project.version}.jar"
+    ext.outJar = "${project.buildDir}/proguard/${jar.archiveName}.jar"
     doFirst{ delete outJar }
 
     injars  shadowJar.outputs.files
