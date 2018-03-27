@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+    <appender name="console" class="org.apache.log4j.ConsoleAppender">
+        <layout class="com.jcabi.log.MulticolorLayout">
+         <param name="Levels" value="INFO:2;10" />
+         <param name="ConversionPattern" value="${runwar.logpattern}" />
+<!--
+         <param name="ConversionPattern" value="%d{HH:mm:ss.SSS} [%t] %-5level %l - %m%n" />
+ -->
+        </layout>
+    </appender>
+
+    <appender name="file" class="org.apache.log4j.RollingFileAppender">
+        <param name="append" value="true" />
+        <param name="maxFileSize" value="10MB" />
+        <param name="maxBackupIndex" value="10" />
+        <param name="file" value="${runwar.logfile}" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n" />
+        </layout>
+    </appender>
+
+    <logger name="org.xnio.nio" additivity="false">
+        <level value="ERROR" />
+        <appender-ref ref="console" />
+    </logger>
+    <logger name="dorkbox.systemTray.SystemTray" additivity="false">
+        <level value="ERROR" />
+        <appender-ref ref="console" />
+    </logger>
+    <logger name="runwar.server" additivity="false">
+        <level value="${runwar.loglevel}"/>
+        <appender-ref ref="console" />
+        <appender-ref ref="file" />
+    </logger>
+    <logger name="runwar.security" additivity="false">
+        <level value="${runwar.loglevel}"/>
+        <appender-ref ref="console" />
+        <appender-ref ref="file" />
+    </logger>
+    <logger name="io.undertow.servlet" additivity="false">
+        <level value="${runwar.loglevel}"/>
+        <appender-ref ref="console" />
+        <appender-ref ref="file" />
+    </logger>
+    <root>
+        <level value="WARN"/>
+        <appender-ref ref="console" />
+        <appender-ref ref="file" />
+    </root>
+
+</log4j:configuration>

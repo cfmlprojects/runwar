@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	metadata-complete="true" version="2.5"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+	<context-param>
+		<param-name>country</param-name>
+		<param-value>india</param-value>
+	</context-param>
+	<context-param>
+		<param-name>color</param-name>
+		<param-value>red</param-value>
+	</context-param>
+	<servlet id="Lucee">
+		<description>Lucee Engine</description>
+		<servlet-name>CFMLServlet</servlet-name>
+		<servlet-class>lucee.loader.servlet.CFMLServlet</servlet-class>
+		<init-param>
+			<param-name>lucee-server-directory</param-name>
+			<param-value>/WEB-INF</param-value>
+		</init-param>
+		<init-param>
+			<param-name>lucee-web-directory</param-name>
+			<param-value>/WEB-INF/lucee-web</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>CFMLServlet</servlet-name>
+		<url-pattern>*.cfc</url-pattern>
+		<url-pattern>*.cfm</url-pattern>
+		<url-pattern>*.cfml</url-pattern>
+		<url-pattern>/index.cfc/*</url-pattern>
+		<url-pattern>/index.cfm/*</url-pattern>
+		<url-pattern>/index.cfml/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet id="RESTServlet">
+		<description>Lucee Servlet for RESTful services</description>
+		<servlet-name>RESTServlet</servlet-name>
+		<servlet-class>lucee.loader.servlet.RestServlet</servlet-class>
+		<load-on-startup>2</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>RESTServlet</servlet-name>
+		<url-pattern>/rest/*</url-pattern>
+	</servlet-mapping>
+
+	<listener>
+		<listener-class>com.journaldev.listener.AppContextListener</listener-class>
+	</listener>
+	<listener>
+		<listener-class>com.journaldev.listener.AppContextAttributeListener</listener-class>
+	</listener>
+
+	<filter>
+		<filter-name>UrlRewriteFilter</filter-name>
+		<filter-class>org.tuckey.web.filters.urlrewrite.UrlRewriteFilter</filter-class>
+		<init-param>
+			<param-name>color</param-name>
+			<param-value>red</param-value>
+		</init-param>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>UrlRewriteFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+		<dispatcher>REQUEST</dispatcher>
+		<dispatcher>FORWARD</dispatcher>
+	</filter-mapping>
+
+	<mime-mapping>
+		<extension>pqz</extension>
+		<mime-type>application/octet-stream</mime-type>
+	</mime-mapping>
+	<mime-mapping>
+		<extension>ico</extension>
+		<mime-type>image/x-icon</mime-type>
+	</mime-mapping>
+
+	<welcome-file-list>
+		<welcome-file>index.cfm</welcome-file>
+		<welcome-file>index.cfml</welcome-file>
+		<welcome-file>index.html</welcome-file>
+		<welcome-file>index.htm</welcome-file>
+		<welcome-file>index.jsp</welcome-file>
+	</welcome-file-list>
+
+	<session-config>
+		<cookie-config>
+			<http-only>true</http-only>
+			<secure>true</secure>
+		</cookie-config>
+	</session-config>
+
+	<error-page>
+		<!-- Missing login -->
+		<error-code>401</error-code>
+		<location>/general-error.html</location>
+	</error-page>
+	<error-page>
+		<!-- Forbidden directory listing -->
+		<error-code>403</error-code>
+		<location>/general-error.html</location>
+	</error-page>
+	<error-page>
+		<!-- Missing resource -->
+		<error-code>404</error-code>
+		<location>/Error404.html</location>
+	</error-page>
+	<error-page>
+		<!-- Uncaught exception -->
+		<error-code>500</error-code>
+		<location>/general-error.html</location>
+	</error-page>
+	<error-page>
+		<!-- Unsupported servlet method -->
+		<error-code>503</error-code>
+		<location>/general-error.html</location>
+	</error-page>
+	<error-page>
+		<!-- default -->
+		<location>/general-error.html</location>
+	</error-page>
+
+</web-app>

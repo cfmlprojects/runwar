@@ -1,0 +1,123 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+ext['signing.keyId'] =  project.config.gpg.cfmlprojects.signkeyid
+ext['signing.password'] = project.config.gpg.cfmlprojects.pass
+ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
+
+/*
+ task sourceJar(type: Jar) {
+ classifier "sources"
+ from sourceSets.main.allJava
+ }
+ task javadocJar(type: Jar, dependsOn: javadoc) {
+ classifier "javadoc"
+ from javadoc.destinationDir
+ }
+ */
+
+artifacts { archives javadocJar, sourceJar }
+
+signing { sign configurations.archives }
+
+publishing {
+    publications {
+        runwar(MavenPublication) { publication ->
+            project.shadow.component(publication)
+            customizePom(pom)
+            groupId 'org.cfmlprojects'
+            artifactId 'runwar'
+            version project.version
+
+            //        from components.java
+
+            // create the sign pom artifact
+            pom.withXml {
+                def pomFile = file("${project.buildDir}/generated-pom.xml")
+                writeTo(pomFile)
+                def pomAscFile = signing.sign(pomFile).signatureFiles[0]
+                artifact(pomAscFile) {
+                    classifier = null
+                    extension = 'pom.asc'
+                }
+            }
+
+            artifact(sourceJar) { classifier = 'sources' }
+            artifact(javadocJar) { classifier = 'javadoc' }
+            artifact(jar) { classifier = 'core' }
+            artifact(file(proguard.outJar)) { classifier = 'min' }
+
+            // create the signed artifacts
+            project.tasks.signArchives.signatureFiles.each {
+                artifact(it) {
+                    def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+                    if (matcher.find()) {
+                        classifier = matcher.group(1)
+                    } else {
+                        classifier = null
+                    }
+                    extension = 'jar.asc'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            if(project.isSnapshot) {
+                url "https://oss.sonatype.org/content/repositories/snapshots"
+            } else {
+                url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            }
+            credentials {
+                username project.config.sonatype.cfmlprojects.user
+                password project.config.sonatype.cfmlprojects.pass
+            }
+        }
+    }
+}
+
+def customizePom(pom) {
+    pom.withXml {
+        def root = asNode()
+
+        // eliminate all dependencies as we uberjar
+        root.dependencies.removeAll
+
+        // add all items necessary for maven central publication
+        root.children().last() + {
+            resolveStrategy = Closure.DELEGATE_FIRST
+
+            description 'Run WARs with ease'
+            url 'https://github.com/cfmlprojects/runwar'
+            organization {
+                name 'org.cfmlprojects'
+                url 'https://github.com/cfmlprojects'
+            }
+            issueManagement {
+                system 'GitHub'
+                url 'https://github.com/cfmlprojects/runwar/issues'
+            }
+            licenses {
+                license {
+                    name 'MIT'
+                    url 'https://github.com/cfmlprojects/runwar/blob/master/LICENSE'
+                    distribution 'repo'
+                }
+            }
+            scm {
+                url 'https://github.com/cfmlprojects/runwar'
+                connection 'scm:git:git://github.com/cfmlprojects/runwar.git'
+                developerConnection 'scm:git:ssh://git@github.com:cfmlprojects/runwar.git'
+            }
+            developers { developer { name 'Denny Valliant' } }
+        }
+    }
+}
+
+model {
+    tasks.generatePomFileForRunwarPublication {
+        destination = file("$buildDir/generated-pom.xml")
+    }
+    tasks.publishRunwarPublicationToMavenLocal { dependsOn project.tasks.signArchives }
+    tasks.publishRunwarPublicationToMavenRepository { dependsOn project.tasks.signArchives }
+}
