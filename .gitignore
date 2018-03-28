@@ -10,4 +10,7 @@ src/test/resources/war/simple.war/WEB-INF/logs/
 gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
-
+.settings
+#ignore the various too-lazy-to-fix-and-lame-anyway bash tests
+gradle/*.sh
+testwars

@@ -1,0 +1,8 @@
+##SSL
+
+#Generate a key and certificate:
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout selfsigned.key -out selfsigned.crt
+
+#Start Runwar
+java -jar dist/runwar.jar -war path/to/my.war -b false --sslkey selfsigned.key --sslcert selfsigned.crt --sslport 1443
+
