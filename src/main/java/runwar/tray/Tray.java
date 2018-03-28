@@ -148,7 +148,7 @@ public class Tray {
             }
             else if(itemInfo.get("checkbox") != null) {
                 Checkbox checkbox = new Checkbox(label, null);
-                checkbox.setShortcut('€');
+                checkbox.setShortcut(label.charAt(0));
                 checkbox.setEnabled(!isDisabled);
                 menu.add(checkbox);
             }
