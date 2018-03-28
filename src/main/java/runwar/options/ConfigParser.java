@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import runwar.LaunchUtil;
 import runwar.Server;
 import runwar.logging.RunwarLogger;
+import runwar.options.ServerOptions.Keys;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
@@ -25,7 +26,7 @@ public class ConfigParser {
     public ConfigParser(File config){
         if(!config.exists()) {
             String message = "Configuration file does not exist: " + config.getAbsolutePath();
-            RunwarLogger.ROOT_LOGGER.error(message);
+            RunwarLogger.LOG.error(message);
             throw new RuntimeException(message);
         }
         serverOptions = new ServerOptionsImpl();
@@ -144,7 +145,7 @@ public class ConfigParser {
             if(serverConfig.hasOption("D")){
                 final String[] properties = serverConfig.getOptionValue("D").split(" ");
                 for (int i = 0; i < properties.length; i++) {
-                    RunwarLogger.ROOT_LOGGER.debugf("setting system property: %s", properties[i].toString()+'='+properties[i+1].toString());
+                    RunwarLogger.LOG.debugf("setting system property: %s", properties[i].toString()+'='+properties[i+1].toString());
                     System.setProperty(properties[i].toString(),properties[i+1].toString());
                     i++;
                 }
@@ -455,7 +456,7 @@ public class ConfigParser {
                 try {
                     serverOptions.setErrorPages(serverConfig.getOptionValue(Keys.ERRORPAGES));
                 } catch (Exception e) {
-                    RunwarLogger.ROOT_LOGGER.error("Could not parse errorPages:" + serverConfig.getOptionValue(Keys.ERRORPAGES));
+                    RunwarLogger.LOG.error("Could not parse errorPages:" + serverConfig.getOptionValue(Keys.ERRORPAGES));
                 }
             }
 
@@ -531,11 +532,29 @@ public class ConfigParser {
                 serverOptions.setSecureCookies(Boolean.valueOf(serverConfig.getOptionValue(Keys.SECURECOOKIES)));
             }
 
+            if (serverConfig.hasOption(Keys.COOKIEHTTPONLY) && serverConfig.getOptionValue(Keys.COOKIEHTTPONLY).length() > 0) {
+                serverOptions.setCookieHttpOnly(Boolean.valueOf(serverConfig.getOptionValue(Keys.COOKIEHTTPONLY)));
+            }
+
+            if (serverConfig.hasOption(Keys.COOKIESECURE) && serverConfig.getOptionValue(Keys.COOKIESECURE).length() > 0) {
+                serverOptions.setCookieSecure(Boolean.valueOf(serverConfig.getOptionValue(Keys.COOKIESECURE)));
+            }
+
+            if (serverConfig.hasOption(Keys.WEBINF)) {
+                String webInfPath = serverConfig.getOptionValue(Keys.WEBINF);
+                File webinfDir = new File(webInfPath);
+                if(webinfDir.exists()) {
+                    serverOptions.setWebInfDir(webinfDir);
+                } else {
+                    throw new RuntimeException("Could not find WEB-INF! " + webInfPath);
+                }
+            }
+
             
             if(serverOptions.getLoglevel().equals(Keys.DEBUG)) {
                 Iterator<String> optionsIterator = serverConfig.getOptions().iterator();
                 while(optionsIterator.hasNext()) {
-                    RunwarLogger.ROOT_LOGGER.debug(optionsIterator.next());
+                    RunwarLogger.LOG.debug(optionsIterator.next());
                 }
             }
         }

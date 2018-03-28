@@ -27,6 +27,7 @@ import runwar.Server;
 import runwar.logging.RunwarLogger;
 
 import static runwar.options.ServerOptions.Keys;
+import static runwar.logging.RunwarLogger.CONF_LOG;
 
 public class CommandLineHandler {
     private static PosixParser parser;
@@ -509,6 +510,24 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.SECURECOOKIES) );
         
+        options.addOption( OptionBuilder
+                .withLongOpt( "cookie-httponly" )
+                .withDescription( "Set cookie 'http-only' header" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.COOKIEHTTPONLY) );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "cookie-secure" )
+                .withDescription( "Set cookie 'secure' header" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.COOKIEHTTPONLY) );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "webinf-path" )
+                .withDescription( "Set WEB-INF path" )
+                .hasArg().withArgName("path/to/WEB-INF")
+                .create(Keys.WEBINF) );
+        
         options.addOption( new Option( "h", Keys.HELP, false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
         
@@ -617,7 +636,7 @@ public class CommandLineHandler {
             }
             if (line.hasOption("c")) {
                 String config = line.getOptionValue("c");
-                RunwarLogger.ROOT_LOGGER.debug("Loading config from file: " + getFile(config));
+                CONF_LOG.debug("Loading config from file: " + getFile(config));
                 serverOptions = new ConfigParser(getFile(config)).getServerOptions();
             }
             
@@ -630,7 +649,7 @@ public class CommandLineHandler {
                 serverOptions.setDebug(debug);
                 if(debug) {
                     serverOptions.setLoglevel(Keys.DEBUG);
-                    RunwarLogger.ROOT_LOGGER.debug("Enabling debug mode");
+                    CONF_LOG.debug("Enabling debug mode");
                 }
             }
             
@@ -678,7 +697,7 @@ public class CommandLineHandler {
             if(line.hasOption("D")){
                 final String[] properties = line.getOptionValues("D");
                 for (int i = 0; i < properties.length; i++) {
-                    RunwarLogger.ROOT_LOGGER.debugf("setting system property: %s", properties[i].toString()+'='+properties[i+1].toString());
+                    CONF_LOG.debugf("setting system property: %s", properties[i].toString()+'='+properties[i+1].toString());
                     System.setProperty(properties[i].toString(),properties[i+1].toString());
                     i++;
                 }
@@ -726,9 +745,11 @@ public class CommandLineHandler {
             }
             if (line.hasOption(Keys.SSLPORT)) {
                 if(!line.hasOption(Keys.HTTPENABLE)) {
+                    CONF_LOG.trace("SSL enabled and http not explicitly enabled; disabling http");
                     serverOptions.setEnableHTTP(false);
                 }
                 if(!line.hasOption(Keys.SECURECOOKIES)) {
+                    CONF_LOG.trace("SSL enabled and secure cookies explicitly disabled; enabling secure cookies");
                     serverOptions.setSecureCookies(true);
                 }
                 serverOptions.setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue(Keys.SSLPORT)).intValue());
@@ -932,6 +953,7 @@ public class CommandLineHandler {
             }
             if (line.hasOption(Keys.HTTP2) && line.getOptionValue(Keys.HTTP2).length() > 0) {
                 if(!line.hasOption(Keys.SECURECOOKIES)) {
+                    CONF_LOG.trace("SSL enabled and secure cookies explicitly disabled; enabling secure cookies");
                     serverOptions.setSecureCookies(true);
                 }
                 serverOptions.setHTTP2Enabled(Boolean.valueOf(line.getOptionValue(Keys.HTTP2)));
@@ -940,11 +962,29 @@ public class CommandLineHandler {
             if (line.hasOption(Keys.SECURECOOKIES) && line.getOptionValue(Keys.SECURECOOKIES).length() > 0) {
                 serverOptions.setSecureCookies(Boolean.valueOf(line.getOptionValue(Keys.SECURECOOKIES)));
             }
-            
+
+            if (line.hasOption(Keys.COOKIEHTTPONLY) && line.getOptionValue(Keys.COOKIEHTTPONLY).length() > 0) {
+                serverOptions.setCookieHttpOnly(Boolean.valueOf(line.getOptionValue(Keys.COOKIEHTTPONLY)));
+            }
+
+            if (line.hasOption(Keys.COOKIESECURE) && line.getOptionValue(Keys.COOKIESECURE).length() > 0) {
+                serverOptions.setCookieSecure(Boolean.valueOf(line.getOptionValue(Keys.COOKIESECURE)));
+            }
+
+            if (line.hasOption(Keys.WEBINF)) {
+                String webInfPath = line.getOptionValue(Keys.WEBINF);
+                File webinfDir = new File(webInfPath);
+                if(webinfDir.exists()) {
+                    serverOptions.setWebInfDir(webinfDir);
+                } else {
+                    throw new RuntimeException("Could not find WEB-INF! " + webInfPath);
+                }
+            }
+
             if(serverOptions.getLoglevel().equals(Keys.TRACE)) {
                 for (Option arg : line.getOptions()) {
-                    RunwarLogger.ROOT_LOGGER.debug(arg.toString());
-//                    RunwarLogger.ROOT_LOGGER.debug(arg.getValue());
+                    CONF_LOG.debug(arg.toString());
+//                    CONF_LOG.debug(arg.getValue());
                 }
             }
             return serverOptions;

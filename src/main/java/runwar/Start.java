@@ -39,7 +39,7 @@ public class Start {
         String host = schemeHostAndPort[1].replaceAll("^//", "");
         int port = Integer.parseInt(schemeHostAndPort[2]);
         int stopPort = port+1;
-        RunwarLogger.ROOT_LOGGER.info("Starting instance: " + host + " on port "+ schemeHostAndPort[2]);
+        RunwarLogger.LOG.info("Starting instance: " + host + " on port "+ schemeHostAndPort[2]);
         LaunchUtil.relaunchAsBackgroundProcess(serverOptions.setHost(host)
                 .setPortNumber(port).setSocketNumber(stopPort).setLoadBalance(""), false);
 	    
@@ -64,29 +64,29 @@ public class Start {
         }
         if(serverOptions.getLoadBalance() != null && serverOptions.getLoadBalance().length > 0) {
             final List<String> balanceHosts = new ArrayList<String>();
-            RunwarLogger.ROOT_LOGGER.info("Initializing...");
+            RunwarLogger.LOG.info("Initializing...");
             final LoadBalancingProxyClient loadBalancer = new LoadBalancingProxyClient();
             for(String balanceHost : serverOptions.getLoadBalance()) {
                 if(serverOptions.getWarFile() != null) {
-                    RunwarLogger.ROOT_LOGGER.info("Starting instance of " + serverOptions.getWarFile().getParent() +"...");
+                    RunwarLogger.LOG.info("Starting instance of " + serverOptions.getWarFile().getParent() +"...");
                     launchServer(balanceHost,serverOptions);
                 }
                 loadBalancer.addHost(new URI(balanceHost));
                 balanceHosts.add(balanceHost);
-                RunwarLogger.ROOT_LOGGER.info("Added balanced host: " + balanceHost);
+                RunwarLogger.LOG.info("Added balanced host: " + balanceHost);
                 Thread.sleep(3000);
             }
             int port = serverOptions.getPortNumber();
             loadBalancer.setConnectionsPerThread(20);
-            RunwarLogger.ROOT_LOGGER.info("Hosts loaded");
+            RunwarLogger.LOG.info("Hosts loaded");
 
-            RunwarLogger.ROOT_LOGGER.info("Starting load balancer on 127.0.0.1 port " + port + "...");
+            RunwarLogger.LOG.info("Starting load balancer on 127.0.0.1 port " + port + "...");
             ProxyHandler proxyHandler = ProxyHandler.builder().setProxyClient(loadBalancer)
                     .setMaxRequestTime(30000).setNext(ResponseCodeHandler.HANDLE_404).build();
             Undertow reverseProxy = Undertow.builder().addHttpListener(port, "localhost").setIoThreads(4)
                     .setHandler(proxyHandler).build();
             reverseProxy.start();
-            RunwarLogger.ROOT_LOGGER.info("View balancer admin on http://127.0.0.1:9080");
+            RunwarLogger.LOG.info("View balancer admin on http://127.0.0.1:9080");
             Undertow adminServer = Undertow.builder()
                     .addHttpListener(9080, "localhost")
                     .setHandler(new HttpHandler() {
@@ -119,7 +119,7 @@ public class Start {
             adminServer.start();
             
             
-            RunwarLogger.ROOT_LOGGER.info("Started load balancer.");
+            RunwarLogger.LOG.info("Started load balancer.");
             
         } else {
             

@@ -20,12 +20,12 @@ public class ErrorHandler implements HttpHandler {
             @Override
             public boolean handleDefaultResponse(final HttpServerExchange exchange) {
                 if (!exchange.isResponseChannelAvailable()) {
-                    RunwarLogger.ROOT_LOGGER.error("The response channel was closed prematurely.  Request path: " + exchange.getRequestPath() + " status-code: " + exchange.getStatusCode() );
+                    RunwarLogger.LOG.error("The response channel was closed prematurely.  Request path: " + exchange.getRequestPath() + " status-code: " + exchange.getStatusCode() );
                     return false;
                 }
                 String message = "Location: " + exchange.getRequestPath() + " generated no content, maybe verify any errorPage locations? (status code: "
                         + exchange.getStatusCode() + ")";
-                RunwarLogger.ROOT_LOGGER.error(message);
+                RunwarLogger.LOG.error(message);
 /*  
                 // does not seem to actually return the content, no idea why
                 if (exchange.getStatusCode() != 200) {
@@ -43,7 +43,7 @@ public class ErrorHandler implements HttpHandler {
         try {
             next.handleRequest(exchange);
         } catch (Exception e) {
-            RunwarLogger.ROOT_LOGGER.error("ErrorHandler handleRequest triggered", e);
+            RunwarLogger.LOG.error("ErrorHandler handleRequest triggered", e);
             if (exchange.isResponseChannelAvailable()) {
             }
         }

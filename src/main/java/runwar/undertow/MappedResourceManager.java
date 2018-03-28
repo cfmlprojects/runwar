@@ -9,7 +9,7 @@ import java.util.HashSet;
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.Resource;
-import static runwar.logging.RunwarLogger.ROOT_LOGGER;
+import static runwar.logging.RunwarLogger.LOG;
 
 public class MappedResourceManager extends FileResourceManager {
 
@@ -54,18 +54,18 @@ public class MappedResourceManager extends FileResourceManager {
             }
             String aliasInfo = virtual.isEmpty() ? "" : " as " + virtual;
             if (!dir.exists()) {
-                ROOT_LOGGER.error("Does not exist, cannot serve content from: " + dir.getAbsolutePath() + aliasInfo);
+                LOG.error("Does not exist, cannot serve content from: " + dir.getAbsolutePath() + aliasInfo);
             } else {
-                ROOT_LOGGER.info("Serving content from " + dir.getAbsolutePath() + aliasInfo);
+                LOG.info("Serving content from " + dir.getAbsolutePath() + aliasInfo);
             }
         }
         cfmlDirsFiles = dirs.toArray(new File[dirs.size()]);
     };
 
     public Resource getResource(String path) {
-        ROOT_LOGGER.trace("* requested:" + path);
+        LOG.trace("* requested:" + path);
         if(path == null) {
-            ROOT_LOGGER.error("getResource got a null path!");
+            LOG.error("getResource got a null path!");
             return null;
         }
         File reqFile = null;
@@ -88,7 +88,7 @@ public class MappedResourceManager extends FileResourceManager {
                     for (int x = 0; x < cfmlDirsFiles.length; x++) {
                         String absPath = cfmlDirsFiles[x].getCanonicalPath();
                         reqFile = new File(cfmlDirsFiles[x], path.replace(absPath, ""));
-                        ROOT_LOGGER.tracef("checking:%s = %s",absPath,reqFile.getAbsolutePath());
+                        LOG.tracef("checking:%s = %s",absPath,reqFile.getAbsolutePath());
                         if (reqFile.exists()) {
                             break;
                         }
@@ -97,16 +97,16 @@ public class MappedResourceManager extends FileResourceManager {
             }
             if (reqFile != null && reqFile.exists()) {
                 reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
-                ROOT_LOGGER.tracef("path mapped to:%s", reqFile);
+                LOG.tracef("path mapped to:%s", reqFile);
                 return new FileResource(reqFile, this, path);
             } else {
-                ROOT_LOGGER.tracef("No mapped resource for:%s",path);
+                LOG.tracef("No mapped resource for:%s",path);
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {
-            ROOT_LOGGER.error(e.getMessage());
+            LOG.error(e.getMessage());
         } catch (IOException e) {
-            ROOT_LOGGER.error(e.getMessage());
+            LOG.error(e.getMessage());
         }
         return null;
     }

@@ -28,11 +28,11 @@ public class MariaDB4jManager {
 
     public boolean canLoad() {
         try {
-            RunwarLogger.ROOT_LOGGER.debug("Checking for MariaDB4j class avaiability");
+            RunwarLogger.LOG.debug("Checking for MariaDB4j class avaiability");
             load(classLoader, "ch.vorburger.mariadb4j.DBConfigurationBuilder");
             return true;
         } catch (Exception e) {
-            RunwarLogger.ROOT_LOGGER.debug("MariaDB4j classes are not available");
+            RunwarLogger.LOG.debug("MariaDB4j classes are not available");
             return false;
         }
     }
@@ -79,7 +79,7 @@ public class MariaDB4jManager {
                     System.out.println("importing SQL file: " + importSQLFile.getAbsolutePath());
                     run(importSQLFile, username, password, dbName);
                 } else {
-                    RunwarLogger.ROOT_LOGGER.error("Could not load MariaDB4j SQL file, file does not exist: "
+                    RunwarLogger.LOG.error("Could not load MariaDB4j SQL file, file does not exist: "
                             + importSQLFile.getAbsolutePath());
                     System.out.println("Could not load MariaDB4j SQL file, file does not exist: : "
                             + importSQLFile.getAbsolutePath());

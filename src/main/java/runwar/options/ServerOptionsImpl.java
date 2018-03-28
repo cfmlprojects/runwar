@@ -55,7 +55,7 @@ public class ServerOptionsImpl implements ServerOptions {
     int bufferSize, ioThreads, workerThreads = 0;
     private boolean proxyPeerAddressEnabled = false;
     private boolean http2enabled = false;
-    private boolean secureCookies = false;
+    private boolean secureCookies = false, cookieHttpOnly = false, cookieSecure = false;
     private JSONArray trayConfigJSON;
 
     static {
@@ -926,11 +926,11 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public File getWebInfDir() {
         if(webInfDir == null) {
-            if(warFile != null && warFile.exists() && warFile.isDirectory()) {
-                return new File(warFile, "WEB-INF");
+            if(getWarFile() != null && warFile.exists() && warFile.isDirectory()) {
+                webInfDir = new File(warFile, "WEB-INF");
             }
             if (webXmlFile != null && new File(webXmlFile.getParentFile(), "lib").exists()) {
-                return webXmlFile.getParentFile();
+                webInfDir = webXmlFile.getParentFile();
             }
         }
         return webInfDir;
@@ -954,6 +954,9 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public File getWebXmlFile() {
+        if(webXmlFile == null && getWebInfDir() != null) {
+            setWebXmlFile(new File(getWebInfDir(),"web.xml"));
+        }
         return webXmlFile;
     }
 
@@ -1947,12 +1950,12 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public ServerOptions setSecureCookies(boolean enable) {
         this.secureCookies = enable;
+        this.cookieHttpOnly = enable;
+        this.cookieSecure = enable;
         return this;
     }
 
     /*
-     * (non-Javadoc)
-     * 
      * @see runwar.options.ServerOptions#isSecureCookies()
      */
     @Override
@@ -1963,6 +1966,42 @@ public class ServerOptionsImpl implements ServerOptions {
     /*
      * (non-Javadoc)
      * 
+     * @see runwar.options.ServerOptions#setCookieHttpOnly(boolean)
+     */
+    @Override
+    public ServerOptions setCookieHttpOnly(boolean enable) {
+        this.cookieHttpOnly= enable;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#isCookieHttpOnly()
+     */
+    @Override
+    public boolean isCookieHttpOnly() {
+        return this.cookieHttpOnly;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setCookieSecure(boolean)
+     */
+    @Override
+    public ServerOptions setCookieSecure(boolean enable) {
+        this.cookieSecure = enable;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#isCookieSecure()
+     */
+    @Override
+    public boolean isCookieSecure() {
+        return this.cookieSecure;
+    }
+    
+    /*
      * @see runwar.options.ServerOptions#isSecureCookies()
      */
     @Override

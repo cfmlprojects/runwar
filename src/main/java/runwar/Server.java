@@ -90,7 +90,6 @@ import io.undertow.util.MimeMappings;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import runwar.logging.LoggerFactory;
-import runwar.logging.RunwarLogger;
 import runwar.mariadb4j.MariaDB4jManager;
 import runwar.options.CommandLineHandler;
 import runwar.options.ServerOptions;
@@ -104,6 +103,7 @@ import runwar.undertow.WebXMLParser;
 import runwar.util.ClassLoaderUtils;
 import runwar.util.RequestDumper;
 import runwar.util.TeeOutputStream;
+import static runwar.logging.RunwarLogger.LOG;
 
 public class Server {
 
@@ -149,9 +149,9 @@ public class Server {
 
     protected void initClassLoader(List<URL> _classpath) {
         if (_classLoader == null) {
-            RunwarLogger.ROOT_LOGGER.debug("Initializing classloader with "+ _classpath.size() + " libraries");
+            LOG.debug("Initializing classloader with "+ _classpath.size() + " libraries");
             if( _classpath != null && _classpath.size() > 0) {
-                RunwarLogger.ROOT_LOGGER.tracef("classpath: %s",_classpath);
+                LOG.tracef("classpath: %s",_classpath);
                 _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]));
     //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
     //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
@@ -178,7 +178,7 @@ public class Server {
     
     public void ensureJavaVersion() {
         Class<?> nio;
-        RunwarLogger.ROOT_LOGGER.debug("Checking that we're running on > java7");
+        LOG.debug("Checking that we're running on > java7");
         try{
             nio = Server.class.getClassLoader().loadClass("java.nio.charset.StandardCharsets");
             nio.getClass().getName();
@@ -203,7 +203,7 @@ public class Server {
         LaunchUtil.restartApplication(new Runnable(){
             @Override
             public void run() {
-                RunwarLogger.ROOT_LOGGER.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
+                LOG.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
 //                stopServer();
 //                serverWentDown();
 //                if(monitor != null) {
@@ -235,6 +235,9 @@ public class Server {
         char[] stoppassword = serverOptions.getStopPassword();
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
+        LOG.info("Starting RunWAR " + getVersion());
+        // unset this so thing that reconfigure will find theirs
+        System.setProperty("log4j.configuration", "");
         ensureJavaVersion();
 
         securityManager = new SecurityManager();
@@ -256,10 +259,10 @@ public class Server {
             warFile = new File(warFile.getParentFile(), warDir);
             if(!warFile.exists()) {
                 warFile.mkdir();
-                RunwarLogger.ROOT_LOGGER.debug("Exploding compressed WAR to " + warFile.getAbsolutePath());
+                LOG.debug("Exploding compressed WAR to " + warFile.getAbsolutePath());
                 LaunchUtil.unzipResource(zipResource, warFile, false);
             } else {
-                RunwarLogger.ROOT_LOGGER.debug("Using already exploded WAR in " + warFile.getAbsolutePath());
+                LOG.debug("Using already exploded WAR in " + warFile.getAbsolutePath());
             }
             warPath = warFile.getAbsolutePath();
             if(serverOptions.getWarFile().getAbsolutePath().equals(serverOptions.getCfmlDirs())) {
@@ -283,10 +286,11 @@ public class Server {
                 libDirs = libDirs + ","; 
             }
             libDirs = libDirs + webinf.getAbsolutePath() + "/lib";
-            RunwarLogger.ROOT_LOGGER.info("Adding additional lib dir of: " + webinf.getAbsolutePath() + "/lib");
+            LOG.info("Adding additional lib dir of: " + webinf.getAbsolutePath() + "/lib");
         }
 
         List<URL> cp = new ArrayList<URL>();
+//        cp.add(Server.class.getProtectionDomain().getCodeSource().getLocation());
         if (libDirs != null)
             cp.addAll(getJarList(libDirs));
         if (jarURL != null)
@@ -306,7 +310,7 @@ public class Server {
                 serverMode = Mode.SERVLET;
             }
         }
-        RunwarLogger.ROOT_LOGGER.debugf("Server Mode: %s",serverMode);
+        LOG.debugf("Server Mode: %s",serverMode);
 
         sysOutTee = null;
         sysErrTee = null;
@@ -334,23 +338,23 @@ public class Server {
                 Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
                 dockMethod.invoke(appInstance, dockIcon);
             } catch (Exception e) {
-                RunwarLogger.ROOT_LOGGER.warn("error setting dock icon image",e);
+                LOG.warn("error setting dock icon image",e);
             }
         }
-        RunwarLogger.ROOT_LOGGER.info(bar);
-        RunwarLogger.ROOT_LOGGER.info("Starting - port:" + portNumber + " stop-port:" + socketNumber + " warpath:" + warPath);
-        RunwarLogger.ROOT_LOGGER.info("context: " + contextPath + "  -  version: " + getVersion());
+        LOG.info(bar);
+        LOG.info("Starting - port:" + portNumber + " stop-port:" + socketNumber + " warpath:" + warPath);
+        LOG.info("context: " + contextPath + "  -  version: " + getVersion());
         String cfmlDirs = serverOptions.getCfmlDirs();
         if (cfmlDirs.length() > 0) {
-            RunwarLogger.ROOT_LOGGER.info("web-dirs: " + cfmlDirs);
+            LOG.info("web-dirs: " + cfmlDirs);
         }
-        RunwarLogger.ROOT_LOGGER.info("Log Directory: " + serverOptions.getLogDir().getAbsolutePath());
-        RunwarLogger.ROOT_LOGGER.info(bar);
+        LOG.info("Log Directory: " + serverOptions.getLogDir().getAbsolutePath());
+        LOG.info(bar);
         addShutDownHook();
         portNumber = getPortOrErrorOut(portNumber, host);
         socketNumber = getPortOrErrorOut(socketNumber, host);
         
-        RunwarLogger.ROOT_LOGGER.info("Adding mariadb manager");
+        LOG.info("Adding mariadb manager");
         mariadb4jManager = new MariaDB4jManager(_classLoader);
         
         if(serverOptions.getWelcomeFiles() != null && serverOptions.getWelcomeFiles().length > 0) {
@@ -362,7 +366,7 @@ public class Server {
             ignoreRestMappings = true;
         }
 
-        RunwarLogger.ROOT_LOGGER.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
+        LOG.debug("Transfer Min Size: " + serverOptions.getTransferMinSize());
 
         xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
         worker = xnio.createWorker(OptionMap.builder()
@@ -394,7 +398,7 @@ public class Server {
             System.setProperty("java.library.path",
                     getThisJarLocation().getPath() + System.getProperty("path.separator") + System.getProperty("java.library.path"));
         }
-        RunwarLogger.ROOT_LOGGER.trace("java.library.path:" + System.getProperty("java.library.path"));
+        LOG.trace("java.library.path:" + System.getProperty("java.library.path"));
 
         final SessionCookieConfig sessionConfig = new SessionCookieConfig();
         final SessionAttachmentHandler sessionAttachmentHandler = new SessionAttachmentHandler(new InMemorySessionManager("", 1, true), sessionConfig);
@@ -416,7 +420,7 @@ public class Server {
                 // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
                 File cfclassesDirFile = new File(webinf, "/cfclasses");
                 cfclassesDir = cfclassesDirFile.getAbsolutePath();
-                RunwarLogger.ROOT_LOGGER.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
+                LOG.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
                 if( !cfclassesDirFile.exists() ) {
                 	cfclassesDirFile.mkdir();
                 }
@@ -435,7 +439,7 @@ public class Server {
         if (serverOptions.isCacheEnabled()) {
             addCacheHandler(servletBuilder);
         } else {
-            RunwarLogger.ROOT_LOGGER.debug("File cache is disabled");
+            LOG.debug("File cache is disabled");
         }
 
         if (serverOptions.isCustomHTTPStatusEnabled()) {
@@ -447,10 +451,10 @@ public class Server {
                 String location = serverOptions.getErrorPages().get(errorCode);
                 if(errorCode == 1) {
                     servletBuilder.addErrorPage( new ErrorPage(location));
-                    RunwarLogger.ROOT_LOGGER.debug("Adding default error location: " + location);
+                    LOG.debug("Adding default error location: " + location);
                 } else {
                     servletBuilder.addErrorPage( new ErrorPage(location, errorCode));
-                    RunwarLogger.ROOT_LOGGER.debug("Adding "+errorCode+" error code location: " + location);
+                    LOG.debug("Adding "+errorCode+" error code location: " + location);
                 }
             }
         }
@@ -479,24 +483,24 @@ public class Server {
 
         List<?> welcomePages =  servletBuilder.getWelcomePages();
         if(ignoreWelcomePages) {
-            RunwarLogger.ROOT_LOGGER.debug("Ignoring web.xml welcome file, so adding server options welcome files to deployment manager.");
+            LOG.debug("Ignoring web.xml welcome file, so adding server options welcome files to deployment manager.");
             servletBuilder.addWelcomePages(serverOptions.getWelcomeFiles());
         } else if(welcomePages.size() == 0){
-            RunwarLogger.ROOT_LOGGER.debug("No welcome pages set yet, so adding defaults to deployment manager.");
+            LOG.debug("No welcome pages set yet, so adding defaults to deployment manager.");
             servletBuilder.addWelcomePages(defaultWelcomeFiles);
         }
-        RunwarLogger.ROOT_LOGGER.info("welcome pages in deployment manager: " + servletBuilder.getWelcomePages());
+        LOG.info("welcome pages in deployment manager: " + servletBuilder.getWelcomePages());
 
         if(ignoreRestMappings) {
-            RunwarLogger.ROOT_LOGGER.info("Overriding web.xml rest mappings with " + Arrays.toString( serverOptions.getServletRestMappings() ) );
+            LOG.info("Overriding web.xml rest mappings with " + Arrays.toString( serverOptions.getServletRestMappings() ) );
             Iterator<Entry<String, ServletInfo>> it = servletBuilder.getServlets().entrySet().iterator();
             while (it.hasNext()) {
                 ServletInfo restServlet = it.next().getValue();
-                RunwarLogger.ROOT_LOGGER.trace( "Checking servelet named: " + restServlet.getName() + "to see if it's a REST servlet." );
+                LOG.trace( "Checking servelet named: " + restServlet.getName() + "to see if it's a REST servlet." );
                 if( restServlet.getName().toLowerCase().equals("restservlet") || restServlet.getName().toLowerCase().equals("cfrestservlet") ) {
                     for(String path : serverOptions.getServletRestMappings()) {
                         restServlet.addMapping(path);
-                        RunwarLogger.ROOT_LOGGER.info("Added rest mapping: " + path + " to " + restServlet.getName() );
+                        LOG.info("Added rest mapping: " + path + " to " + restServlet.getName() );
                     }
                 }
             }
@@ -506,14 +510,14 @@ public class Server {
         // TODO: add buffer pool size (maybe-- direct is best at 16k), enable/disable be good I reckon tho
         servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
           new WebSocketDeploymentInfo().setBuffers(new DefaultByteBufferPool(true, 1024 * 16)).setWorker(worker));
-        RunwarLogger.ROOT_LOGGER.debug("Added websocket context");
+        LOG.debug("Added websocket context");
         
         manager = defaultContainer().addDeployment(servletBuilder);
        
         
         manager.deploy();
         HttpHandler servletHandler = manager.start();
-        RunwarLogger.ROOT_LOGGER.debug("started servlet deployment manager");
+        LOG.debug("started servlet deployment manager");
 
         /*
         List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
@@ -532,10 +536,10 @@ public class Server {
         }
 
         if(serverOptions.isHTTP2Enabled()) {
-            RunwarLogger.ROOT_LOGGER.info("Enabling HTTP2 protocol");
+            LOG.info("Enabling HTTP2 protocol");
             LaunchUtil.assertJavaVersion8();
             if(!serverOptions.isEnableSSL()) {
-                RunwarLogger.ROOT_LOGGER.warn("SSL is required for HTTP2.  Enabling default SSL server.");
+                LOG.warn("SSL is required for HTTP2.  Enabling default SSL server.");
                 serverOptions.setEnableSSL(true);
             }
             serverOptions.setSSLPort(serverOptions.getSSLPort()+1);
@@ -546,7 +550,7 @@ public class Server {
         if (serverOptions.isEnableSSL()) {
             int sslPort = serverOptions.getSSLPort();
             serverOptions.setDirectBuffers(true);
-            RunwarLogger.ROOT_LOGGER.info("Enabling SSL protocol on port " + sslPort);
+            LOG.info("Enabling SSL protocol on port " + sslPort);
             try {
                 if (serverOptions.getSSLCertificate() != null) {
                     File certfile = serverOptions.getSSLCertificate();
@@ -561,30 +565,30 @@ public class Server {
                 }
                 serverBuilder.addHttpsListener(sslPort, host, sslContext);
             } catch (Exception e) {
-                RunwarLogger.ROOT_LOGGER.error("Unable to start SSL:" + e.getMessage());
+                LOG.error("Unable to start SSL:" + e.getMessage());
                 e.printStackTrace();
                 System.exit(1);
             }
         }
         
         if (serverOptions.isEnableAJP()) {
-            RunwarLogger.ROOT_LOGGER.info("Enabling AJP protocol on port " + serverOptions.getAJPPort());
+            LOG.info("Enabling AJP protocol on port " + serverOptions.getAJPPort());
             serverBuilder.addAjpListener(serverOptions.getAJPPort(), host);
         }
         
         if(serverOptions.getBufferSize() != 0) {
-            RunwarLogger.ROOT_LOGGER.info("Buffer Size: " + serverOptions.getBufferSize());
+            LOG.info("Buffer Size: " + serverOptions.getBufferSize());
             serverBuilder.setBufferSize(serverOptions.getBufferSize());
         }
         if(serverOptions.getIoThreads() != 0) {
-            RunwarLogger.ROOT_LOGGER.info("IO Threads: " + serverOptions.getIoThreads());
+            LOG.info("IO Threads: " + serverOptions.getIoThreads());
             serverBuilder.setIoThreads(serverOptions.getIoThreads());
         }
         if(serverOptions.getWorkerThreads() != 0) {
-            RunwarLogger.ROOT_LOGGER.info("Worker threads: " + serverOptions.getWorkerThreads());
+            LOG.info("Worker threads: " + serverOptions.getWorkerThreads());
             serverBuilder.setWorkerThreads(serverOptions.getWorkerThreads());
         }
-        RunwarLogger.ROOT_LOGGER.info("Direct Buffers: " + serverOptions.isDirectBuffers());
+        LOG.info("Direct Buffers: " + serverOptions.isDirectBuffers());
         serverBuilder.setDirectBuffers(serverOptions.isDirectBuffers());
 
         final PathHandler pathHandler = new PathHandler(Handlers.redirect(contextPath)) {
@@ -633,7 +637,7 @@ public class Server {
                 .setLogBaseName(options.getLogAccessBaseFileName())
 //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
                 .build();
-            RunwarLogger.ROOT_LOGGER.info("Logging combined access to " + options.getLogAccessDir());
+            LOG.info("Logging combined access to " + options.getLogAccessDir());
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
             errPageHandler = new AccessLogHandler(errPageHandler, accessLogReceiver,"combined", Server.class.getClassLoader());
@@ -641,8 +645,8 @@ public class Server {
 
 
         if (serverOptions.logRequestsEnable()) {
-            RunwarLogger.ROOT_LOGGER.error("Request log output currently goes to server.log");
-            RunwarLogger.ROOT_LOGGER.debug("Enabling request dumper");
+            LOG.error("Request log output currently goes to server.log");
+            LOG.debug("Enabling request dumper");
             DefaultAccessLogReceiver requestsLogReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
                     .setOutputDirectory(options.getLogRequestsDir().toPath())
                     .setLogBaseName(options.getLogRequestsBaseFileName())
@@ -651,13 +655,13 @@ public class Server {
         }
 
         if (serverOptions.isProxyPeerAddressEnabled()) {
-            RunwarLogger.ROOT_LOGGER.debug("Enabling Proxy Peer Address handling");
+            LOG.debug("Enabling Proxy Peer Address handling");
             errPageHandler = new SSLHeaderHandler(new ProxyPeerAddressHandler(errPageHandler));
         }
 
         Undertow reverseProxy = null;
         if (serverOptions.isHTTP2Enabled()) {
-            RunwarLogger.ROOT_LOGGER.debug("Enabling HTTP2 Upgrade and LearningPushHandler");
+            LOG.debug("Enabling HTTP2 Upgrade and LearningPushHandler");
             /**
              * To not be dependent on java9 or crazy requirements, we set up a proxy to enable http2, and swap it with the actual SSL server (thus the port++/port--)
              */
@@ -700,7 +704,7 @@ public class Server {
                 writer.close();
             }
         } catch (Exception e) {
-            RunwarLogger.ROOT_LOGGER.error("Unable to get PID:" + e.getMessage());
+            LOG.error("Unable to get PID:" + e.getMessage());
         }
 
         serverBuilder.setWorker(worker);
@@ -710,29 +714,29 @@ public class Server {
         assert monitor == null;
         monitor = new MonitorThread(stoppassword);
         monitor.start();
-        RunwarLogger.ROOT_LOGGER.debug("started stop monitor");
+        LOG.debug("started stop monitor");
 
 
         if(serverOptions.isTrayEnabled()) {
             try {
                 Tray.hookTray(this);
-                RunwarLogger.ROOT_LOGGER.debug("hooked system tray");	
+                LOG.debug("hooked system tray");	
             } catch( Throwable e ) {
-                RunwarLogger.ROOT_LOGGER.error( "system tray hook failed", e );
+                LOG.error( "system tray hook failed", e );
             }
         } else {
-            RunwarLogger.ROOT_LOGGER.debug("System tray integration disabled");
+            LOG.debug("System tray integration disabled");
         }
 
         if (serverOptions.isOpenbrowser()) {
-            RunwarLogger.ROOT_LOGGER.debug("Starting open browser action");
+            LOG.debug("Starting open browser action");
             new Server(3);
         }
         
         // if this println changes be sure to update the LaunchUtil so it will know success
         String sslInfo = serverOptions.isEnableSSL() ? " https-port:" + serverOptions.getSSLPort() : "";
         String msg = "Server is up - http-port:" + portNumber + sslInfo + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
-        RunwarLogger.ROOT_LOGGER.info(msg);
+        LOG.info(msg);
         System.out.println(msg);
         if(serverOptions.isTrayEnabled()) {
             LaunchUtil.displayMessage("info", msg);
@@ -755,7 +759,7 @@ public class Server {
                 mariadb4jManager.start(serverOptions.getMariaDB4jPort(), serverOptions.getMariaDB4jBaseDir(),
                         serverOptions.getMariaDB4jDataDir(), serverOptions.getMariaDB4jImportSQLFile());
             } catch (Exception dbStartException) {
-                RunwarLogger.ROOT_LOGGER.error("Could not start MariaDB4j", dbStartException);
+                LOG.error("Could not start MariaDB4j", dbStartException);
                 System.out.println("Error starting MariaDB4j: " + dbStartException.getMessage());
             }
         }
@@ -764,7 +768,7 @@ public class Server {
             undertow.start();
 
             if (serverOptions.isHTTP2Enabled()) {
-                RunwarLogger.ROOT_LOGGER.debug("Starting HTTP2 proxy");
+                LOG.debug("Starting HTTP2 proxy");
                 reverseProxy.start();
             }
 
@@ -791,13 +795,13 @@ public class Server {
                 throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
             }
             servletBuilder.setClassLoader(_classLoader);
-            RunwarLogger.ROOT_LOGGER.debug("Running default web server" + warFile.getAbsolutePath());
+            LOG.debug("Running default web server" + warFile.getAbsolutePath());
         }
     }
 
     private void configureServerWar(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
         Long transferMinSize= serverOptions.getTransferMinSize();
-        RunwarLogger.ROOT_LOGGER.debug("found WEB-INF: " + webinf.getAbsolutePath());
+        LOG.debug("found WEB-INF: " + webinf.getAbsolutePath());
         if (_classLoader == null) {
             throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
         }
@@ -816,7 +820,7 @@ public class Server {
             if (webXmlFile != null) {
                 cfusionDir = new File(webXmlFile.getParentFile(),"cfusion").getAbsolutePath();
             }
-            RunwarLogger.ROOT_LOGGER.debug("Setting coldfusion home:" + cfusionDir);
+            LOG.debug("Setting coldfusion home:" + cfusionDir);
             System.setProperty("coldfusion.home", cfusionDir);
             System.setProperty("coldfusion.rootDir", cfusionDir);
 //            System.setProperty("javax.servlet.context.tempdir", cfusionDir + "/../cfclasses");
@@ -839,19 +843,19 @@ public class Server {
             File webConfigDirFile = new File(getThisJarLocation().getParentFile(), "engine/cfml/server/cfml-web/");
             cfmlServletConfigWebDir = webConfigDirFile.getPath() + "/" + serverName;
         }
-        RunwarLogger.ROOT_LOGGER.debug("cfml.web.config.dir: " + cfmlServletConfigWebDir);
+        LOG.debug("cfml.web.config.dir: " + cfmlServletConfigWebDir);
         if (cfmlServletConfigServerDir == null || cfmlServletConfigServerDir.length() == 0) {
             File serverConfigDirFile = new File(getThisJarLocation().getParentFile(), "engine/cfml/server/");
             cfmlServletConfigServerDir = serverConfigDirFile.getAbsolutePath();
         }
-        RunwarLogger.ROOT_LOGGER.debug("cfml.server.config.dir: " + cfmlServletConfigServerDir);
+        LOG.debug("cfml.server.config.dir: " + cfmlServletConfigServerDir);
         String webinfDir = System.getProperty("cfml.webinf");
         if (webinfDir == null) {
             webinf = new File(cfmlServletConfigWebDir, "WEB-INF/");
         } else {
             webinf = new File(webinfDir);
         }
-        RunwarLogger.ROOT_LOGGER.debug("cfml.webinf: " + webinf.getPath());
+        LOG.debug("cfml.webinf: " + webinf.getPath());
 
         // servletBuilder.setResourceManager(new CFMLResourceManager(new
         // File(homeDir,"server/"), transferMinSize, cfmlDirs));
@@ -861,13 +865,13 @@ public class Server {
 
         Class<Servlet> cfmlServlet = getCFMLServletClass(cfengine);
         if (webXmlFile != null) {
-            RunwarLogger.ROOT_LOGGER.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
+            LOG.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
             servletBuilder.setClassLoader(_classLoader);
             WebXMLParser.parseWebXml(webXmlFile, webinf, servletBuilder, sessionConfig, ignoreWelcomePages, ignoreRestMappings);
         } else {
             servletBuilder.setClassLoader(_classLoader);
             Class<Servlet> restServletClass = getRestServletClass(cfengine);
-            RunwarLogger.ROOT_LOGGER.debug("loaded servlet classes");
+            LOG.debug("loaded servlet classes");
             servletBuilder.addServlet(
                 servlet("CFMLServlet", cfmlServlet)
                 .setRequireWelcomeFileMapping(true)
@@ -881,7 +885,7 @@ public class Server {
                 .setLoadOnStartup(1)
                 );
             if(serverOptions.getServletRestEnabled()) {
-                RunwarLogger.ROOT_LOGGER.debug("Adding REST servlet");
+                LOG.debug("Adding REST servlet");
                 ServletInfo restServlet = servlet("RESTServlet", restServletClass)
                     .setRequireWelcomeFileMapping(true)
                     .addInitParam(cfengine+"-web-directory",cfmlServletConfigWebDir)
@@ -898,46 +902,46 @@ public class Server {
         if(shutDownThread == null) {
             shutDownThread = new Thread() {
                 public void run() {
-                    RunwarLogger.ROOT_LOGGER.debug("Running shutdown hook");
+                    LOG.debug("Running shutdown hook");
                     try {
                         if(!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
-                            RunwarLogger.ROOT_LOGGER.debug("shutdown hook:stopServer()");
+                            LOG.debug("shutdown hook:stopServer()");
                             stopServer();
                         }
 //                    if(tempWarDir != null) {
 //                        LaunchUtil.deleteRecursive(tempWarDir);
 //                    }
                         if(mainThread.isAlive()) {
-                            RunwarLogger.ROOT_LOGGER.debug("shutdown hook joining main thread");
+                            LOG.debug("shutdown hook joining main thread");
                             mainThread.interrupt();
                             mainThread.join();
                         }
                     } catch ( Exception e) {
                         e.printStackTrace();
                     }
-                    RunwarLogger.ROOT_LOGGER.debug("Shutdown hook finished");
+                    LOG.debug("Shutdown hook finished");
                 }
             };
             Runtime.getRuntime().addShutdownHook(shutDownThread);
-            RunwarLogger.ROOT_LOGGER.debug("Added shutdown hook");
+            LOG.debug("Added shutdown hook");
         }
     }
 
     public synchronized void stopServer() {
         int exitCode = 0;
         if(shutDownThread != null && Thread.currentThread() != shutDownThread) {
-            RunwarLogger.ROOT_LOGGER.debug("Removed shutdown hook");
+            LOG.debug("Removed shutdown hook");
             Runtime.getRuntime().removeShutdownHook(shutDownThread);
         }
         if(getServerState() == ServerState.STOPPING) {
-            RunwarLogger.ROOT_LOGGER.warn("Stop server called, however the server is already stopping.");
+            LOG.warn("Stop server called, however the server is already stopping.");
         } else if(getServerState() == ServerState.STOPPED) {
-            RunwarLogger.ROOT_LOGGER.warn("Stop server called, however the server has already stopped.");
+            LOG.warn("Stop server called, however the server has already stopped.");
         } else {
             try{
                 setServerState(ServerState.STOPPING);
-                RunwarLogger.ROOT_LOGGER.info(bar);
-                RunwarLogger.ROOT_LOGGER.info("*** stopping server");
+                LOG.info(bar);
+                LOG.info("*** stopping server");
                 if (serverOptions.isMariaDB4jEnabled()) {
                     mariadb4jManager.stop();
                 }
@@ -951,15 +955,15 @@ public class Server {
                     undertow.stop();
 //                Thread.sleep(1000);
                 } catch (Exception notRunning) {
-                    RunwarLogger.ROOT_LOGGER.error("*** server did not appear to be running");
+                    LOG.error("*** server did not appear to be running");
                 }
-                RunwarLogger.ROOT_LOGGER.info(bar);
+                LOG.info(bar);
                 setServerState(ServerState.STOPPED);
                 
             } catch (Exception e) {
                 e.printStackTrace();
                 setServerState(ServerState.UNKNOWN);
-                RunwarLogger.ROOT_LOGGER.error("Errserver", e);
+                LOG.error("Errserver", e);
                 exitCode = 1;
             }
             try {
@@ -972,7 +976,7 @@ public class Server {
                     sysErrTee.closeBranch();
                 }
             } catch (Exception e) {
-                RunwarLogger.ROOT_LOGGER.error("Redirect:  Unable to close this log file!");
+                LOG.error("Redirect:  Unable to close this log file!");
             }
             
             if(exitCode != 0) {
@@ -996,7 +1000,7 @@ public class Server {
     @SuppressWarnings("unchecked")
     private void configureURLRewrite(DeploymentInfo servletBuilder, File webInfDir) throws ClassNotFoundException, IOException {
         if(serverOptions.isEnableURLRewrite()) {
-            RunwarLogger.ROOT_LOGGER.debug("enabling URL rewriting");
+            LOG.debug("enabling URL rewriting");
             Class<Filter> rewriteFilter;
             String urlRewriteFile = "runwar/urlrewrite.xml";
             try{
@@ -1006,18 +1010,18 @@ public class Server {
             }
             if(serverOptions.getURLRewriteFile() != null) {
                 if(!serverOptions.getURLRewriteFile().isFile()) {
-                    RunwarLogger.ROOT_LOGGER.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
+                    LOG.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
                 } else {
                     String rewriteFileName = "urlrewrite";
                     rewriteFileName += serverOptions.isURLRewriteApacheFormat() ? ".htaccess" : ".xml";
                     LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir, rewriteFileName));
-                    RunwarLogger.ROOT_LOGGER.debug("Copying URL rewrite file " + serverOptions.getURLRewriteFile().getPath() + " to WEB-INF: " + webInfDir.getPath() + "/"+rewriteFileName);
+                    LOG.debug("Copying URL rewrite file " + serverOptions.getURLRewriteFile().getPath() + " to WEB-INF: " + webInfDir.getPath() + "/"+rewriteFileName);
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
             }
             
             String rewriteformat = serverOptions.isURLRewriteApacheFormat() ? "modRewrite-style" : "XML";
-            RunwarLogger.ROOT_LOGGER.debug(rewriteformat + " rewrite config file: " + urlRewriteFile);
+            LOG.debug(rewriteformat + " rewrite config file: " + urlRewriteFile);
             FilterInfo rewriteFilterInfo = new FilterInfo("UrlRewriteFilter", rewriteFilter)
                     .addInitParam("confPath", urlRewriteFile)
                     .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
@@ -1034,14 +1038,14 @@ public class Server {
             servletBuilder.addFilter(rewriteFilterInfo);
             servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
         } else {
-            RunwarLogger.ROOT_LOGGER.debug("URL rewriting is disabled");
+            LOG.debug("URL rewriting is disabled");
         }
     }
 
     @SuppressWarnings({ "unchecked" })
     private void configurePathInfoFilter(DeploymentInfo servletBuilder) throws ClassNotFoundException, IOException {
         if(serverOptions.isFilterPathInfoEnabled()) {
-            RunwarLogger.ROOT_LOGGER.debug("enabling path_info filter");
+            LOG.debug("enabling path_info filter");
             Class<Filter> regexPathInfoFilter;
             try{
                 regexPathInfoFilter = (Class<Filter>) _classLoader.loadClass("org.cfmlprojects.regexpathinfofilter.RegexPathInfoFilter");
@@ -1052,7 +1056,7 @@ public class Server {
             servletBuilder.addFilterUrlMapping("RegexPathInfoFilter", "/*", DispatcherType.REQUEST);
             servletBuilder.addFilterUrlMapping("RegexPathInfoFilter", "/*", DispatcherType.FORWARD);
         } else {
-            RunwarLogger.ROOT_LOGGER.debug("path_info filter is disabled");
+            LOG.debug("path_info filter is disabled");
         }
     }
     
@@ -1072,7 +1076,7 @@ public class Server {
                 suffixList.addAll(Arrays.asList(".eot",".otf",".ttf",".woff"));
                 // add the default types and any added in web.xml files
                 for(MimeMapping mime : servletBuilder.getMimeMappings()) {
-                    RunwarLogger.ROOT_LOGGER.debug("Adding mime-type: " + mime.getExtension() + " - " + mime.getMimeType());
+                    LOG.debug("Adding mime-type: " + mime.getExtension() + " - " + mime.getMimeType());
                     mimes.addMapping(mime.getExtension(), mime.getMimeType());
                     suffixList.add("."+mime.getExtension());
                 }
@@ -1132,7 +1136,7 @@ public class Server {
             File file = new File(path); 
             // Ignore non-existent dirs
             if( !file.exists() ) {
-                RunwarLogger.ROOT_LOGGER.debug("lib: Skipping non-existent: " + file.getAbsolutePath());
+                LOG.debug("lib: Skipping non-existent: " + file.getAbsolutePath());
                 continue;
             }
             for (File item : file.listFiles()) {
@@ -1140,11 +1144,11 @@ public class Server {
                 if (!item.isDirectory()) {
                     if (fileName.endsWith(".jar") || fileName.endsWith(".zip")) {
                         if(fileName.contains("slf4j")) {
-                            RunwarLogger.ROOT_LOGGER.debug("lib: Skipping slf4j jar: " + item.getAbsolutePath());
+                            LOG.debug("lib: Skipping slf4j jar: " + item.getAbsolutePath());
                         } else {
                             URL url = item.toURI().toURL();
                             classpath.add(url);
-                            RunwarLogger.ROOT_LOGGER.trace("lib: added to classpath: " + item.getAbsolutePath());
+                            LOG.trace("lib: added to classpath: " + item.getAbsolutePath());
                         }
                     }
                 }
@@ -1158,11 +1162,11 @@ public class Server {
         Class<Servlet> cfmlServlet = null;
         try {
             cfmlServlet = (Class<Servlet>) _classLoader.loadClass(cfengine + ".loader.servlet.CFMLServlet");
-            RunwarLogger.ROOT_LOGGER.debug("dynamically loaded CFML servlet from runwar child classloader");
+            LOG.debug("dynamically loaded CFML servlet from runwar child classloader");
         } catch (java.lang.ClassNotFoundException devnul) {
             try {
                 cfmlServlet = (Class<Servlet>) Server.class.getClassLoader().loadClass(cfengine + ".loader.servlet.CFMLServlet");
-                RunwarLogger.ROOT_LOGGER.debug("dynamically loaded CFML servlet from runwar classloader");
+                LOG.debug("dynamically loaded CFML servlet from runwar classloader");
             } catch(java.lang.ClassNotFoundException e) {
             }
         }
@@ -1197,7 +1201,7 @@ public class Server {
                 }
             }
         } else {
-            RunwarLogger.ROOT_LOGGER.debug("WEB-INF classes directory (" + classesDir.getAbsolutePath() + ") does not exist");
+            LOG.debug("WEB-INF classes directory (" + classesDir.getAbsolutePath() + ") does not exist");
         }
         return classpath;
     }
@@ -1233,12 +1237,12 @@ public class Server {
             try {
                 serverSocket = new ServerSocket(socketNumber, 1, InetAddress.getByName(serverOptions.getHost()));
                 listening = true;
-                RunwarLogger.ROOT_LOGGER.info(bar);
-                RunwarLogger.ROOT_LOGGER.info("*** starting 'stop' listener thread - Host: " + serverOptions.getHost()
+                LOG.info(bar);
+                LOG.info("*** starting 'stop' listener thread - Host: " + serverOptions.getHost()
                         + " - Socket: " + socketNumber);
-                RunwarLogger.ROOT_LOGGER.info(bar);
+                LOG.info(bar);
                 while (listening) {
-                    RunwarLogger.ROOT_LOGGER.debug("StopMonitor listening for password");
+                    LOG.debug("StopMonitor listening for password");
                     if(serverState == ServerState.STOPPED || serverState == ServerState.STOPPING){
                         listening = false;
                     }
@@ -1258,9 +1262,9 @@ public class Server {
                             listening = false;
                         } else {
                             if(listening) {
-                                RunwarLogger.ROOT_LOGGER.warn("Incorrect password used when trying to stop server.");
+                                LOG.warn("Incorrect password used when trying to stop server.");
                             } else {
-                                RunwarLogger.ROOT_LOGGER.debug("stopped listening for stop password.");
+                                LOG.debug("stopped listening for stop password.");
                             }
                                 
                         }
@@ -1270,25 +1274,25 @@ public class Server {
                     try {
                         clientSocket.close();
                     } catch (IOException e) {
-                        RunwarLogger.ROOT_LOGGER.error(e);
+                        LOG.error(e);
                     }
                 }
             } catch (Exception e) {
-                RunwarLogger.ROOT_LOGGER.error(e);
+                LOG.error(e);
                 exitCode = 1;
                 e.printStackTrace();
             } finally {
-                RunwarLogger.ROOT_LOGGER.debug("Closing server socket");
+                LOG.debug("Closing server socket");
                 try {
                     serverSocket.close();
                     serverSocket = null;
                 } catch (IOException e) {
-                    RunwarLogger.ROOT_LOGGER.error(e);
+                    LOG.error(e);
                     e.printStackTrace();
                 }
                 try {
                     if (mainThread.isAlive()) {
-                        RunwarLogger.ROOT_LOGGER.debug("monitor joining main thread");
+                        LOG.debug("monitor joining main thread");
                         mainThread.interrupt();
                         try{
                             mainThread.join();
@@ -1297,7 +1301,7 @@ public class Server {
                         }
                     }
                 } catch (Exception e) {
-                    RunwarLogger.ROOT_LOGGER.error(e);
+                    LOG.error(e);
                     e.printStackTrace();
                 }
             }
@@ -1378,9 +1382,9 @@ public class Server {
             sock.connect(sa, 500);
             return true;
         } catch (ConnectException e) {
-            RunwarLogger.ROOT_LOGGER.debug("Error while connecting. " + e.getMessage());
+            LOG.debug("Error while connecting. " + e.getMessage());
         } catch (SocketTimeoutException e) {
-            RunwarLogger.ROOT_LOGGER.debug("Connection: " + e.getMessage() + ".");
+            LOG.debug("Connection: " + e.getMessage() + ".");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -1423,7 +1427,7 @@ public class Server {
                     System.out.println("could not open browser to..." + openbrowserURL + "... timeout...");
                 }
             } catch (Exception e) {
-                RunwarLogger.ROOT_LOGGER.error(e.getMessage());
+                LOG.error(e.getMessage());
             }
             return;
         }
@@ -1442,7 +1446,7 @@ public class Server {
                 writer.print(state);
                 writer.close();
             } catch (FileNotFoundException e) {
-                RunwarLogger.ROOT_LOGGER.error(e.getMessage());
+                LOG.error(e.getMessage());
             }
         }
     }

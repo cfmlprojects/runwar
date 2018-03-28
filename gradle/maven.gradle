@@ -118,6 +118,6 @@ model {
     tasks.generatePomFileForRunwarPublication {
         destination = file("$buildDir/generated-pom.xml")
     }
-    tasks.publishRunwarPublicationToMavenLocal { dependsOn project.tasks.signArchives }
-    tasks.publishRunwarPublicationToMavenRepository { dependsOn project.tasks.signArchives }
+    tasks.publishRunwarPublicationToMavenLocal { dependsOn project.tasks.proguard, project.tasks.signArchives }
+    tasks.publishRunwarPublicationToMavenRepository { dependsOn project.tasks.proguard, project.tasks.signArchives }
 }

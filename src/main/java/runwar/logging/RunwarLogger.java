@@ -48,7 +48,8 @@ public interface RunwarLogger extends BasicLogger {
      * System.setProperty("runwar.loglevel", "DEBUG" );
      * System.setProperty("runwar.logpattern", "%m%n" ); }
      */
-    Logger ROOT_LOGGER = Logger.getLogger("runwar.server");
+    Logger LOG = Logger.getLogger("runwar.server");
+    Logger CONF_LOG = Logger.getLogger("runwar.config");
     Logger SECURITY_LOGGER = Logger.getLogger("runwar.security");
 //  RunwarLogger ROOT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName());
 //    RunwarLogger CLIENT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, ClientConnection.class.getPackage().getName());

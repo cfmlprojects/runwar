@@ -115,7 +115,7 @@ public class LaunchUtil {
         InputStreamReader isr = new InputStreamReader(is);
         BufferedReader br = new BufferedReader(isr);
 
-        RunwarLogger.ROOT_LOGGER.debug("launching background process with these args: ");
+        RunwarLogger.LOG.debug("launching background process with these args: ");
         // Pretty print out all the process args being sent to the background server.
         StringBuilder formattedArgs = new StringBuilder();
     	formattedArgs.append( "\n  " );
@@ -128,9 +128,9 @@ public class LaunchUtil {
         	}
         	formattedArgs.append( "  "+ arg );
         }
-        RunwarLogger.ROOT_LOGGER.debug( formattedArgs.toString() );
+        RunwarLogger.LOG.debug( formattedArgs.toString() );
         
-        RunwarLogger.ROOT_LOGGER.debug("timeout of " + timeout / 1000 + " seconds");
+        RunwarLogger.LOG.debug("timeout of " + timeout / 1000 + " seconds");
         String line;
         int exit = -1;
         long start = System.currentTimeMillis();
@@ -141,10 +141,10 @@ public class LaunchUtil {
                 try {
                     exit = process.exitValue();
                     if (exit == 0) {
-                        RunwarLogger.ROOT_LOGGER.debug(line);
+                        RunwarLogger.LOG.debug(line);
                         // Process finished
                         while ((line = br.readLine()) != null) {
-                            RunwarLogger.ROOT_LOGGER.debug(line);
+                            RunwarLogger.LOG.debug(line);
                         }
                         if(andExit) {
                             System.exit(0);
@@ -182,7 +182,7 @@ public class LaunchUtil {
     }
 
     private static boolean processOutout(String line, Process process, boolean exitWhenUp) {
-        RunwarLogger.ROOT_LOGGER.info("processoutput: " + line);
+        RunwarLogger.LOG.info("processoutput: " + line);
         if (line.indexOf("Server is up - ") != -1) {
             // start up was successful, quit out
             System.out.println(line);
@@ -199,7 +199,7 @@ public class LaunchUtil {
 
     public static void printExceptionLine(String line) {
         final String msg = "java.lang.RuntimeException: ";
-        RunwarLogger.ROOT_LOGGER.debug(line);
+        RunwarLogger.LOG.debug(line);
         String formatted = line.contains(msg) ? line.substring(line.indexOf(msg) + msg.length()) : line;
         formatted = formatted.matches("^\\s+at runwar.Start.*") ? "" : formatted.trim();
         if (formatted.length() > 0) {
@@ -223,7 +223,7 @@ public class LaunchUtil {
                 return;
             relaunching = true;
             String path = LaunchUtil.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-            RunwarLogger.ROOT_LOGGER.info("Starting background " + processName + " from: " + path + " ");
+            RunwarLogger.LOG.info("Starting background " + processName + " from: " + path + " ");
             String decodedPath = URLDecoder.decode(path, "UTF-8");
             decodedPath = new File(decodedPath).getPath();
             List<String> cmdarray = new ArrayList<String>();
@@ -580,7 +580,7 @@ public class LaunchUtil {
         try {
             copyStream(resource.openStream(), dest);
         } catch (IOException e) {
-            RunwarLogger.ROOT_LOGGER.error("Error copying file.", e);
+            RunwarLogger.LOG.error("Error copying file.", e);
         }
 
     }
@@ -613,7 +613,7 @@ public class LaunchUtil {
         try {
             return readStream(new FileInputStream(source));
         } catch (FileNotFoundException e) {
-            RunwarLogger.ROOT_LOGGER.error("Error reading file.", e);
+            RunwarLogger.LOG.error("Error reading file.", e);
         }
         return null;
     }
@@ -622,7 +622,7 @@ public class LaunchUtil {
         try {
             copyStream(new FileInputStream(source), dest);
         } catch (FileNotFoundException e) {
-            RunwarLogger.ROOT_LOGGER.error("Error copying file.", e);
+            RunwarLogger.LOG.error("Error copying file.", e);
         }
     }
 
@@ -632,7 +632,7 @@ public class LaunchUtil {
             writeStreamTo(bis, output, 8 * KB);
             output.close();
         } catch (Exception e) {
-            RunwarLogger.ROOT_LOGGER.error("Error copying stream.", e);
+            RunwarLogger.LOG.error("Error copying stream.", e);
         }
 
     }
@@ -795,7 +795,7 @@ public class LaunchUtil {
                 }
             }
         } catch (IOException ex) {
-            RunwarLogger.ROOT_LOGGER.error("Error executing command",ex);
+            RunwarLogger.LOG.error("Error executing command",ex);
         } finally {
             if (stdInput != null) {
                 try {

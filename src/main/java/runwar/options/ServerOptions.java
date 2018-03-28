@@ -94,6 +94,8 @@ public interface ServerOptions {
         final static String PROXYPEERADDRESS = "proxypeeraddress";
         final static String HTTP2 = "http2";
         final static String SECURECOOKIES = "securecookies";
+        final static String COOKIEHTTPONLY = "cookiehttponly";
+        final static String COOKIESECURE = "cookiesecure";
         final static String SERVERMODE = "mode";
     }
 
@@ -447,6 +449,14 @@ public interface ServerOptions {
 
     ServerOptions setSecureCookies(boolean enable);
 
+    boolean isCookieHttpOnly();
+    
+    ServerOptions setCookieHttpOnly(boolean enable);
+    
+    boolean isCookieSecure();
+    
+    ServerOptions setCookieSecure(boolean enable);
+    
     boolean isHTTP2Enabled();
     
     String getServerMode();

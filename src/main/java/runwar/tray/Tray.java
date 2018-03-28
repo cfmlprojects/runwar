@@ -61,19 +61,19 @@ public class Tray {
         System.setProperty("SWT_GTK3", "0");
 //        SystemTray.FORCE_TRAY_TYPE = TrayType.;
         if ( GraphicsEnvironment.isHeadless() ) {
-            RunwarLogger.ROOT_LOGGER.debug("Server is in headless mode, System Tray is not supported");
+            RunwarLogger.LOG.debug("Server is in headless mode, System Tray is not supported");
             return;
         }
         try{
-            RunwarLogger.ROOT_LOGGER.trace("Initializing tray");
+            RunwarLogger.LOG.trace("Initializing tray");
             systemTray = SystemTray.get();
-            RunwarLogger.ROOT_LOGGER.trace("Initialized");
+            RunwarLogger.LOG.trace("Initialized");
         } catch (java.lang.ExceptionInInitializerError e) {
-            RunwarLogger.ROOT_LOGGER.debugf("Error initializing tray: %s", e.getMessage());
+            RunwarLogger.LOG.debugf("Error initializing tray: %s", e.getMessage());
         }
 
         if ( systemTray == null ) {
-            RunwarLogger.ROOT_LOGGER.warn("System Tray is not supported");
+            RunwarLogger.LOG.warn("System Tray is not supported");
             return;
         }
 
@@ -114,7 +114,7 @@ public class Tray {
         setVariableMap(variableMap);
         menu = getTrayConfig( trayConfigJSON, statusText, variableMap );
         if (menu == null) {
-            RunwarLogger.ROOT_LOGGER.error("Could not load tray config json, using default");
+            RunwarLogger.LOG.error("Could not load tray config json, using default");
             menu = getTrayConfig( defaultMenu, statusText, variableMap );
         }
         systemTray.setStatus( getString(menu, "title", "") );
@@ -172,7 +172,7 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
                 } else {
-                    RunwarLogger.ROOT_LOGGER.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
+                    RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                 }
             } else {
                 menuItem = new MenuItem(label, is);
@@ -225,7 +225,7 @@ public class Tray {
         for (Object ob : loadItems) {
             JSONObject itemInfo = (JSONObject) ob;
             if(itemInfo.get("label") == null) {
-                RunwarLogger.ROOT_LOGGER.error("No label for menu item: " + itemInfo.toJSONString());
+                RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
                 continue;
             }
             String label = getString(itemInfo, "label", "");
@@ -233,7 +233,7 @@ public class Tray {
             if(itemInfo.get("action") != null) {
                 String action = itemInfo.get("action").toString();
                 if (action.toLowerCase().equals("stopserver") && action.toLowerCase().equals("openbrowser")) {
-                    RunwarLogger.ROOT_LOGGER.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
+                    RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                     itemInfo.put("action",null);
                 }
             }
@@ -258,7 +258,7 @@ public class Tray {
             if(variableMap.get(key) != null) {
                 string = string.replace("${" + key + "}", variableMap.get(key));
             } else {
-                RunwarLogger.ROOT_LOGGER.error("Could not get key: " + key);
+                RunwarLogger.LOG.error("Could not get key: " + key);
             }
         }
         return string;
@@ -267,7 +267,7 @@ public class Tray {
     public static void unhookTray() {
         if (systemTray != null) {
             try {
-                RunwarLogger.ROOT_LOGGER.debug("Removing tray icon");
+                RunwarLogger.LOG.debug("Removing tray icon");
                 systemTray.shutdown();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -279,7 +279,7 @@ public class Tray {
         Image image = null;
         if (iconImage != null && iconImage.length() != 0) {
             iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            RunwarLogger.ROOT_LOGGER.trace("trying to load icon: " + iconImage);
+            RunwarLogger.LOG.trace("trying to load icon: " + iconImage);
             if (iconImage.contains("!")) {
                 String[] zip = iconImage.split("!");
                 try {
@@ -288,25 +288,25 @@ public class Tray {
                     InputStream entryStream = zipFile.getInputStream(zipEntry);
                     image = ImageIO.read(entryStream);
                     zipFile.close();
-                    RunwarLogger.ROOT_LOGGER.trace("loaded image from archive: " + zip[0] + zip[1]);
+                    RunwarLogger.LOG.trace("loaded image from archive: " + zip[0] + zip[1]);
                 } catch (IOException e2) {
-                    RunwarLogger.ROOT_LOGGER.trace("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
+                    RunwarLogger.LOG.trace("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
                 }
             } else if (new File(iconImage).exists()) {
                 try {
                     image = ImageIO.read(new File(iconImage));
                 } catch (IOException e1) {
-                    RunwarLogger.ROOT_LOGGER.trace("Could not get file resource: " + iconImage + "(" + e1.getMessage() + ")");
+                    RunwarLogger.LOG.trace("Could not get file resource: " + iconImage + "(" + e1.getMessage() + ")");
                 }
             } else {
-                RunwarLogger.ROOT_LOGGER.debug("trying parent loader for image: " + iconImage);
+                RunwarLogger.LOG.debug("trying parent loader for image: " + iconImage);
                 URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
                 if (imageURL == null) {
-                    RunwarLogger.ROOT_LOGGER.trace("trying loader for image: " + iconImage);
+                    RunwarLogger.LOG.trace("trying loader for image: " + iconImage);
                     imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
                 }
                 if (imageURL != null) {
-                    RunwarLogger.ROOT_LOGGER.trace("Trying getImage for: " + imageURL);
+                    RunwarLogger.LOG.trace("Trying getImage for: " + imageURL);
                     image = Toolkit.getDefaultToolkit().getImage(imageURL);
                 }
             }
@@ -315,7 +315,7 @@ public class Tray {
         }
         // if bad image, use default
         if (image == null) {
-            RunwarLogger.ROOT_LOGGER.debug("load icon '"+ iconImage+ "' failed, using default.");
+            RunwarLogger.LOG.debug("load icon '"+ iconImage+ "' failed, using default.");
             image = Toolkit.getDefaultToolkit().getImage(Start.class.getResource("/runwar/icon.png"));
         }
         return image;
@@ -324,7 +324,7 @@ public class Tray {
     public static void setIconImage(String iconImage) {
         if (iconImage != null && iconImage.length() != 0) {
             iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            RunwarLogger.ROOT_LOGGER.trace("trying to load icon: " + iconImage);
+            RunwarLogger.LOG.trace("trying to load icon: " + iconImage);
             if (iconImage.contains("!")) {
                 String[] zip = iconImage.split("!");
                 try {
@@ -332,29 +332,29 @@ public class Tray {
                     ZipEntry zipEntry = zipFile.getEntry(zip[1].replaceFirst("^[\\/]", ""));
                     systemTray.setImage( zipFile.getInputStream(zipEntry) );
                     zipFile.close();
-                    RunwarLogger.ROOT_LOGGER.trace("loaded image from archive: " + zip[0] + zip[1]);
+                    RunwarLogger.LOG.trace("loaded image from archive: " + zip[0] + zip[1]);
                     return;
                 } catch (IOException e2) {
-                    RunwarLogger.ROOT_LOGGER.trace("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
+                    RunwarLogger.LOG.trace("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
                 }
             } else if (new File(iconImage).exists()) {
                 systemTray.setImage( iconImage );
                 return;
             } else {
-                RunwarLogger.ROOT_LOGGER.trace("trying parent loader for image: " + iconImage);
+                RunwarLogger.LOG.trace("trying parent loader for image: " + iconImage);
                 URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
                 if (imageURL == null) {
-                    RunwarLogger.ROOT_LOGGER.trace("trying loader for image: " + iconImage);
+                    RunwarLogger.LOG.trace("trying loader for image: " + iconImage);
                     imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
                 }
                 if (imageURL != null) {
-                    RunwarLogger.ROOT_LOGGER.trace("Trying getImage for: " + imageURL);
+                    RunwarLogger.LOG.trace("Trying getImage for: " + imageURL);
                     systemTray.setImage( imageURL );
                     return;
                 }
             }
         } else {
-            RunwarLogger.ROOT_LOGGER.trace("no icon image specified");
+            RunwarLogger.LOG.trace("no icon image specified");
         }
         // if bad image, use default
         systemTray.setImage( Tray.class.getResource("/runwar/icon.png") );
@@ -363,7 +363,7 @@ public class Tray {
     public static InputStream getImageInputStream(String iconImage) {
         if (iconImage != null && iconImage.length() != 0) {
             iconImage = iconImage.replaceAll("(^\")|(\"$)", "");
-            RunwarLogger.ROOT_LOGGER.trace("trying to load icon: " + iconImage);
+            RunwarLogger.LOG.trace("trying to load icon: " + iconImage);
             if (iconImage.contains("!")) {
                 String[] zip = iconImage.split("!");
                 try {
@@ -373,26 +373,26 @@ public class Tray {
                     zipFile.close();
                     return is;
                 } catch (IOException e2) {
-                    RunwarLogger.ROOT_LOGGER.error("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
+                    RunwarLogger.LOG.error("Could not get zip resource: " + iconImage + "(" + e2.getMessage() + ")");
                 }
             } else if (new File(iconImage).exists()) {
                 try {
                     return new FileInputStream(iconImage);
                 } catch (FileNotFoundException e) {
-                    RunwarLogger.ROOT_LOGGER.errorf("Error getting image input stream: %s", e.getMessage());
+                    RunwarLogger.LOG.errorf("Error getting image input stream: %s", e.getMessage());
                 }
             } else {
-                RunwarLogger.ROOT_LOGGER.trace("trying parent loader for image: " + iconImage);
+                RunwarLogger.LOG.trace("trying parent loader for image: " + iconImage);
                 URL imageURL = LaunchUtil.class.getClassLoader().getParent().getResource(iconImage);
                 if (imageURL == null) {
-                    RunwarLogger.ROOT_LOGGER.trace("trying loader for image: " + iconImage);
+                    RunwarLogger.LOG.trace("trying loader for image: " + iconImage);
                     imageURL = LaunchUtil.class.getClassLoader().getResource(iconImage);
                 }
                 if (imageURL != null) {
                     try {
                         return imageURL.openStream();
                     } catch (IOException e) {
-                        RunwarLogger.ROOT_LOGGER.errorf("Error getting image input stream: %s", e.getMessage());
+                        RunwarLogger.LOG.errorf("Error getting image input stream: %s", e.getMessage());
                     }
                 }
             }
@@ -429,7 +429,7 @@ public class Tray {
                 System.out.println("Exiting...");
                 server.stopServer();
                 String message = "Server shut down " + (server.serverWentDown() ? "" : "un") + "successfully, shutting down tray";
-                RunwarLogger.ROOT_LOGGER.debug( message );
+                RunwarLogger.LOG.debug( message );
                 try {
                     systemTray.shutdown();
                 } catch (Exception ex) {
@@ -502,7 +502,7 @@ public class Tray {
         }
         @Override
         public void actionPerformed(ActionEvent e) {
-            RunwarLogger.ROOT_LOGGER.debug("Trying to open file browser to: " + path);
+            RunwarLogger.LOG.debug("Trying to open file browser to: " + path);
             try {
                 LaunchUtil.browseDirectory(path);
             }
