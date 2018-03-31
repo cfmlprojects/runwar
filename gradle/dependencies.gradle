@@ -2,6 +2,9 @@ ext {
     undertowVersion = '1.4.23.Final'
     tuckeyRewriteVersion = '5.0.0'
     proguardVersion = '6.0.1'
+    goomphVersion='3.13.0'
+    bndVersion='1.5.0'
+    spotlessVersion='3.5.1'
 }
 
 repositories {

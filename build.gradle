@@ -2,7 +2,9 @@ import java.util.HashMap
 import java.util.List
 import java.util.TreeSet
 
-plugins {  id 'com.github.johnrengelman.shadow' version '2.0.2' }
+plugins {  id 'com.github.johnrengelman.shadow' version '2.0.2'
+  id "com.diffplug.gradle.oomph.ide" version "3.13.0"
+ }
 
 apply plugin: 'java'
 
@@ -10,6 +12,7 @@ group = 'org.cfmlprojects'
 description = 'RunWar Gradle build script'
 apply from: 'gradle/config.gradle'
 apply from: 'gradle/dependencies.gradle'
+apply from: 'gradle/ide.gradle'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -121,6 +124,5 @@ task listUsedClasses() {
             println "keep 'class ${it}'"
         }
     }
-
 
 }

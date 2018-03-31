@@ -115,7 +115,6 @@ public class Server {
     private DeploymentManager manager;
     private Undertow undertow;
     private MonitorThread monitor;
-    
 
     private String PID;
     private volatile String serverState = ServerState.STOPPED;
@@ -1010,7 +1009,9 @@ public class Server {
             }
             if(serverOptions.getURLRewriteFile() != null) {
                 if(!serverOptions.getURLRewriteFile().isFile()) {
-                    LOG.error("The URL rewrite file " + urlRewriteFile + " does not exist!");
+                    String message = "The URL rewrite file " + urlRewriteFile + " does not exist!";
+                    LOG.error(message);
+                    throw new RuntimeException(message);
                 } else {
                     String rewriteFileName = "urlrewrite";
                     rewriteFileName += serverOptions.isURLRewriteApacheFormat() ? ".htaccess" : ".xml";

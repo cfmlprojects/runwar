@@ -5,6 +5,7 @@
 /build/cfdistro
 /undertow
 /testlibs
+src/test/resources/war/simple.war/WEB-INF/urlrewrite.xml
 src/test/resources/war/simple.war/WEB-INF/logs/
 .gradle
 gradle-app.setting
