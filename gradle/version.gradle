@@ -1,0 +1,53 @@
+// -*- coding: utf-8; mode: groovy -*-
+
+buildscript {
+    repositories { maven { url "https://plugins.gradle.org/m2/" } }
+    dependencies { classpath "org.ajoberstar:grgit:2.1.1" }
+}
+
+import org.ajoberstar.grgit.Grgit
+
+ext {
+    git = Grgit.open(dir: file('.'))
+    describedCommit = git.describe().toString().trim()
+    revision = git.head().id
+
+    isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
+
+    version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') +
+            (isSnapshot ? "-SNAPSHOT" : "") +
+            (git.status().isClean() ? "" : "+dirty")
+
+}
+
+task generateScmInfoFile {
+    doLast {
+        file(generatedResources).mkdirs()
+        def versionFile = new File(generatedResources, "scm.info.properties")
+        versionFile.text = """
+			git.tags=${git.tag.list().name}
+			git.branch=${git.branch.current().name}
+			git.dirty=${!git.status().isClean()}
+			git.remote.origin.url=${git.remote.list().find { it.name == 'origin' }.url}
+			git.commit.id=${git.head().id}
+			git.commit.id.abbreviated=${git.head().abbreviatedId}
+			git.commit.id.describe=${describedCommit}
+			git.commit.user.name=${git.head().author.name}
+			git.commit.user.email=${git.head().author.email}
+			git.commit.message.full=${git.head().fullMessage.trim()}
+			git.commit.message.short=${git.head().shortMessage.trim()}
+			git.commit.time=${git.head().dateTime}
+        """.stripIndent().trim()
+    }
+}
+
+task generateVersionFile {
+    dependsOn generateScmInfoFile
+    doLast {
+        file(generatedResources + '/runwar/').mkdirs()
+        def versionFile = new File(generatedResources, "runwar/version.properties")
+        versionFile.text = 'runwar.version=' + project.version
+    }
+}
+
+

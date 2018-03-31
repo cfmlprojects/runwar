@@ -1,11 +1,8 @@
 // -*- coding: utf-8; mode: groovy -*-
-
-buildscript {
-    repositories { maven { url "https://plugins.gradle.org/m2/" } }
-    dependencies { classpath "org.ajoberstar:grgit:2.1.1" }
-}
+apply from: 'gradle/version.gradle'
 
 ext {
+    generatedResources = "$buildDir/generated-resources/main"
     config = new ConfigObject()
     config.sonatype.cfmlprojects.user = ''
     config.sonatype.cfmlprojects.pass = ''
@@ -13,37 +10,27 @@ ext {
     config.gpg.cfmlprojects.pubring = ''
     config.gpg.cfmlprojects.signkeyid = ''
     config.gpg.cfmlprojects.pass = ''
-    config.user.home = System.properties[ 'user.home' ]
-    def String replacedConfigFileText = file("${ config.user.home }/.cfdistrorc").text
-    for ( key in System.properties.keys() ) {
-        replacedConfigFileText=replacedConfigFileText.replaceAll('\\$\\{' + key + '+\\}', System.properties.get(key))
+    config.user.home = System.properties['user.home']
+    def replacedConfigFileText = file("${config.user.home}/.cfdistrorc").text
+    for (key in System.properties.keys()) {
+        replacedConfigFileText = replacedConfigFileText.replaceAll('\\$\\{' + key + '+\\}', System.properties.get(key))
     }
     def props = new Properties()
     props.load(new java.io.StringReader(replacedConfigFileText))
     def propsConfig = new ConfigSlurper("").parse(props)
     config.merge(propsConfig)
-
-    git = org.ajoberstar.grgit.Grgit.open(dir:file('.'))
-    describedCommit = git.describe().toString().trim()
-
-    isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
-
-    config.version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)",'$1$2') +
-            (isSnapshot ? "-SNAPSHOT" : "") +
-            (git.status().isClean() ? "" : "+dirty")
-
+    config.version = project.version
 }
 
-version = config.version
-
-task printConfig(){
+task printConfig() {
     group = "RunWAR"
     description = "Print the configuration"
-    doLast{
+    doLast {
         println project.config.prettyPrint()
     }
 }
 
-
-
 task showVersion { doLast { println version } }
+
+apply from: 'gradle/dependencies.gradle'
+apply from: 'gradle/ide.gradle'
