@@ -97,10 +97,10 @@ public class MappedResourceManager extends FileResourceManager {
             }
             if (reqFile != null && reqFile.exists()) {
                 reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
-                LOG.tracef("path mapped to:%s", reqFile);
+                LOG.tracef("path mapped to: %s", reqFile);
                 return new FileResource(reqFile, this, path);
             } else {
-                LOG.tracef("No mapped resource for:%s",path);
+                LOG.tracef("No mapped resource for: %s",path);
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {
