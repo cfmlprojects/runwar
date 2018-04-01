@@ -1,0 +1,47 @@
+buildscript {
+  repositories {
+      jcenter()
+  }
+  dependencies {
+    classpath "com.diffplug.gradle:goomph:3.13.0"
+  }
+}
+
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+allprojects {
+    eclipse.project {
+        natures 'org.eclipse.buildship.core.gradleprojectnature'
+    }
+}
+
+apply plugin: "com.diffplug.gradle.oomph.ide"
+oomphIde {
+	repo 'https://dl.bintray.com/de-jcup/asciidoctoreditor'
+	iu   'de.jcup.asciidoctoreditor'
+    repoEclipseLatest()
+    jdt {}
+    eclipseIni {
+        vmargs('-Xmx2g')    // IDE can have up to 2 gigs of RAM
+    }
+    //addProjectFolder('../')
+    //addProjectFolder('./')
+    addAllProjects()
+    style {
+        classicTheme()  // oldschool cool
+        niceText()      // with nice fonts and visible whitespace
+    }
+    thirdParty {
+        minimalistGradleEditor {}   // add syntax highlighting for gradle scripts
+        tmTerminal {}               // adds an in-eclipse terminal
+//buildship{}
+    }
+}
+
+/////////////////////////////////////////////////////////
+// Root eclipse project for tinkering with build files //
+/////////////////////////////////////////////////////////
+apply plugin: 'com.diffplug.gradle.eclipse.resourcefilters'
+eclipseResourceFilters {
+	exclude().folders().name('org.cfmlprojects.*')
+}

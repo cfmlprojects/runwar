@@ -76,12 +76,15 @@
       classpathref="runwar.lib.path" compliance="1.7"/>
     -->
     <javac-ecj srcdir="${runwar.src.dir}/" destdir="${runwar.bin.dir}/runwar" classpath="${toString:runwar.lib.path}"
-      compliance="1.7" />
+      compliance="1.8" />
   </target>
 
   <target name="runwar.jar" depends="runwar.compile">
     <runwar.initprops />
     <delete dir="${temp.dir}/jar"/>
+    <copy todir="${runwar.bin.dir}/runwar/">
+      <fileset dir="${runwar.src.dir}/runwar/logging/" includes="log4j*.xml" />
+    </copy>
     <copy todir="${runwar.bin.dir}/runwar/runwar/">
       <fileset dir="${runwar.src.dir}/runwar/" includes="client.*, runwar.keystore, runwar.truststore, icon.png, taskbar.json, urlrewrite.xml" />
     </copy>
@@ -242,7 +245,7 @@
     <!-- - change this back to org.tuckey when it hits 4.0.5 -->
     <dependency groupId="org.cfmlprojects" artifactId="urlrewritefilter" version="${tuckey.rewrite.version}" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
-    <dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.56" unzip="false" type="jar"
+    <dependency groupId="org.bouncycastle" artifactId="bcpkix-jdk15on" version="1.57" unzip="false" type="jar"
       dest="${runwar.lib.dir}" />
     <!--  replace options with this eventually
     -->
@@ -277,16 +280,23 @@
     <dependency groupId="org.cfmlprojects" artifactId="Notify" version="2.18" unzip="false" type="jar" dest="${runwar.lib.dir}" />
     <dependency groupId="org.cfmlprojects" artifactId="SystemTray" version="2.24" unzip="false" type="jar" dest="${runwar.lib.dir}" />
  -->
-    <dependency groupId="com.dorkbox" artifactId="Notify" version="2.20" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
-    <dependency groupId="com.dorkbox" artifactId="SystemTray" version="3.1" unzip="false" type="jar" dest="${runwar.lib.dir}">
+    <dependency groupId="com.dorkbox" artifactId="Notify" version="3.7" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+    <dependency groupId="com.dorkbox" artifactId="SystemTray" version="3.13-SNAPSHOT" unzip="false" type="jar" dest="${runwar.lib.dir}">
       <exclusions>
         <exclusion groupId="ch.qos.logback" artifactId="logback-core" />
         <exclusion groupId="ch.qos.logback" artifactId="logback-classic" />
       </exclusions>
     </dependency>
     
-    <!--  for stuff that uses slf4j -->
+    <!--  use slf4j and log4j for logging -->
+    <!-- 
     <dependency groupId="org.slf4j" artifactId="slf4j-simple" version="1.7.9" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+    <dependency groupId="org.slf4j" artifactId="slf4j-log4j12" version="1.7.9" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+    <dependency groupId="log4j" artifactId="log4j" version="1.2.17" unzip="false" type="jar" dest="${runwar.lib.dir}"/> 
+    <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.10.0" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+    <dependency groupId="org.apache.logging.log4j" artifactId="log4j-slf4j-impl" version="2.10.0" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+    <dependency groupId="org.jboss.logmanager" artifactId="jboss-logmanager" version="2.1.0.Final" unzip="false" type="jar" dest="${runwar.lib.dir}"/>
+    -->
 
     <!--  http2 (until java 9 maybe)
     way too error prone, needs exact jvm, etc.

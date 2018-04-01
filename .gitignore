@@ -5,4 +5,19 @@
 /build/cfdistro
 /undertow
 /testlibs
-tests/resource/war/simple.war/WEB-INF/logs
+src/test/resources/war/simple.war/WEB-INF/urlrewrite.xml
+src/test/resources/war/simple.war/WEB-INF/logs/
+.gradle
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+#ignore the various too-lazy-to-fix-and-lame-anyway bash tests
+gradle/*.sh
+testwars
+#IDE files
+*.project
+.settings
+.idea
+*.iml
+*.ipr
+*.iws

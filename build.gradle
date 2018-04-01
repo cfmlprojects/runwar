@@ -1,0 +1,188 @@
+import se.bjurr.gitchangelog.api.GitChangelogApi
+
+import static se.bjurr.gitchangelog.api.GitChangelogApi.gitChangelogApiBuilder
+
+plugins {
+    id 'com.github.johnrengelman.shadow' version '2.0.2'
+    id "com.diffplug.gradle.oomph.ide" version "3.13.0"
+    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "1.55"
+    id "org.ajoberstar.grgit" version "2.1.1"
+
+}
+
+buildDir = file('dist')
+
+apply plugin: 'java'
+
+group = 'org.cfmlprojects'
+description = 'RunWar Gradle build script'
+apply from: 'gradle/config.gradle'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
+
+task wrapper(type: Wrapper) { gradleVersion = '4.6' }
+
+
+sourceSets {
+    main {
+        output.dir(generatedResources, builtBy: 'generateVersionFile')
+    }
+}
+
+/*
+ processResources {
+ filesMatching('properties/*.properties') {
+ filter ReplaceTokens, tokens: [
+ 'build.version': project.property("version"),
+ 'build.timestamp': project.buildTimestamp
+ ]
+ }
+ }
+ */
+
+test {
+    // Enable JUnit 5 (Gradle 4.6+).
+    useJUnitPlatform { /*jvmArgs "-verbose:class"*/ }
+
+    // Always run tests, even when nothing changed.
+    dependsOn 'cleanTest'
+
+    // Show test results.
+    testLogging { events "passed", "skipped", "failed" }
+
+    // show standard out and standard error of the test JVM(s) on the console
+    testLogging.showStandardStreams = true
+}
+
+
+jar {
+    classifier = 'core'
+    manifest {
+        attributes 'Main-Class': 'runwar.Start'
+        attributes 'Can-Redefine-Classes': 'true'
+        attributes 'Can-Retransform-Classes': 'true'
+        attributes 'Implementation-Version': project.version
+    }
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourceJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+shadowJar {
+    classifier = null
+    mergeServiceFiles()
+}
+apply from: 'gradle/proguard.gradle'
+apply from: 'gradle/maven.gradle'
+
+task copyToLib(type: Copy) {
+    doFirst { delete "$buildDir/libs" }
+    into "$buildDir/libs"
+    from configurations.runtime
+}
+
+task generateGitChangelogTemplateWithGitHubIssues(type: se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask) {
+    gitHubApi = "https://api.github.com/repos/cfmlprojects/runwar"
+    gitHubToken = System.properties['GITHUB_OAUTH2TOKEN']
+    gitHubIssuePattern = "#([0-9]*)"
+    file = new File("${buildDir}/CHANGELOG.md")
+    templateContent = file('gradle/changelog/changelog.mustache').getText('UTF-8')
+}
+
+task gitChangelogTask() {
+    doLast {
+        GitChangelogApi builder;
+        builder = gitChangelogApiBuilder()
+        /*
+            println builder.withGitHubApi("https://api.github.com/repos/cfmlprojects/runwar")
+            .withGitHubToken(System.properties['GITHUB_OAUTH2TOKEN'])
+           .withGitHubIssuePattern("#([0-9]*)")
+           .withTemplatePath('gradle/changelog/changelog.mustache')
+            .render();
+        */
+        println builder.withFromRef("master")
+                .withToRef("HEAD")
+        .withReadableTagName()
+                .withGitHubApi("https://api.github.com/repos/cfmlprojects/runwar")
+                .withRemoveIssueFromMessageArgument(false)
+                .withUntaggedName("Untagged version")
+                .withNoIssueName("These commits have no issue in their commit comment")
+                .withTemplateContent("""
+# Changelog
+
+{{#tags}}
+## {{name}}
+ {{^hasIssue}}
+ GitHub Issues:
+ {{/hasIssue}}
+ {{#issues}}
+  {{#hasLink}}
+  [{{issue}}]({{link}}) {{title}}
+  {{#commits}}
+   [{{hash}}] {{{messageTitle}}} (https://github.com/{{ownerName}}/{{repoName}}/commit/{{hash}}) 
+  {{/commits}}
+  {{/hasLink}}
+ {{/issues}}
+
+ {{#issues}}
+  {{^hasLink}}
+ Commits:
+  {{#commits}}
+  [{{hash}}] {{{messageTitle}}} (https://github.com/{{ownerName}}/{{repoName}}/commit/{{hash}}) 
+  {{/commits}}
+  {{/hasLink}}
+ {{/issues}}
+ 
+{{/tags}}
+                """.stripIndent())
+                .render()
+
+/*
+        println builder.withFromRef("refs/tags/3.7.0")
+                .withToRef("refs/tags/3.8.0")
+                .withTemplatePath('gradle/changelog/changelog.mustache')
+                .render()
+*/
+        //    file = new File("${buildDir}/CHANGELOG.md");
+        //    templateContent = file('gradle/changelog/changelog.mustache').getText('UTF-8');
+    }
+}
+
+task listUsedClasses() {
+    doFirst {
+        def verboseFilePath = file('/workspace/runwar/used.txt')
+        TreeSet<String> usedJars = new TreeSet<>()
+        TreeSet<String> usedClasses = new TreeSet<>(); TreeSet<String> duplicateEntries = new TreeSet<>()
+        HashMap<String, String> mergedEntries = new HashMap<>()
+
+        usedJars.clear()
+        usedClasses.clear()
+        verboseFilePath.eachLine { line ->
+            int pos = line.indexOf("from file")
+            if (pos < 0)
+                return
+            String jarName = line.substring(pos + 11, line.length() - 1)
+            if (jarName.contains("/jre") || jarName.contains("\\jre") || !jarName.endsWith(".jar"))
+                return
+            usedJars.add(jarName)
+            String className = line.substring(8, pos - 1)
+            usedClasses.add(className)
+        }
+        usedJars.each {
+            println "used jar ${it}"
+        }
+        usedClasses.each {
+            println "keep 'class ${it}'"
+        }
+    }
+
+}

@@ -1,0 +1,36 @@
+// -*- coding: utf-8; mode: groovy -*-
+apply from: 'gradle/version.gradle'
+
+ext {
+    generatedResources = "$buildDir/generated-resources/main"
+    config = new ConfigObject()
+    config.sonatype.cfmlprojects.user = ''
+    config.sonatype.cfmlprojects.pass = ''
+    config.gpg.cfmlprojects.secring = ''
+    config.gpg.cfmlprojects.pubring = ''
+    config.gpg.cfmlprojects.signkeyid = ''
+    config.gpg.cfmlprojects.pass = ''
+    config.user.home = System.properties['user.home']
+    def replacedConfigFileText = file("${config.user.home}/.cfdistrorc").text
+    for (key in System.properties.keys()) {
+        replacedConfigFileText = replacedConfigFileText.replaceAll('\\$\\{' + key + '+\\}', System.properties.get(key))
+    }
+    def props = new Properties()
+    props.load(new java.io.StringReader(replacedConfigFileText))
+    def propsConfig = new ConfigSlurper("").parse(props)
+    config.merge(propsConfig)
+    config.version = project.version
+}
+
+task printConfig() {
+    group = "RunWAR"
+    description = "Print the configuration"
+    doLast {
+        println project.config.prettyPrint()
+    }
+}
+
+task showVersion { doLast { println version } }
+
+apply from: 'gradle/dependencies.gradle'
+apply from: 'gradle/ide.gradle'

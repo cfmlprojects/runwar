@@ -1,0 +1,15 @@
+{ 
+"title" : "${defaultTitle}",
+"tooltip" : "${defaultTitle}",
+"items":
+	[
+	 {"label":"", "separator":"true"}
+	,{"label":"Stop Server (${runwar.processName})", "hotkey":"S", "action":"stopserver", "image":"dialog-error.png"}
+	,{"label":"Restart Server", "hotkey":"R", "action":"restartserver", "image":"dialog-reload.png"}
+	,{"label":"Open Browser", "hotkey":"O", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/","image":"dialog-information.png"}
+	,{"label":"Advanced","items": [
+			{"label":"Version", "action":"getversion", "image":"dialog-reload.png"},{"label":"Start on boot", "checkbox":"true", "image":"dialog-information.png", "disabled":"true"}
+			,{"label":"Browse File System", "hotkey":"B", "action":"openfilesystem", "path":"", "image":"resources/dialog-information.png"}
+			] }
+	]
+}

@@ -1,0 +1,86 @@
+{
+    "name":"superserver",
+    "startTimeout":240,
+    "stopsocket":50123,
+    "debug":true,
+    "trace":false,
+    "console":false,
+    "openBrowser":true,
+    "openBrowserURL":"http://127.0.0.1:8080/",
+    "commandbox_home":".cfml",
+    "app":{
+        "logDir":"./logs",
+        "cfengine":"lucee@4.5",
+        "serverHomeDirectory":"dist/project.war",
+        "libDirs": "",
+        "webConfigDir": "",
+        "serverConfigDir": "",
+        "webXML": "",
+        "WARPath": "",
+        "restMappings": "/rest/*,/api/*"
+    },
+    "trayOptions":[
+        {
+            "label":"Open da browser",
+            "action":"openbrowser",
+            "url":"http://${runwar.host}:${runwar.port}/hoo/",
+            "disabled":false
+        },
+        {
+            "label":"Open da browser to another place",
+            "action":"openbrowser",
+            "url":"http://${runwar.host}:${runwar.port}/wee/",
+            "disabled":false
+        }
+    ],
+    "jvm":{
+        "heapSize":4096,
+        "minHeapSize":1024
+    },
+    "web":{
+        "webroot":"./war/simple.war",
+        "host":"127.0.1.1",
+        "directoryBrowsing":true,
+        "welcomeFiles": "index.cfm,main.cfm,go.cfm",
+        "aliases":{
+            "/first":"local/path",
+            "/absolutepath":"/absolute"
+        },
+        "errorPages": {
+            "404": "/path/to/404.html",
+            "500": "/path/to/500.html",
+            "default": "/path/to/default.html"
+        },
+        "http":{
+            "port":8080,
+            "enable":true
+        },
+        "ajp":{
+            "port":8009,
+            "enable":true
+        },
+        "ssl":{
+            "enable":false,
+            "port":443,
+            "certFile":"",
+            "keyFile":"",
+            "keyPass":""
+        },
+        "rewrites": {
+            "enable": true,
+            "config": "./urlrewrite.xml",
+            "statusPath": "/rewriteStatus",
+            "configReloadSeconds": 60
+        },
+        "basicAuth": {
+            "enable": true,
+            "users": {
+                "userName1": "password1",
+                "userName2": "password2"
+            }
+        }
+    },
+    "runwar": {
+        "args": ""
+    }
+}
