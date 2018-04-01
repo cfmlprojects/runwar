@@ -30,7 +30,5 @@ task printConfig() {
     }
 }
 
-task showVersion { doLast { println version } }
-
 apply from: 'gradle/dependencies.gradle'
 apply from: 'gradle/ide.gradle'

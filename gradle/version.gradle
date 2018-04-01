@@ -50,4 +50,5 @@ task generateVersionFile {
     }
 }
 
+task showVersion { doLast { println version } }
 
