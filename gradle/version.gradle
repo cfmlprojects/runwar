@@ -20,6 +20,8 @@ ext {
 
 }
 
+version = ext.version
+
 task generateScmInfoFile {
     doLast {
         file(generatedResources).mkdirs()
