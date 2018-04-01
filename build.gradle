@@ -90,6 +90,7 @@ task copyToLib(type: Copy) {
     from configurations.runtime
 }
 
+/*
 task generateGitChangelogTemplateWithGitHubIssues(type: se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask) {
     gitHubApi = "https://api.github.com/repos/cfmlprojects/runwar"
     gitHubToken = System.properties['GITHUB_OAUTH2TOKEN']
@@ -97,6 +98,7 @@ task generateGitChangelogTemplateWithGitHubIssues(type: se.bjurr.gitchangelog.pl
     file = new File("${buildDir}/CHANGELOG.md")
     templateContent = file('gradle/changelog/changelog.mustache').getText('UTF-8')
 }
+*/
 
 task gitChangelogTask() {
     doLast {
@@ -111,7 +113,6 @@ task gitChangelogTask() {
         */
         println builder.withFromRef("master")
                 .withToRef("HEAD")
-        .withReadableTagName()
                 .withGitHubApi("https://api.github.com/repos/cfmlprojects/runwar")
                 .withRemoveIssueFromMessageArgument(false)
                 .withUntaggedName("Untagged version")
