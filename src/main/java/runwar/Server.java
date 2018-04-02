@@ -634,6 +634,7 @@ public class Server {
             DefaultAccessLogReceiver requestsLogReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
                     .setOutputDirectory(options.getLogRequestsDir().toPath())
                     .setLogBaseName(options.getLogRequestsBaseFileName())
+                    .setLogNameSuffix(options.getLogSuffix())
                     .build();
             httpHandler = new RequestDebugHandler(httpHandler, requestsLogReceiver);
         }
