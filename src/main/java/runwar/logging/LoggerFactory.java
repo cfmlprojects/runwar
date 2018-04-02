@@ -16,6 +16,7 @@ public class LoggerFactory {
 
     private static boolean initialized = false;
     private static volatile String logFile;
+    private static volatile String errLogFile;
     private static volatile String logLevel;
     private static volatile String logPattern;
     
@@ -36,6 +37,7 @@ public class LoggerFactory {
 //        System.setProperty("log4j.debug", "true");
 //        System.setProperty("log4j.configuration", "file:runwar/log4j.properties");
         logFile = serverOptions.getLogDir().getPath() + '/' + serverOptions.getLogFileName() + ".out.txt";
+        errLogFile = serverOptions.getLogDir().getPath() + '/' + serverOptions.getLogFileName() + ".err.txt";
         logLevel = serverOptions.getLoglevel().toUpperCase();
         logPattern = "%m%n";
         if(serverOptions.isDebug() || !serverOptions.getLoglevel().equalsIgnoreCase("info")) {
@@ -45,6 +47,7 @@ public class LoggerFactory {
 //            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
         }
         System.setProperty("runwar.logfile", logFile);
+        System.setProperty("runwar.errlogfile", errLogFile);
         System.setProperty("runwar.loglevel", logLevel);
         System.setProperty("runwar.logpattern", logPattern);
         DOMConfigurator.configure(LoggerFactory.class.getClassLoader().getResource("log4j.filelog.xml"));
@@ -62,8 +65,9 @@ public class LoggerFactory {
         System.setProperty("log4j.debug", "false");
         System.setProperty("org.jboss.logging.provider", "log4j");
         System.setProperty("runwar.logfile", "");
+        System.setProperty("runwar.errlogfile", "");
         System.setProperty("runwar.loglevel", "WARN" );
-        System.setProperty("runwar.logpattern", "%d{yyyy-MM-dd HH:mm:ss} %-5p %c:%L - %m%n" );
+        System.setProperty("runwar.logpattern", "%d{yyyy-MM-dd HH:mm:ss} %-5p %c - %m%n" );
         initialized = true;
         return initialized;
     }
