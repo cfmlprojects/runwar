@@ -35,7 +35,6 @@
     <logger name="runwar.request" additivity="false">
         <level value="DEBUG"/>
         <appender-ref ref="console" />
-        <appender-ref ref="file" />
     </logger>
     <logger name="io.undertow.servlet" additivity="false">
         <level value="DEBUG"/>

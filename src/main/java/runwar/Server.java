@@ -603,15 +603,15 @@ public class Server {
         }
         sessionAttachmentHandler.setNext(pathHandler);
 
-        HttpHandler errPageHandler;
+        HttpHandler httpHandler;
         
         if (serverOptions.isGzipEnabled()) {
             final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size[5]")))
                     .setNext(pathHandler);
-            errPageHandler = new ErrorHandler(handler);
+            httpHandler = new ErrorHandler(handler);
         } else {
-            errPageHandler = new ErrorHandler(pathHandler);
+            httpHandler = new ErrorHandler(pathHandler);
         }
 
         if (serverOptions.logAccessEnable()) {
@@ -621,10 +621,10 @@ public class Server {
                 .setLogBaseName(options.getLogAccessBaseFileName())
 //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
                 .build();
-            LOG.info("Logging combined access to " + options.getLogAccessDir());
+            LOG.info("Logging combined access to " + options.getLogAccessDir() + " base name of '" + options.getLogAccessBaseFileName() + "'");
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
-            errPageHandler = new AccessLogHandler(errPageHandler, accessLogReceiver,"combined", Server.class.getClassLoader());
+            httpHandler = new AccessLogHandler(httpHandler, accessLogReceiver,"combined", Server.class.getClassLoader());
         }
 
 
@@ -634,12 +634,12 @@ public class Server {
                     .setOutputDirectory(options.getLogRequestsDir().toPath())
                     .setLogBaseName(options.getLogRequestsBaseFileName())
                     .build();
-            errPageHandler = new RequestDebugHandler(errPageHandler, requestsLogReceiver);
+            httpHandler = new RequestDebugHandler(httpHandler, requestsLogReceiver);
         }
 
         if (serverOptions.isProxyPeerAddressEnabled()) {
             LOG.debug("Enabling Proxy Peer Address handling");
-            errPageHandler = new SSLHeaderHandler(new ProxyPeerAddressHandler(errPageHandler));
+            httpHandler = new SSLHeaderHandler(new ProxyPeerAddressHandler(httpHandler));
         }
 
         Undertow reverseProxy = null;
@@ -648,8 +648,8 @@ public class Server {
             /**
              * To not be dependent on java9 or crazy requirements, we set up a proxy to enable http2, and swap it with the actual SSL server (thus the port++/port--)
              */
-            errPageHandler = new Http2UpgradeHandler(errPageHandler);
-            errPageHandler = Handlers.header(predicate(secure(),errPageHandler,new HttpHandler() {
+            httpHandler = new Http2UpgradeHandler(httpHandler);
+            httpHandler = Handlers.header(predicate(secure(),httpHandler,new HttpHandler() {
                 @Override
                 public void handleRequest(HttpServerExchange exchange) throws Exception {
                     exchange.getResponseHeaders().add(Headers.LOCATION, "https://" + exchange.getHostName()
@@ -657,7 +657,7 @@ public class Server {
                     exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT);
                 }
             }), "x-undertow-transport", ExchangeAttributes.transportProtocol());
-            errPageHandler = new SessionAttachmentHandler(new LearningPushHandler(100, -1, errPageHandler),new InMemorySessionManager("runwarsessions"), new SessionCookieConfig());
+            httpHandler = new SessionAttachmentHandler(new LearningPushHandler(100, -1, httpHandler),new InMemorySessionManager("runwarsessions"), new SessionCookieConfig());
             LoadBalancingProxyClient proxy = new LoadBalancingProxyClient()
                     .addHost(new URI("https://localhost:"+serverOptions.getSSLPort()), null, new UndertowXnioSsl(Xnio.getInstance(), OptionMap.EMPTY, SSLUtil.createClientSSLContext()), OptionMap.create(UndertowOptions.ENABLE_HTTP2, true))
                     .setConnectionsPerThread(20);
@@ -670,10 +670,10 @@ public class Server {
         }
 
         if(serverOptions.isEnableBasicAuth()) {
-            securityManager.configureAuth(errPageHandler, serverBuilder, options);
+            securityManager.configureAuth(httpHandler, serverBuilder, options);
 //            serverBuilder.setHandler(errPageHandler);
         } else {
-            serverBuilder.setHandler(errPageHandler);
+            serverBuilder.setHandler(httpHandler);
         }
 
         try {
