@@ -173,6 +173,10 @@ public interface ServerOptions {
 
     ServerOptions setLogFileName(String name);
 
+    ServerOptions setLogSuffix(String suffix);
+
+    String getLogSuffix();
+
     String getLogFileName();
 
     String getCfmlDirs();

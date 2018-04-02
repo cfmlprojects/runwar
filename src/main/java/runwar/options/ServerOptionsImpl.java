@@ -18,7 +18,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
     private boolean debug = false, isBackground = true, logAccessEnable = false, logRequestsEnable = false, openbrowser = false;
-    private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server.", logRequestBaseFileName="requests.", logAccessBaseFileName="access.", libDirs = null;
+    private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server", logRequestBaseFileName="requests", logAccessBaseFileName="access", logSuffix="txt", libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
     private File warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, trayConfig, statusFile = null;
@@ -509,6 +509,27 @@ public class ServerOptionsImpl implements ServerOptions {
     public String getLogFileName() {
         this.logFileBaseName = (this.logFileBaseName == null) ? "server." : this.logFileBaseName;
         return this.logFileBaseName;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setLogFileName(java.lang.String)
+     */
+    @Override
+    public ServerOptions setLogSuffix(String suffix) {
+        this.logSuffix = suffix;
+        return this;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setLogFileName()
+     */
+    @Override
+    public String getLogSuffix() {
+        return this.logSuffix;
     }
 
     /*

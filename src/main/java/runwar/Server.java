@@ -619,6 +619,7 @@ public class Server {
             DefaultAccessLogReceiver accessLogReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
                 .setOutputDirectory(options.getLogAccessDir().toPath())
                 .setLogBaseName(options.getLogAccessBaseFileName())
+                .setLogNameSuffix(options.getLogSuffix())
 //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
                 .build();
             LOG.info("Logging combined access to " + options.getLogAccessDir() + " base name of '" + options.getLogAccessBaseFileName() + "'");
