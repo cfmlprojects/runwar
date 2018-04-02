@@ -629,7 +629,6 @@ public class Server {
 
 
         if (serverOptions.logRequestsEnable()) {
-            LOG.error("Request log output currently goes to server.log");
             LOG.debug("Enabling request dumper");
             DefaultAccessLogReceiver requestsLogReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
                     .setOutputDirectory(options.getLogRequestsDir().toPath())

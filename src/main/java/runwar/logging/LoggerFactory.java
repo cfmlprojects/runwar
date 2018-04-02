@@ -35,7 +35,6 @@ public class LoggerFactory {
 //        System.setProperty("log4j2.skipJansi", "false");
 //        System.setProperty("log4j.debug", "true");
 //        System.setProperty("log4j.configuration", "file:runwar/log4j.properties");
-String logdr = serverOptions.getLogDir().getPath();
         logFile = serverOptions.getLogDir().getPath() + '/' + serverOptions.getLogFileName() + ".out.txt";
         logLevel = serverOptions.getLoglevel().toUpperCase();
         logPattern = "%m%n";
