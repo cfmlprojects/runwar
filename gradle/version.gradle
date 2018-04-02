@@ -12,14 +12,14 @@ ext {
     describedCommit = git.describe().toString().trim()
     revision = git.head().id
 
-    isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
+//    isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
+    isSnapshot = git.branch.current().name.equalsIgnoreCase('develop')
 
     version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') +
-            (isSnapshot ? "-SNAPSHOT" : "") +
-            (git.status().isClean() ? "" : "+dirty")
+            (isSnapshot ? "-SNAPSHOT" : "")
+            // + (git.status().isClean() ? "" : "+dirty")
 
 }
-
 version = ext.version
 
 task generateScmInfoFile {

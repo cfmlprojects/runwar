@@ -35,9 +35,8 @@ public class LoggerFactory {
 //        System.setProperty("log4j2.skipJansi", "false");
 //        System.setProperty("log4j.debug", "true");
 //        System.setProperty("log4j.configuration", "file:runwar/log4j.properties");
-
-        System.setProperty("log4j.configuration", "log4j.filelog.xml");
-        logFile = serverOptions.getLogDir().getPath() + '/' + serverOptions.getLogFileName() + "log";
+String logdr = serverOptions.getLogDir().getPath();
+        logFile = serverOptions.getLogDir().getPath() + '/' + serverOptions.getLogFileName() + ".out.txt";
         logLevel = serverOptions.getLoglevel().toUpperCase();
         logPattern = "%m%n";
         if(serverOptions.isDebug() || !serverOptions.getLoglevel().equalsIgnoreCase("info")) {
@@ -51,14 +50,20 @@ public class LoggerFactory {
         System.setProperty("runwar.logpattern", logPattern);
         DOMConfigurator.configure(LoggerFactory.class.getClassLoader().getResource("log4j.filelog.xml"));
         initialized = true;
+        if(System.getProperty("runwar.dumploggerstyles") != null) {
+            RunwarLogger.LOG.trace("This is a TRACE message");
+            RunwarLogger.LOG.debug("This is a DEBUG message");
+            RunwarLogger.LOG.warn("This is a WARN message");
+            RunwarLogger.LOG.error("This is an ERROR message");
+        }
     }
     
     public static boolean defaults() {
         System.setProperty("log4j.configuration", "log4j.xml");
-        System.setProperty("log4j.debug", "true");
+        System.setProperty("log4j.debug", "false");
         System.setProperty("org.jboss.logging.provider", "log4j");
         System.setProperty("runwar.logfile", "");
-        System.setProperty("runwar.loglevel", "DEBUG" );
+        System.setProperty("runwar.loglevel", "WARN" );
         System.setProperty("runwar.logpattern", "%d{yyyy-MM-dd HH:mm:ss} %-5p %c:%L - %m%n" );
         initialized = true;
         return initialized;

@@ -21,28 +21,27 @@ import runwar.options.ServerOptionsImpl;
 public class DefaultServer implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback {
 
     static final String DEFAULT = "default";
-    public static final int APACHE_PORT = 9080;
-    public static final int APACHE_SSL_PORT = 9443;
+    public static final int HTTP_PORT = 9080;
+    public static final int SSL_PORT = 9443;
     public static final int BUFFER_SIZE = Integer.getInteger("test.bufferSize", 8192 * 3);
-    public static final String SIMPLEWARPATH = "src/test/resources/war/simple.war";
+    public static final String WARPATH = "src/test/resources/war/simple.war";
 
-    private static boolean first = true;
     private static volatile Server server = null;
     private static final boolean https = Boolean.getBoolean("test.https");
-    private static final int runs = Integer.getInteger("test.runs", 1);
 
     private static ServerOptions serverOptions;
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         serverOptions = new ServerOptionsImpl();
+        serverOptions.setWarFile(new File(WARPATH)).setDebug(true).setBackground(false).setTrayEnabled(false);
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         try {
-            serverOptions.setWarFile(new File(SIMPLEWARPATH)).setDebug(true).setBackground(false).setTrayEnabled(false);
             server = new Server();
+            serverOptions.setWarFile(new File(WARPATH)).setDebug(true).setBackground(false).setTrayEnabled(false);
             server.startServer(serverOptions);
         } catch (Exception e) {
             e.printStackTrace();

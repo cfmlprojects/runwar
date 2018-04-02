@@ -50,6 +50,7 @@ public interface RunwarLogger extends BasicLogger {
      */
     Logger LOG = Logger.getLogger("runwar.server");
     Logger CONF_LOG = Logger.getLogger("runwar.config");
+    Logger MAPPER_LOG = Logger.getLogger("runwar.request");
     Logger SECURITY_LOGGER = Logger.getLogger("runwar.security");
 //  RunwarLogger ROOT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName());
 //    RunwarLogger CLIENT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, ClientConnection.class.getPackage().getName());

@@ -462,6 +462,7 @@ public class ServerOptionsImpl implements ServerOptions {
                 logDir = new File(defaultLogDir);
             }
         }
+        assert logDir != null;
         return logDir;
     }
 
@@ -506,7 +507,7 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public String getLogFileName() {
-        this.logFileBaseName = this.logFileBaseName == null ? "server." : this.logFileBaseName;
+        this.logFileBaseName = (this.logFileBaseName == null) ? "server." : this.logFileBaseName;
         return this.logFileBaseName;
     }
 
@@ -926,11 +927,10 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public File getWebInfDir() {
         if(webInfDir == null) {
-            if(getWarFile() != null && warFile.exists() && warFile.isDirectory()) {
-                webInfDir = new File(warFile, "WEB-INF");
-            }
-            if (webXmlFile != null && new File(webXmlFile.getParentFile(), "lib").exists()) {
+            if (webXmlFile != null && (webXmlFile.getParentFile().getName().equalsIgnoreCase("WEB-INF") || new File(webXmlFile.getParentFile(), "lib").exists())) {
                 webInfDir = webXmlFile.getParentFile();
+            } else if(getWarFile() != null && warFile.exists() && warFile.isDirectory()) {
+                webInfDir = new File(warFile, "WEB-INF");
             }
         }
         return webInfDir;

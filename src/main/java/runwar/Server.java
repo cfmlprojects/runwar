@@ -413,21 +413,6 @@ public class Server {
         });
         */
 
-        if(cfengine.equals("adobe")){
-            String cfclassesDir = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
-            if(cfclassesDir == null || cfclassesDir.startsWith("/WEB-INF")){
-                // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
-                File cfclassesDirFile = new File(webinf, "/cfclasses");
-                cfclassesDir = cfclassesDirFile.getAbsolutePath();
-                LOG.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
-                if( !cfclassesDirFile.exists() ) {
-                	cfclassesDirFile.mkdir();
-                }
-                servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
-            }
-        }
-        
-
         if(serverOptions.isEnableBasicAuth()) {
             securityManager.configureAuth(servletBuilder, serverOptions);
         }
@@ -783,6 +768,25 @@ public class Server {
     }
 
     private void configureServerResourceHandler(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
+        if(cfengine.equals("adobe")){
+            if (System.getProperty("coldfusion.home") == null) {
+                String cfusionDir = new File(webinf,"cfusion").getAbsolutePath();
+                LOG.debug("Setting coldfusion home:" + cfusionDir);
+                System.setProperty("coldfusion.home", cfusionDir);
+                System.setProperty("coldfusion.rootDir", cfusionDir);
+//                System.setProperty("javax.servlet.context.tempdir", cfusionDir + "/../cfclasses");
+                System.setProperty("coldfusion.libPath", cfusionDir + "/lib");
+                System.setProperty("flex.dir", new File(webinf,"cfform").getAbsolutePath());
+                System.setProperty("coldfusion.jsafe.defaultalgo", "FIPS186Random");
+                System.setProperty("coldfusion.classPath", cfusionDir + "/lib/updates/," + cfusionDir + "/lib/,"
+                        + cfusionDir + "/lib/axis2,"+ cfusionDir + "/gateway/lib/,"+ cfusionDir + "/../cfform/jars,"
+                        + cfusionDir + "/../flex/jars,"+ cfusionDir + "/lib/oosdk/lib,"+ cfusionDir + "/lib/oosdk/classes");
+                System.setProperty("java.security.policy", cfusionDir + "/lib/coldfusion.policy");
+                System.setProperty("java.security.auth.policy", cfusionDir + "/lib/neo_jaas.policy");
+                System.setProperty("java.nixlibrary.path", cfusionDir + "/lib");
+                System.setProperty("java.library.path", cfusionDir + "/lib");
+            }
+        }
         if(serverMode.equals(Mode.SERVLET)) {
             configureServerServlet(servletBuilder, sessionConfig, warFile, webinf, webXmlFile, cfmlDirs, cfengine, ignoreWelcomePages, ignoreRestMappings);
         } 
@@ -796,6 +800,20 @@ public class Server {
             servletBuilder.setClassLoader(_classLoader);
             LOG.debug("Running default web server" + warFile.getAbsolutePath());
         }
+        if(cfengine.equals("adobe")) {
+            String cfclassesDir = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
+            if(cfclassesDir == null || cfclassesDir.matches("^.?WEB-INF.*?")){
+                // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
+                File cfclassesDirFile = new File(webinf, "/cfclasses");
+                cfclassesDir = cfclassesDirFile.getAbsolutePath();
+                LOG.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
+                if( !cfclassesDirFile.exists() ) {
+                    cfclassesDirFile.mkdir();
+                }
+                servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
+                LOG.debug(servletBuilder.getServletContextAttributes().toString());
+            }
+        }
     }
 
     private void configureServerWar(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
@@ -807,33 +825,13 @@ public class Server {
         servletBuilder.setClassLoader(_classLoader);
         servletBuilder.setResourceManager(getResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
 //        LogSubverter.subvertJDKLoggers(loglevel);
-        WebXMLParser.parseWebXml(new File(webinf, "/web.xml"), webinf, servletBuilder, sessionConfig, ignoreWelcomePages, ignoreRestMappings);
+        WebXMLParser.parseWebXml(webXmlFile, webinf, servletBuilder, sessionConfig, ignoreWelcomePages, ignoreRestMappings);
     }
     
     private void configureServerServlet(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
         String cfmlServletConfigWebDir = serverOptions.getCFMLServletConfigWebDir();
         String cfmlServletConfigServerDir = serverOptions.getCFMLServletConfigServerDir();
         Long transferMinSize = serverOptions.getTransferMinSize();
-        if (System.getProperty("coldfusion.home") == null) {
-            String cfusionDir = new File(webinf,"cfusion").getAbsolutePath();
-            if (webXmlFile != null) {
-                cfusionDir = new File(webXmlFile.getParentFile(),"cfusion").getAbsolutePath();
-            }
-            LOG.debug("Setting coldfusion home:" + cfusionDir);
-            System.setProperty("coldfusion.home", cfusionDir);
-            System.setProperty("coldfusion.rootDir", cfusionDir);
-//            System.setProperty("javax.servlet.context.tempdir", cfusionDir + "/../cfclasses");
-            System.setProperty("coldfusion.libPath", cfusionDir + "/lib");
-            System.setProperty("flex.dir", new File(webinf,"cfform").getAbsolutePath());
-            System.setProperty("coldfusion.jsafe.defaultalgo", "FIPS186Random");
-            System.setProperty("coldfusion.classPath", cfusionDir + "/lib/updates/," + cfusionDir + "/lib/,"
-                    + cfusionDir + "/lib/axis2,"+ cfusionDir + "/gateway/lib/,"+ cfusionDir + "/../cfform/jars,"
-                    + cfusionDir + "/../flex/jars,"+ cfusionDir + "/lib/oosdk/lib,"+ cfusionDir + "/lib/oosdk/classes");
-            System.setProperty("java.security.policy", cfusionDir + "/lib/coldfusion.policy");
-            System.setProperty("java.security.auth.policy", cfusionDir + "/lib/neo_jaas.policy");
-            System.setProperty("java.nixlibrary.path", cfusionDir + "/lib");
-            System.setProperty("java.library.path", cfusionDir + "/lib");
-        }
 
         if (_classLoader == null) {
             throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
@@ -1094,7 +1092,9 @@ public class Server {
     
     private ResourceManager getResourceManager(File warFile, Long transferMinSize, String cfmlDirs, File internalCFMLServerRoot) {
         MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot);
-        if(serverOptions.isDirectoryListingRefreshEnabled()) return mappedResourceManager;
+        if(serverOptions.isDirectoryListingRefreshEnabled()) {
+            return mappedResourceManager;
+        }
         final DirectBufferCache dataCache = new DirectBufferCache(1000, 10, 1000 * 10 * 1000, BufferAllocator.DIRECT_BYTE_BUFFER_ALLOCATOR, METADATA_MAX_AGE);
         final int metadataCacheSize = 100;
         final long maxFileSize = 10000;

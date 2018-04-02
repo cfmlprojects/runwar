@@ -43,6 +43,7 @@ import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
 import dorkbox.util.ActionHandler;
 import dorkbox.util.OS;
+import runwar.logging.LoggerFactory;
 import runwar.logging.RunwarLogger;
 import runwar.options.ServerOptions;
 
@@ -56,6 +57,9 @@ public class LaunchUtil {
     private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
     private static String uname;
     private static String linuxRelease;
+    static {
+        LoggerFactory.defaults();
+    }
 
     public static File getJreExecutable() throws FileNotFoundException {
         String jreDirectory = System.getProperty("java.home");

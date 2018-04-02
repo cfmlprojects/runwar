@@ -5,18 +5,21 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.Resource;
-import static runwar.logging.RunwarLogger.LOG;
+import static runwar.logging.RunwarLogger.MAPPER_LOG;
 
 public class MappedResourceManager extends FileResourceManager {
 
     private HashMap<String, File> aliasMap = new HashMap<String, File>();
     private File[] cfmlDirsFiles;
     private File WEBINF = null;
-    
+    private static final Matcher CFIDE_REGEX_MATCHER = Pattern.compile("^.?CFIDE").matcher("");
+    private static final Matcher WEBINF_REGEX_MATCHER = Pattern.compile(".*?WEB-INF(.+)?").matcher("");
     private final boolean allowResourceChangeListeners;
 
     public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, boolean allowResourceChangeListeners) {
@@ -25,9 +28,10 @@ public class MappedResourceManager extends FileResourceManager {
         processMappings(cfmlDirList);
     }
 
-    public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, File file) {
+    public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, File webinfDir) {
         this(base, transferMinSize, cfmlDirList, false);
-        WEBINF = file;
+        WEBINF = webinfDir;
+        MAPPER_LOG.debugf("Initialized MappedResourceManager - base: %s, web-inf: %s, aliases: %s",base.getAbsolutePath(), webinfDir.getAbsolutePath(), cfmlDirList);
         if (!WEBINF.exists()) {
             throw new RuntimeException("The specified WEB-INF does not exist: " + WEBINF.getAbsolutePath());
         }
@@ -54,33 +58,36 @@ public class MappedResourceManager extends FileResourceManager {
             }
             String aliasInfo = virtual.isEmpty() ? "" : " as " + virtual;
             if (!dir.exists()) {
-                LOG.error("Does not exist, cannot serve content from: " + dir.getAbsolutePath() + aliasInfo);
+                MAPPER_LOG.error("Does not exist, cannot serve content from: " + dir.getAbsolutePath() + aliasInfo);
             } else {
-                LOG.info("Serving content from " + dir.getAbsolutePath() + aliasInfo);
+                MAPPER_LOG.info("Serving content from " + dir.getAbsolutePath() + aliasInfo);
             }
         }
         cfmlDirsFiles = dirs.toArray(new File[dirs.size()]);
     };
 
     public Resource getResource(String path) {
-        LOG.trace("* requested:" + path);
+        MAPPER_LOG.debug("* requested:" + path);
         if(path == null) {
-            LOG.error("getResource got a null path!");
+            MAPPER_LOG.error("** getResource got a null path!");
             return null;
         }
         File reqFile = null;
         try {
-            if (WEBINF != null && (path.startsWith("/WEB-INF") || path.startsWith("./WEB-INF"))) {
-                if (path.equals("/WEB-INF") || path.equals("./WEB-INF")) {
+            final Matcher webInfMatcher = WEBINF_REGEX_MATCHER.reset(path);
+            if (WEBINF != null && webInfMatcher.matches()) {
+                if(webInfMatcher.group(1) == null) {
                     reqFile = WEBINF;
+                } else {
+                    reqFile = new File(WEBINF, webInfMatcher.group(1).replace("WEB-INF", ""));
                 }
-                reqFile = new File(WEBINF, path.replaceAll(".+WEB-INF", ""));
-            } else if (path.startsWith(WEBINF.getPath())) {
-                reqFile = new File(WEBINF, path.replace(WEBINF.getPath(), ""));
-            } else if (path.startsWith("/CFIDE")) {
+                MAPPER_LOG.trace("** matched WEB-INF : " + reqFile.getAbsolutePath());
+            } else if (CFIDE_REGEX_MATCHER.reset(path).matches()) {
                 reqFile = new File(WEBINF.getParentFile(), path);
-            } else if (!path.startsWith("/WEB-INF")) {
+                MAPPER_LOG.trace("** matched /CFIDE : " + reqFile.getAbsolutePath());
+            } else if (!webInfMatcher.matches()) {
                 reqFile = new File(getBase(), path);
+                MAPPER_LOG.trace("* checking with base path: " + reqFile.getAbsolutePath());
                 if (!reqFile.exists()) {
                     reqFile = getAliasedFile(aliasMap, path);
                 }
@@ -88,8 +95,9 @@ public class MappedResourceManager extends FileResourceManager {
                     for (int x = 0; x < cfmlDirsFiles.length; x++) {
                         String absPath = cfmlDirsFiles[x].getCanonicalPath();
                         reqFile = new File(cfmlDirsFiles[x], path.replace(absPath, ""));
-                        LOG.tracef("checking:%s = %s",absPath,reqFile.getAbsolutePath());
+                        MAPPER_LOG.tracef("checking:%s = %s",absPath,reqFile.getAbsolutePath());
                         if (reqFile.exists()) {
+                            MAPPER_LOG.tracef("Exists: %s",reqFile.getAbsolutePath());
                             break;
                         }
                     }
@@ -97,16 +105,16 @@ public class MappedResourceManager extends FileResourceManager {
             }
             if (reqFile != null && reqFile.exists()) {
                 reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
-                LOG.tracef("path mapped to: %s", reqFile);
+                MAPPER_LOG.debugf("** path mapped to: %s", reqFile);
                 return new FileResource(reqFile, this, path);
             } else {
-                LOG.tracef("No mapped resource for: %s",path);
+                MAPPER_LOG.debugf("** No mapped resource for: %s (reqFile was:%s)",path,reqFile != null ? reqFile.getAbsolutePath() : "null");
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {
-            LOG.error(e.getMessage());
+            MAPPER_LOG.error(e.getMessage());
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            MAPPER_LOG.error(e.getMessage());
         }
         return null;
     }

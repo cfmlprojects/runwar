@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="true">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
     <appender name="console" class="org.apache.log4j.ConsoleAppender">
         <layout class="com.jcabi.log.MulticolorLayout">
          <param name="ConversionPattern"
@@ -24,12 +24,25 @@
         <level value="TRACE"/>
         <appender-ref ref="console" />
     </logger>
-    <logger name="runwar.security" additivity="false">
-        <level value="${runwar.loglevel}"/>
+    <logger name="runwar.config" additivity="false">
+        <level value="WARN"/>
         <appender-ref ref="console" />
     </logger>
+    <logger name="runwar.security" additivity="false">
+        <level value="DEBUG"/>
+        <appender-ref ref="console" />
+    </logger>
+    <logger name="runwar.request" additivity="false">
+        <level value="DEBUG"/>
+        <appender-ref ref="console" />
+        <appender-ref ref="file" />
+    </logger>
     <logger name="io.undertow.servlet" additivity="false">
-        <level value="${runwar.loglevel}"/>
+        <level value="DEBUG"/>
+        <appender-ref ref="console" />
+    </logger>
+    <logger name="org.apache.http.client.protocol" additivity="false">
+        <level value="WARN"/>
         <appender-ref ref="console" />
     </logger>
     <root>

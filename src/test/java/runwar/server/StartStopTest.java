@@ -17,7 +17,7 @@ public class StartStopTest {
     @Test
     public void testAliasMapProcessed() {
         ServerOptions serverOptions = new ServerOptionsImpl();
-        serverOptions.setWarFile(new File(DefaultServer.SIMPLEWARPATH)).setDebug(true).setBackground(false)
+        serverOptions.setWarFile(new File(DefaultServer.WARPATH)).setDebug(true).setBackground(false)
                 .setTrayEnabled(false);
         Server server = new Server();
         try {

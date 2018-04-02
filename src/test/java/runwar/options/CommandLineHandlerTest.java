@@ -40,7 +40,7 @@ public class CommandLineHandlerTest {
 
     @Test
     public void testURLRewriteArguments() {
-        String argString = "-war " + DefaultServer.SIMPLEWARPATH + " -urlrewritecheck 0 -urlrewritestatuspath stats";
+        String argString = "-war " + DefaultServer.WARPATH + " -urlrewritecheck 0 -urlrewritestatuspath stats";
         ServerOptions serverOptions = CommandLineHandler.parseArguments(argString.split(" "));
         assertEquals(serverOptions.getURLRewriteCheckInterval(), "0");
         assertEquals(serverOptions.getURLRewriteStatusPath(), "/stats");
