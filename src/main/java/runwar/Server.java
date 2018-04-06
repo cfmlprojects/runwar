@@ -13,6 +13,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
@@ -722,7 +723,7 @@ public class Server {
         String sslInfo = serverOptions.isEnableSSL() ? " https-port:" + serverOptions.getSSLPort() : "";
         String msg = "Server is up - http-port:" + portNumber + sslInfo + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         LOG.info(msg);
-        System.out.println(msg);
+//        System.out.println(msg);
         if(serverOptions.isTrayEnabled()) {
             LaunchUtil.displayMessage("info", msg);
         }
@@ -769,9 +770,9 @@ public class Server {
     }
 
     private void configureServerResourceHandler(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
-        if(cfengine.equals("adobe")){
+        String cfusionDir = new File(webinf,"cfusion").getAbsolutePath();
+        if(cfengine.equals("adobe") || cfengine.equals("") && new File(cfusionDir).exists()){
             if (System.getProperty("coldfusion.home") == null) {
-                String cfusionDir = new File(webinf,"cfusion").getAbsolutePath();
                 LOG.debug("Setting coldfusion home:" + cfusionDir);
                 System.setProperty("coldfusion.home", cfusionDir);
                 System.setProperty("coldfusion.rootDir", cfusionDir);
@@ -801,7 +802,7 @@ public class Server {
             servletBuilder.setClassLoader(_classLoader);
             LOG.debug("Running default web server" + warFile.getAbsolutePath());
         }
-        if(cfengine.equals("adobe")) {
+        if(cfengine.equals("adobe") || cfengine.equals("") && new File(cfusionDir).exists()) {
             String cfclassesDir = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
             if(cfclassesDir == null || cfclassesDir.matches("^.?WEB-INF.*?")){
                 // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
@@ -814,6 +815,13 @@ public class Server {
                 servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
                 LOG.debug(servletBuilder.getServletContextAttributes().toString());
             }
+            PrintStream filterOut = new PrintStream(System.err) {
+                public void println(String l) {
+                    if (! l.startsWith("SLF4J") )
+                        super.println(l);
+                }
+            };
+            System.setErr(filterOut);
         }
     }
 
