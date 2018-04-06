@@ -61,6 +61,7 @@ public interface ServerOptions {
         final static String TRAYCONFIG = "trayconfig";
         final static String ICON = "icon";
         final static String URLREWRITEFILE = "urlrewritefile";
+        final static String URLREWRITELOG = "urlrewritelog";
         final static String URLREWRITECHECK = "urlrewritecheck";
         final static String URLREWRITESTATUSPATH = "urlrewritestatuspath";
         final static String STATUSFILE = "statusfile";
@@ -152,6 +153,10 @@ public interface ServerOptions {
     ServerOptions setURLRewriteFile(File file);
 
     File getURLRewriteFile();
+
+    ServerOptions setURLRewriteLog(File file);
+
+    File getURLRewriteLog();
 
     ServerOptions setURLRewriteCheckInterval(String interval);
 

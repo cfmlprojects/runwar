@@ -21,7 +21,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server", logRequestBaseFileName="requests", logAccessBaseFileName="access", logSuffix=".txt", libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
-    private File warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, trayConfig, statusFile = null;
+    private File warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null;
     private String iconImage = null;
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
@@ -368,6 +368,27 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public File getURLRewriteFile() {
         return this.urlRewriteFile;
+    }
+    
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setURLRewriteLog(java.io.File)
+     */
+    @Override
+    public ServerOptions setURLRewriteLog(File file) {
+        this.urlRewriteLog = file;
+        return this;
+    }
+    
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#getURLRewriteLog()
+     */
+    @Override
+    public File getURLRewriteLog() {
+        return this.urlRewriteLog;
     }
 
     /*

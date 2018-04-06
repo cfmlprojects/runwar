@@ -264,6 +264,12 @@ public class ConfigParser {
             if (serverConfig.hasOption(Keys.URLREWRITEFILE)) {
                 serverOptions.setURLRewriteFile(getFile(serverConfig.getOptionValue(Keys.URLREWRITEFILE)));
             }
+            if (serverConfig.hasOption(Keys.URLREWRITELOG)) {
+                serverOptions.setURLRewriteLog(getFile(serverConfig.getOptionValue(Keys.URLREWRITELOG)));
+                if(!serverConfig.hasOption(Keys.URLREWRITEENABLE)) {
+                    serverOptions.setEnableURLRewrite(true);
+                }
+            }
 
             if (serverConfig.g("web").g("rewrites").hasOption("enable")) {
                 serverConfig.put(Keys.URLREWRITEENABLE, serverConfig.g("web").g("rewrites").getOptionValue("enable"));
