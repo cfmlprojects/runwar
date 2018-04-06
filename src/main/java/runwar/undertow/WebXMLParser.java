@@ -29,53 +29,56 @@ import io.undertow.servlet.api.ServletInfo;
 public class WebXMLParser {
 
     private static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
-	/**
-	 * Parses the web.xml and configures the context.
-	 *
-	 * @param webxml
-	 * @param info
-	 */
-	@SuppressWarnings("unchecked")
-	public static void parseWebXml(File webxml, File webinf, DeploymentInfo info, SessionCookieConfig sessionConfig, boolean ignoreWelcomePages, boolean ignoreRestMappings) {
-    if (!webxml.exists() || !webxml.canRead()) {
-	        CONF_LOG.error("Error reading web.xml! exists:"+webxml.exists()+"readable:"+webxml.canRead());
-	    }
-	    Map<String, ServletInfo> servletMap = new HashMap<String, ServletInfo>();
-	    Map<String, FilterInfo> filterMap = new HashMap<String, FilterInfo>();
-		try {
-			final String webinfPath;
-			if (File.separatorChar=='\\') {
-				webinfPath  = webinf.getCanonicalPath().replace("\\", "\\\\");
-			} else {
-			    webinfPath = webinf.getCanonicalPath();
-			}
-			trace("parsing %s",webxml.getCanonicalPath());
-			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 
-			// disable validation, so we don't incur network calls
-			docBuilderFactory.setValidating(false);
-			docBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+    /**
+     * Parses the web.xml and configures the context.
+     *
+     * @param webxml
+     * @param info
+     */
+    @SuppressWarnings("unchecked")
+    public static void parseWebXml(File webxml, File webinf, DeploymentInfo info, SessionCookieConfig sessionConfig,
+            boolean ignoreWelcomePages, boolean ignoreRestMappings) {
+        CONF_LOG.infof("Parsing %s", webxml.getPath());
+        if (!webxml.exists() || !webxml.canRead()) {
+            CONF_LOG.error("Error reading web.xml! exists:" + webxml.exists() + "readable:" + webxml.canRead());
+        }
+        Map<String, ServletInfo> servletMap = new HashMap<String, ServletInfo>();
+        Map<String, FilterInfo> filterMap = new HashMap<String, FilterInfo>();
+        try {
+            final String webinfPath;
+            if (File.separatorChar == '\\') {
+                webinfPath = webinf.getCanonicalPath().replace("\\", "\\\\");
+            } else {
+                webinfPath = webinf.getCanonicalPath();
+            }
+            trace("parsing %s", webxml.getCanonicalPath());
+            DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 
-			// parse and normalize text representation
-			Document doc = docBuilder.parse(webxml);
-			doc.getDocumentElement().normalize();
+            // disable validation, so we don't incur network calls
+            docBuilderFactory.setValidating(false);
+            docBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 
-			trace("Root element of the doc is %s", doc.getDocumentElement().getNodeName());
+            // parse and normalize text representation
+            Document doc = docBuilder.parse(webxml);
+            doc.getDocumentElement().normalize();
 
-			String displayName = $(doc).find("context-param").text();
-			if(displayName != null) {
-			    info.setDisplayName(displayName);
-			}
+            trace("Root element of the doc is %s", doc.getDocumentElement().getNodeName());
 
-			$(doc).find("context-param").each(ctx -> {
+            String displayName = $(doc).find("context-param").text();
+            if (displayName != null) {
+                info.setDisplayName(displayName);
+            }
+
+            $(doc).find("context-param").each(ctx -> {
                 String pName = $(ctx).find("param-name").text();
                 String pValue = $(ctx).find("param-value").text();
                 info.addServletContextAttribute(pName, pValue);
                 info.addInitParameter(pName, pValue);
                 CONF_LOG.tracef("context param: %s = %s", pName, pValue);
             });
-			trace("Total no of context-params: %s", info.getServletContextAttributes().size());
+            trace("Total no of context-params: %s", info.getServletContextAttributes().size());
 
             Match listeners = $(doc).find("listener");
             trace("Total no of listeners: %s", listeners.size());
@@ -84,7 +87,8 @@ public class WebXMLParser {
                 CONF_LOG.tracef("Listener: %s", pName);
                 ListenerInfo listener;
                 try {
-                    listener = new ListenerInfo( (Class<? extends EventListener>) info.getClassLoader().loadClass(pName));
+                    listener = new ListenerInfo(
+                            (Class<? extends EventListener>) info.getClassLoader().loadClass(pName));
                     info.addListener(listener);
                 } catch (ClassNotFoundException e) {
                     CONF_LOG.error(e);
@@ -99,8 +103,8 @@ public class WebXMLParser {
                 String className = $(ctx).find("filter-class").text();
                 CONF_LOG.tracef("filter-name: %s, filter-class: %s", filterName, className);
                 try {
-                    FilterInfo filter = new FilterInfo(filterName, (Class<? extends Filter>) info.getClassLoader()
-                            .loadClass(className));
+                    FilterInfo filter = new FilterInfo(filterName,
+                            (Class<? extends Filter>) info.getClassLoader().loadClass(className));
                     Match initParams = $(ctx).find("init-param");
                     CONF_LOG.debugf("Total no of %s init-params: %s", filterName, initParams.size());
                     initParams.each(cctx -> {
@@ -109,7 +113,7 @@ public class WebXMLParser {
                         filter.addInitParam(pName, pValue);
                         CONF_LOG.tracef("%s init-param: param-name: %s  param-value: %s", filterName, pName, pValue);
                     });
-                    if($(ctx).find("async-supported").size() > 0) {
+                    if ($(ctx).find("async-supported").size() > 0) {
                         trace("Async supported: %s", $(ctx).find("async-supported").text());
                         filter.setAsyncSupported(Boolean.valueOf($(ctx).find("async-supported").text()));
                     }
@@ -127,29 +131,29 @@ public class WebXMLParser {
                 String className = $(ctx).find("filter-class").text();
                 CONF_LOG.tracef("filter-name: %s, filter-class: %s", filterName, className);
                 FilterInfo filter = filterMap.get(filterName);
-                if(filter == null) {
-                    CONF_LOG.errorf("No filter found for filter-mapping: %s",filterName);
+                if (filter == null) {
+                    CONF_LOG.errorf("No filter found for filter-mapping: %s", filterName);
                 } else {
                     String urlPattern = $(ctx).find("url-pattern").text();
                     Match dispatchers = $(ctx).find("dispatcher");
-                    if(dispatchers == null) {
-                        CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: REQUEST", filterName,urlPattern);
-                        info.addFilterUrlMapping( filterName, urlPattern, DispatcherType.valueOf( "REQUEST") );
+                    if (dispatchers == null) {
+                        CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: REQUEST", filterName, urlPattern);
+                        info.addFilterUrlMapping(filterName, urlPattern, DispatcherType.valueOf("REQUEST"));
                     } else {
-                        dispatchers.each(dCtx ->{
+                        dispatchers.each(dCtx -> {
                             String dispatcher = $(dCtx).text();
-                            CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: %s", filterName,urlPattern, dispatcher);
-                            info.addFilterUrlMapping( filterName, $(dCtx).text(), DispatcherType.valueOf( dispatcher ) );
+                            CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: %s", filterName, urlPattern,
+                                    dispatcher);
+                            info.addFilterUrlMapping(filterName, $(dCtx).text(), DispatcherType.valueOf(dispatcher));
                         });
                     }
                     String servletName = $(ctx).find("servlet-name").text();
-                    if(servletName != null) {
+                    if (servletName != null) {
                         CONF_LOG.debugf("Adding servlet mapping: %s", servletName);
                         info.addFilterServletNameMapping(filterName, servletName, DispatcherType.valueOf("REQUEST"));
                     }
                 }
             });
-
 
             Match servlets = $(doc).find("servlet");
             trace("Total no of servlets: %s", servlets.size());
@@ -158,9 +162,10 @@ public class WebXMLParser {
                 String servletClassName = $(ctx).find("servlet-class").text();
                 String loadOnStartup = $(ctx).find("load-on-startup").text();
                 CONF_LOG.tracef("servlet-name: %s, servlet-class: %s", servletName, servletClassName);
-                CONF_LOG.tracef("Adding servlet to undertow: ************* %s: %s *************", servletName, servletClassName);
+                CONF_LOG.tracef("Adding servlet to undertow: ************* %s: %s *************", servletName,
+                        servletClassName);
                 Class<?> servletClass;
-                try{
+                try {
                     servletClass = info.getClassLoader().loadClass(servletClassName);
                 } catch (Exception e) {
                     String msg = "Could not load servlet class: " + servletClassName;
@@ -169,7 +174,7 @@ public class WebXMLParser {
                 }
                 ServletInfo servlet = new ServletInfo(servletName, (Class<? extends Servlet>) servletClass);
                 servlet.setRequireWelcomeFileMapping(true);
-                if(loadOnStartup != null) {
+                if (loadOnStartup != null) {
                     trace("Load on startup: %s", loadOnStartup);
                     servlet.setLoadOnStartup(Integer.valueOf(loadOnStartup));
                 }
@@ -178,27 +183,29 @@ public class WebXMLParser {
                 initParams.each(cctx -> {
                     String pName = $(cctx).find("param-name").text();
                     String pValue = $(cctx).find("param-value").text();
-                    pValue = pValue.replaceAll(".?/WEB-INF", SPECIAL_REGEX_CHARS.matcher(webinfPath).replaceAll("\\\\$0"));
+                    pValue = pValue.replaceAll(".?/WEB-INF",
+                            SPECIAL_REGEX_CHARS.matcher(webinfPath).replaceAll("\\\\$0"));
                     CONF_LOG.tracef("%s init-param: param-name: %s  param-value: %s", servletName, pName, pValue);
                     servlet.addInitParam(pName, pValue);
                 });
                 servletMap.put(servlet.getName(), servlet);
             });
 
-
             Match servletMappings = $(doc).find("servlet-mapping");
             trace("Total no of servlet-mappings: %s", servletMappings.size());
             servletMappings.each(ctx -> {
                 String servletName = $(ctx).find("servlet-name").text();
                 ServletInfo servlet = servletMap.get(servletName);
-                if(servlet == null) {
-                    CONF_LOG.errorf("No servlet found for servlet-mapping: %s",servletName);
+                if (servlet == null) {
+                    CONF_LOG.errorf("No servlet found for servlet-mapping: %s", servletName);
                 } else {
                     Match urlPatterns = $(ctx).find("url-pattern");
-                    urlPatterns.each( urlPatternElement -> {
+                    urlPatterns.each(urlPatternElement -> {
                         String urlPattern = $(urlPatternElement).text();
-                        if(ignoreRestMappings && (servletName.toLowerCase().equals("restservlet") || servletName.toLowerCase().equals("cfrestservlet")) ) {
-                            CONF_LOG.tracef("Skipping mapping servlet-name:%s, url-partern: %s", servletName, urlPattern);
+                        if (ignoreRestMappings && (servletName.toLowerCase().equals("restservlet")
+                                || servletName.toLowerCase().equals("cfrestservlet"))) {
+                            CONF_LOG.tracef("Skipping mapping servlet-name:%s, url-partern: %s", servletName,
+                                    urlPattern);
                         } else {
                             CONF_LOG.tracef("mapping servlet-name:%s, url-pattern: %s", servletName, urlPattern);
                             servlet.addMapping(urlPattern);
@@ -222,7 +229,6 @@ public class WebXMLParser {
                     info.addWelcomePage(welcomeFile);
                 });
             }
-            
 
             Match mimeMappings = $(doc).find("mime-mapping");
             trace("Total no of mime-mappings: %s", mimeMappings.size());
@@ -230,7 +236,7 @@ public class WebXMLParser {
                 String extension = $(ctx).find("extension").text();
                 String mimeType = $(ctx).find("mime-type").text();
                 CONF_LOG.tracef("filter-name: %s, filter-class: %s", extension, mimeType);
-                info.addMimeMapping(new MimeMapping(extension,mimeType));
+                info.addMimeMapping(new MimeMapping(extension, mimeType));
             });
 
             Match errorPages = $(doc).find("error-page");
@@ -239,20 +245,22 @@ public class WebXMLParser {
                 String location = $(ctx).find("location").text();
                 String errorCode = $(ctx).find("error-code").text();
                 String exceptionType = $(ctx).find("exception-type").text();
-                if(errorCode != null && exceptionType != null) {
-                    CONF_LOG.errorf("Cannot specify both error-code and exception-type, using exception-type: %s", exceptionType);
+                if (errorCode != null && exceptionType != null) {
+                    CONF_LOG.errorf("Cannot specify both error-code and exception-type, using exception-type: %s",
+                            exceptionType);
                     errorCode = null;
                 }
-                if(errorCode == null && exceptionType == null) {
+                if (errorCode == null && exceptionType == null) {
                     CONF_LOG.tracef("default error-page location: %s", location);
-                    info.addErrorPage( new ErrorPage(location));                        
-                } else if(errorCode != null) {
+                    info.addErrorPage(new ErrorPage(location));
+                } else if (errorCode != null) {
                     CONF_LOG.tracef("error-code: %s - location: %s", location, errorCode);
-                    info.addErrorPage( new ErrorPage(location, Integer.parseInt(errorCode)));
+                    info.addErrorPage(new ErrorPage(location, Integer.parseInt(errorCode)));
                 } else {
                     CONF_LOG.tracef("exception-type: %s - location: %s", location, errorCode);
                     try {
-                        info.addErrorPage( new ErrorPage(location, (Class<? extends Throwable>) info.getClassLoader().loadClass(exceptionType)));
+                        info.addErrorPage(new ErrorPage(location,
+                                (Class<? extends Throwable>) info.getClassLoader().loadClass(exceptionType)));
                     } catch (ClassNotFoundException e) {
                         CONF_LOG.error(e);
                     }
@@ -269,16 +277,16 @@ public class WebXMLParser {
                 CONF_LOG.debugf("http-only: %s", Boolean.valueOf(httpOnly).toString());
                 CONF_LOG.debugf("secure: %s", Boolean.valueOf(secure).toString());
             });
-		} catch (Exception e) {
-			CONF_LOG.error("Error reading web.xml", e);
-			throw new RuntimeException(e);
-		}
-	}
+        } catch (Exception e) {
+            CONF_LOG.error("Error reading web.xml", e);
+            throw new RuntimeException(e);
+        }
+    }
 
-	private static void trace(String string, Object elements) {
-		CONF_LOG.tracef(string,elements);
-//		System.out.printf(string,elements);
-//		System.out.println();
-	}
-	
+    private static void trace(String string, Object elements) {
+        CONF_LOG.tracef(string, elements);
+        // System.out.printf(string,elements);
+        // System.out.println();
+    }
+
 }

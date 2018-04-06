@@ -4,10 +4,12 @@ import runwar.options.ServerOptions;
 import runwar.options.ServerOptionsImpl;
 
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import org.apache.log4j.Appender;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
@@ -25,7 +27,9 @@ public class LoggerFactory {
     private static volatile String logPattern;
     private static List<Appender> appenders;
     private static List<Logger> loggers;
+    private static List<Logger> urlrewriteLoggers;
     private static RollingFileAppender rewriteLogAppender;
+    private static ConsoleAppender consoleAppender;
 
     public static void configure(ServerOptions serverOptions) {
         Logger.getRootLogger().getLoggerRepository().resetConfiguration();
@@ -35,15 +39,16 @@ public class LoggerFactory {
         loggers = new ArrayList<Logger>();
         Level level = Level.toLevel(logLevel);
 
-        ConsoleAppender console = new ConsoleAppender();
+        consoleAppender = new ConsoleAppender();
         MulticolorLayout layout = new MulticolorLayout();
         layout.setConversionPattern(logPattern);
         layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;34,WARN:1;43,ERROR:37;41,FATAL:37;40");
-        console.setLayout(layout);
-        console.setThreshold(Level.toLevel(logLevel));
-        console.activateOptions();
-        appenders.add(console);
-        Logger.getRootLogger().addAppender(console);
+        consoleAppender.setLayout(layout);
+        consoleAppender.setThreshold(Level.toLevel(logLevel));
+        consoleAppender.activateOptions();
+        appenders.add(consoleAppender);
+        Logger.getRootLogger().setLevel(Level.WARN);
+        Logger.getRootLogger().addAppender(consoleAppender);
 
         Logger DORKBOX_LOG = Logger.getLogger("dorkbox.systemTray.SystemTray");
         loggers.add(DORKBOX_LOG);
@@ -58,6 +63,9 @@ public class LoggerFactory {
         loggers.add(UNDERTOW_REQUEST_LOG);
 
         Logger UNDERTOW_IO_LOG = Logger.getLogger("io.undertow");
+        loggers.add(UNDERTOW_IO_LOG);
+
+        Logger XNIO_LOG = Logger.getLogger("org.xnio.nio");
         loggers.add(UNDERTOW_IO_LOG);
 
         Logger HTTP_CLIENT_LOG = Logger.getLogger("org.apache.http.client.protocol");
@@ -89,6 +97,14 @@ public class LoggerFactory {
             rewriteLogAppender.activateOptions();
         }
 
+        RUNWAR_SERVER.setLevel(level);
+        RUNWAR_CONFIG.setLevel(Level.INFO);
+        RUNWAR_SECURITY.setLevel(Level.WARN);
+        RUNWAR_REQUEST.setLevel(Level.WARN);
+        DORKBOX_LOG.setLevel(Level.ERROR);
+        UNDERTOW_LOG.setLevel(Level.WARN);
+        HTTP_CLIENT_LOG.setLevel(Level.WARN);
+
         if (serverOptions.isDebug() || !logLevel.equalsIgnoreCase("info")) {
             logPattern = "[%color{%-5p}] %c: %m%n";
             layout.setConversionPattern(logPattern);
@@ -104,16 +120,10 @@ public class LoggerFactory {
                 RUNWAR_CONFIG.setLevel(level);
                 RUNWAR_SECURITY.setLevel(level);
                 RUNWAR_REQUEST.setLevel(level);
+                // Logger.getRootLogger().setLevel(level);
                 configureUrlRewriteLoggers(true);
             } else {
-                RUNWAR_SERVER.setLevel(level);
-                DORKBOX_LOG.setLevel(Level.ERROR);
-                UNDERTOW_LOG.setLevel(Level.WARN);
-                HTTP_CLIENT_LOG.setLevel(Level.WARN);
-                RUNWAR_CONFIG.setLevel(Level.WARN);
-                RUNWAR_SECURITY.setLevel(Level.WARN);
-                RUNWAR_REQUEST.setLevel(Level.WARN);
-                configureUrlRewriteLoggers(true);
+                configureUrlRewriteLoggers(false);
             }
         }
 
@@ -133,7 +143,7 @@ public class LoggerFactory {
             appenders.add(fa);
             Logger.getRootLogger().addAppender(fa);
         }
-        Logger.getRootLogger().addAppender(console);
+        Logger.getRootLogger().addAppender(consoleAppender);
 
         loggers.forEach(logger -> {
             appenders.forEach(appender -> {
@@ -163,43 +173,58 @@ public class LoggerFactory {
     }
 
     public static void configureUrlRewriteLoggers(boolean isTrace) {
-        Logger REWRITE_CONDITION_LOG = Logger.getLogger(" org.tuckey.web.filters.urlrewrite.Condition");
-        Logger REWRITE_RULE_LOG = Logger.getLogger(" org.tuckey.web.filters.urlrewrite.RuleBase");
+        Logger REWRITE_CONDITION_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.Condition");
+        Logger REWRITE_RULE_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.RuleBase");
         Logger REWRITE_SUBSTITUTION_LOG = Logger
-                .getLogger(" org.tuckey.web.filters.urlrewrite.substitution.VariableReplacer");
-        Logger REWRITE_EXECUTION_LOG = Logger.getLogger(" org.tuckey.web.filters.urlrewrite.RuleExecutionOutput");
-        Logger REWRITE_WRITER_LOG = Logger.getLogger(" org.tuckey.web.filters.urlrewrite.UrlRewriter");
-        Logger REWRITE_URL_LOG = Logger.getLogger(" org.tuckey.web.filters.urlrewrite.RewrittenUrl");
+                .getLogger("org.tuckey.web.filters.urlrewrite.substitution.VariableReplacer");
+        Logger REWRITE_EXECUTION_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.RuleExecutionOutput");
+        Logger REWRITE_WRITER_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.UrlRewriter");
+        Logger REWRITE_URL_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite");
+        Logger REWRITE_FILTER = Logger.getLogger("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+        Logger REWRITE_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.utils.Log");
+        urlrewriteLoggers = new ArrayList<Logger>();
+        urlrewriteLoggers.add(REWRITE_CONDITION_LOG);
+        urlrewriteLoggers.add(REWRITE_RULE_LOG);
+        urlrewriteLoggers.add(REWRITE_SUBSTITUTION_LOG);
+        urlrewriteLoggers.add(REWRITE_EXECUTION_LOG);
+        urlrewriteLoggers.add(REWRITE_WRITER_LOG);
+        urlrewriteLoggers.add(REWRITE_URL_LOG);
+        urlrewriteLoggers.add(REWRITE_FILTER);
+        urlrewriteLoggers.add(REWRITE_LOG);
 
         if (rewriteLogAppender != null) {
-            RunwarLogger.CONF_LOG.warnf("Enabling URL rewrite log: %s", rewriteLogAppender.getFile());
-            REWRITE_CONDITION_LOG.addAppender(rewriteLogAppender);
-            REWRITE_RULE_LOG.addAppender(rewriteLogAppender);
-            REWRITE_SUBSTITUTION_LOG.addAppender(rewriteLogAppender);
-            REWRITE_EXECUTION_LOG.addAppender(rewriteLogAppender);
-            REWRITE_WRITER_LOG.addAppender(rewriteLogAppender);
-            REWRITE_URL_LOG.addAppender(rewriteLogAppender);
+            RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log: %s", rewriteLogAppender.getFile());
+            urlrewriteLoggers.forEach(logger -> {
+                logger.addAppender(rewriteLogAppender);
+                logger.setAdditivity(false);
+            });
         }
 
         if (isTrace) {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "TRACE");
-            REWRITE_CONDITION_LOG.setLevel(Level.TRACE);
-            REWRITE_RULE_LOG.setLevel(Level.TRACE);
-            REWRITE_SUBSTITUTION_LOG.setLevel(Level.TRACE);
-            REWRITE_EXECUTION_LOG.setLevel(Level.TRACE);
-            REWRITE_WRITER_LOG.setLevel(Level.TRACE);
-            REWRITE_URL_LOG.setLevel(Level.TRACE);
+            urlrewriteLoggers.forEach(logger -> {
+                logger.setLevel(Level.TRACE);
+                logger.addAppender(consoleAppender);
+                logger.setAdditivity(false);
+            });
         } else {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "DEBUG");
-            REWRITE_CONDITION_LOG.setLevel(Level.DEBUG);
-            REWRITE_RULE_LOG.setLevel(Level.DEBUG);
-            REWRITE_SUBSTITUTION_LOG.setLevel(Level.DEBUG);
-            REWRITE_EXECUTION_LOG.setLevel(Level.DEBUG);
-            REWRITE_WRITER_LOG.setLevel(Level.DEBUG);
-            REWRITE_URL_LOG.setLevel(Level.DEBUG);
+            urlrewriteLoggers.forEach(logger -> {
+                logger.setLevel(Level.DEBUG);
+                logger.setAdditivity(false);
+            });
         }
-        REWRITE_CONDITION_LOG.info("EEEEEE");
+    }
 
+    public static void listLoggers() {
+        for (Enumeration<?> loggers = LogManager.getCurrentLoggers(); loggers.hasMoreElements();) {
+            Logger logger = (Logger) loggers.nextElement();
+            System.out.println("Logger: " + logger.getName());
+            for (Enumeration<?> appenders = logger.getAllAppenders(); appenders.hasMoreElements();) {
+                Appender appender = (Appender) appenders.nextElement();
+                System.out.println("  appender: " + appender.getName());
+            }
+        }
     }
 
 }

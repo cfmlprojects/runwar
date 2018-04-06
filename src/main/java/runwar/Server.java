@@ -29,6 +29,7 @@ import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -40,6 +41,8 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.xnio.BufferAllocator;
 import org.xnio.OptionMap;
 import org.xnio.Options;
@@ -723,7 +726,9 @@ public class Server {
         String sslInfo = serverOptions.isEnableSSL() ? " https-port:" + serverOptions.getSSLPort() : "";
         String msg = "Server is up - http-port:" + portNumber + sslInfo + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         LOG.info(msg);
-//        System.out.println(msg);
+        if(serverOptions.getLoglevel().equalsIgnoreCase("WARN") || serverOptions.getLoglevel().equalsIgnoreCase("ERROR")) {
+            System.out.println(msg);
+        }
         if(serverOptions.isTrayEnabled()) {
             LaunchUtil.displayMessage("info", msg);
         }
@@ -991,6 +996,10 @@ public class Server {
             if(System.getProperty("runwar.classlist") != null && Boolean.parseBoolean(System.getProperty("runwar.classlist"))) {
                 ClassLoaderUtils.listAllClasses(serverOptions.getLogDir() + "/classlist.txt");
             }
+            if(System.getProperty("runwar.listloggers") != null && Boolean.parseBoolean(System.getProperty("runwar.listloggers"))) {
+                LoggerFactory.listLoggers();
+            }
+            
             if(monitor != null) {
                 MonitorThread monitorThread = monitor;
                 monitor = null;
