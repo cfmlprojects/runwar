@@ -50,9 +50,8 @@ public class Start {
     }
 
 	public static void main(String[] args) throws Exception {
-        System.setProperty("log4j.configuration", "log4j.filelog.xml");
         ServerOptions serverOptions = CommandLineHandler.parseLogArguments(args);
-        LoggerFactory.init(serverOptions);
+        LoggerFactory.configure(serverOptions);
         if(args.length == 0) {
             if(new File("server.json").exists()) {
                 serverOptions = new ConfigParser(new File("server.json")).getServerOptions();

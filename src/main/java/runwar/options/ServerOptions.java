@@ -167,6 +167,8 @@ public interface ServerOptions {
 
     File getLogDir();
 
+    boolean hasLogDir();
+
     ServerOptions setLogDir(String logDir);
 
     ServerOptions setLogDir(File logDir);

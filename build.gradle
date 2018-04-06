@@ -3,11 +3,10 @@ import se.bjurr.gitchangelog.api.GitChangelogApi
 import static se.bjurr.gitchangelog.api.GitChangelogApi.gitChangelogApiBuilder
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '2.0.2'
+    id 'com.github.johnrengelman.shadow' version '2.0.3'
     id "com.diffplug.gradle.oomph.ide" version "3.13.0"
     id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "1.55"
     id "org.ajoberstar.grgit" version "2.1.1"
-
 }
 
 buildDir = file('dist')
@@ -118,32 +117,32 @@ task gitChangelogTask() {
                 .withUntaggedName("Untagged version")
                 .withNoIssueName("These commits have no issue in their commit comment")
                 .withTemplateContent("""
-# Changelog
-
-{{#tags}}
-## {{name}}
- {{^hasIssue}}
- GitHub Issues:
- {{/hasIssue}}
- {{#issues}}
-  {{#hasLink}}
-  [{{issue}}]({{link}}) {{title}}
-  {{#commits}}
-   [{{hash}}] {{{messageTitle}}} (https://github.com/{{ownerName}}/{{repoName}}/commit/{{hash}}) 
-  {{/commits}}
-  {{/hasLink}}
- {{/issues}}
-
- {{#issues}}
-  {{^hasLink}}
- Commits:
-  {{#commits}}
-  [{{hash}}] {{{messageTitle}}} (https://github.com/{{ownerName}}/{{repoName}}/commit/{{hash}}) 
-  {{/commits}}
-  {{/hasLink}}
- {{/issues}}
- 
-{{/tags}}
+					# Changelog
+					
+					{{#tags}}
+					## {{name}}
+					 {{^hasIssue}}
+					 GitHub Issues:
+					 {{/hasIssue}}
+					 {{#issues}}
+					  {{#hasLink}}
+					  [{{issue}}]({{link}}) {{title}}
+					  {{#commits}}
+					   [{{hash}}] {{{messageTitle}}} (https://github.com/{{ownerName}}/{{repoName}}/commit/{{hash}}) 
+					  {{/commits}}
+					  {{/hasLink}}
+					 {{/issues}}
+					
+					 {{#issues}}
+					  {{^hasLink}}
+					 Commits:
+					  {{#commits}}
+					  [{{hash}}] {{{messageTitle}}} (https://github.com/{{ownerName}}/{{repoName}}/commit/{{hash}}) 
+					  {{/commits}}
+					  {{/hasLink}}
+					 {{/issues}}
+					 
+					{{/tags}}
                 """.stripIndent())
                 .render()
 

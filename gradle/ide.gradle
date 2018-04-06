@@ -21,7 +21,10 @@ oomphIde {
     feature   'org.codehaus.groovy24.feature'
 
     repo 'http://www.mihai-nita.net/eclipse'
-    feature 'net.mihai-nita.ansicon.feature'
+    feature 'net.mihai-nita.ansicon'
+
+    repo 'http://download.eclipse.org/buildship/updates/e47/milestones/2.x'
+    feature 'org.eclipse.buildship'
 
     repoEclipseLatest()
     jdt {}

@@ -8,6 +8,7 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import runwar.Server;
+import runwar.options.ServerOptionsImpl;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
@@ -31,6 +32,7 @@ import static org.jboss.logging.Logger.Level.ERROR;
 import static org.jboss.logging.Logger.Level.INFO;
 import static org.jboss.logging.Logger.Level.WARN;
 
+
 /**
  * log messages start at 5000
  *
@@ -38,7 +40,7 @@ import static org.jboss.logging.Logger.Level.WARN;
 @MessageLogger(projectCode = "RW")
 public interface RunwarLogger extends BasicLogger {
 
-    boolean initialized = LoggerFactory.defaults();
+    boolean initialized = LoggerFactory.initialize();
 
     /*
      * public default void doityo() {
@@ -52,7 +54,8 @@ public interface RunwarLogger extends BasicLogger {
     Logger CONF_LOG = Logger.getLogger("runwar.config");
     Logger MAPPER_LOG = Logger.getLogger("runwar.request");
     Logger SECURITY_LOGGER = Logger.getLogger("runwar.security");
-//  RunwarLogger ROOT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName());
+
+    //  RunwarLogger ROOT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName());
 //    RunwarLogger CLIENT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, ClientConnection.class.getPackage().getName());
 //
 //    RunwarLogger REQUEST_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName() + ".request");

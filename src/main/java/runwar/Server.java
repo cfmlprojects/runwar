@@ -214,7 +214,7 @@ public class Server {
     
     public synchronized void startServer(final ServerOptions options) throws Exception {
         serverOptions = (ServerOptionsImpl) options;
-        LoggerFactory.init(serverOptions);
+        LoggerFactory.configure(serverOptions);
         serverState = ServerState.STARTING;
         if(serverOptions.getAction().equals("stop")){
             Stop.stopServer(serverOptions,true);
@@ -1032,9 +1032,7 @@ public class Server {
             if(serverOptions.getURLRewriteStatusPath() != null && serverOptions.getURLRewriteStatusPath().length() != 0) {
                 rewriteFilterInfo.addInitParam("statusPath", serverOptions.getURLRewriteStatusPath());
             }
-            if(serverOptions.getLoglevel() != "WARN") {
-                rewriteFilterInfo.addInitParam("logLevel", serverOptions.getLoglevel());
-            }
+            rewriteFilterInfo.addInitParam("logLevel", "SLF4J");
             servletBuilder.addFilter(rewriteFilterInfo);
             servletBuilder.addFilterUrlMapping("UrlRewriteFilter", "/*", DispatcherType.REQUEST);
         } else {

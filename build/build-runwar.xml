@@ -320,7 +320,8 @@
  -->
   </target>
 
-  <target name="build.testwar" depends="cfdistro.build">
+  <target name="build.testwar">
+    <antcontrib:runtarget target="cfdistro.build" />
     <mapping physical="${basedir}/../tests" virtual="/tests"/>
   </target>
   

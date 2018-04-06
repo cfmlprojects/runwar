@@ -441,6 +441,16 @@ public class ServerOptionsImpl implements ServerOptions {
     /*
      * (non-Javadoc)
      * 
+     * @see runwar.options.ServerOptions#hasLogDir()
+     */
+    @Override
+    public boolean hasLogDir() {
+        return logDir != null;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see runwar.options.ServerOptions#getLogDir()
      */
     @Override

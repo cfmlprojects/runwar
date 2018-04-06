@@ -58,7 +58,7 @@ public class LaunchUtil {
     private static String uname;
     private static String linuxRelease;
     static {
-        LoggerFactory.defaults();
+        LoggerFactory.initialize();
     }
 
     public static File getJreExecutable() throws FileNotFoundException {
