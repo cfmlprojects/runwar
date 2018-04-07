@@ -210,9 +210,10 @@ public class LoggerFactory {
         } else {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "DEBUG");
             urlrewriteLoggers.forEach(logger -> {
-                logger.setLevel(Level.DEBUG);
+                logger.setLevel(Level.WARN);
                 logger.setAdditivity(false);
             });
+            REWRITE_EXECUTION_LOG.setLevel(Level.DEBUG);
         }
     }
 
