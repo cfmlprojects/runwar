@@ -526,7 +526,7 @@ public class CommandLineHandler {
                 .withLongOpt( "cookie-secure" )
                 .withDescription( "Set cookie 'secure' header" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
-                .create(Keys.COOKIEHTTPONLY) );
+                .create(Keys.COOKIESECURE) );
 
         options.addOption( OptionBuilder
                 .withLongOpt( "webinf-path" )
