@@ -26,6 +26,14 @@ oomphIde {
     repo 'http://download.eclipse.org/buildship/updates/e47/milestones/2.x'
     feature 'org.eclipse.buildship'
 
+    repo 'http://download.eclipse.org/egit/updates'
+    feature 'org.eclipse.egit'
+
+    repo 'http://download.eclipse.org/egit/github/updates/'
+    feature 'org.eclipse.mylyn_feature'
+    repo 'http://download.eclipse.org/mylyn/releases/latest'
+    feature 'org.eclipse.mylyn.github.feature'
+
     repoEclipseLatest()
     jdt {}
     eclipseIni { vmargs('-Xmx2g')    // IDE can have up to 2 gigs of RAM

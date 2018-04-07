@@ -21,15 +21,15 @@ import com.jcabi.log.MulticolorLayout;
 
 public class LoggerFactory {
 
-    private static boolean initialized = false;
+    private static volatile boolean initialized = false;
     private static volatile String logFile;
     private static volatile String logLevel;
     private static volatile String logPattern;
-    private static List<Appender> appenders;
-    private static List<Logger> loggers;
-    private static List<Logger> urlrewriteLoggers;
-    private static RollingFileAppender rewriteLogAppender;
-    private static ConsoleAppender consoleAppender;
+    private static volatile List<Appender> appenders;
+    private static volatile List<Logger> loggers;
+    private static volatile List<Logger> urlrewriteLoggers;
+    private static volatile RollingFileAppender rewriteLogAppender;
+    private static volatile ConsoleAppender consoleAppender;
 
     public static void configure(ServerOptions serverOptions) {
         Logger.getRootLogger().getLoggerRepository().resetConfiguration();

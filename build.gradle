@@ -56,14 +56,31 @@ test {
 }
 
 
+	//////////
+	// OSGI //
+	//////////
+	// create the manifest
+	apply plugin: 'com.diffplug.gradle.osgi.bndmanifest'
+	osgiBndManifest {
+		copyTo 'META-INF/MANIFEST.MF'
+	}
+	
 jar {
     classifier = 'core'
-    manifest {
-        attributes 'Main-Class': 'runwar.Start'
-        attributes 'Can-Redefine-Classes': 'true'
-        attributes 'Can-Retransform-Classes': 'true'
-        attributes 'Implementation-Version': project.version
-    }
+    manifest.attributes (
+        'Main-Class': 'runwar.Start',
+         'Can-Redefine-Classes': 'true',
+         'Can-Retransform-Classes': 'true',
+         'Implementation-Version': project.version,
+		'-exportcontents': 'runwar.*',
+		'-removeheaders': 'Bnd-LastModified,Bundle-Name,Created-By,Tool,Private-Package,Require-Capability',
+		'Import-Package': '!javax.annotation.*,*',
+		'Bundle-SymbolicName': project.name,
+		'Bundle-RequiredExecutionEnvironment': 'JavaSE-1.8',
+		'Require-Capability': 'osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"',
+		'Bundle-Vendor': 'cfmlprojects.org',
+		'Bundle-License': "MIT"
+    )
 }
 
 task javadocJar(type: Jar) {

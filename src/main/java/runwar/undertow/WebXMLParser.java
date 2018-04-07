@@ -95,66 +95,6 @@ public class WebXMLParser {
                 }
             });
 
-            // do filters
-            Match filters = $(doc).find("filter");
-            trace("Total no of filters: %s", filters.size());
-            filters.each(ctx -> {
-                String filterName = $(ctx).find("filter-name").text();
-                String className = $(ctx).find("filter-class").text();
-                CONF_LOG.tracef("filter-name: %s, filter-class: %s", filterName, className);
-                try {
-                    FilterInfo filter = new FilterInfo(filterName,
-                            (Class<? extends Filter>) info.getClassLoader().loadClass(className));
-                    Match initParams = $(ctx).find("init-param");
-                    CONF_LOG.debugf("Total no of %s init-params: %s", filterName, initParams.size());
-                    initParams.each(cctx -> {
-                        String pName = $(cctx).find("param-name").text();
-                        String pValue = $(cctx).find("param-value").text();
-                        filter.addInitParam(pName, pValue);
-                        CONF_LOG.tracef("%s init-param: param-name: %s  param-value: %s", filterName, pName, pValue);
-                    });
-                    if ($(ctx).find("async-supported").size() > 0) {
-                        trace("Async supported: %s", $(ctx).find("async-supported").text());
-                        filter.setAsyncSupported(Boolean.valueOf($(ctx).find("async-supported").text()));
-                    }
-                    filterMap.put(filterName, filter);
-                } catch (ClassNotFoundException e) {
-                    CONF_LOG.error(e);
-                }
-            });
-            info.addFilters(filterMap.values());
-
-            Match filterMappings = $(doc).find("filter-mapping");
-            trace("Total no of filters-mappings: %s", filterMappings.size());
-            filterMappings.each(ctx -> {
-                String filterName = $(ctx).find("filter-name").text();
-                String className = $(ctx).find("filter-class").text();
-                CONF_LOG.tracef("filter-name: %s, filter-class: %s", filterName, className);
-                FilterInfo filter = filterMap.get(filterName);
-                if (filter == null) {
-                    CONF_LOG.errorf("No filter found for filter-mapping: %s", filterName);
-                } else {
-                    String urlPattern = $(ctx).find("url-pattern").text();
-                    Match dispatchers = $(ctx).find("dispatcher");
-                    if (dispatchers == null) {
-                        CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: REQUEST", filterName, urlPattern);
-                        info.addFilterUrlMapping(filterName, urlPattern, DispatcherType.valueOf("REQUEST"));
-                    } else {
-                        dispatchers.each(dCtx -> {
-                            String dispatcher = $(dCtx).text();
-                            CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: %s", filterName, urlPattern,
-                                    dispatcher);
-                            info.addFilterUrlMapping(filterName, $(dCtx).text(), DispatcherType.valueOf(dispatcher));
-                        });
-                    }
-                    String servletName = $(ctx).find("servlet-name").text();
-                    if (servletName != null) {
-                        CONF_LOG.debugf("Adding servlet mapping: %s", servletName);
-                        info.addFilterServletNameMapping(filterName, servletName, DispatcherType.valueOf("REQUEST"));
-                    }
-                }
-            });
-
             Match servlets = $(doc).find("servlet");
             trace("Total no of servlets: %s", servlets.size());
             servlets.each(ctx -> {
@@ -216,6 +156,65 @@ public class WebXMLParser {
 
             // add servlets to deploy info
             info.addServlets(servletMap.values());
+            // do filters
+            Match filters = $(doc).find("filter");
+            trace("Total no of filters: %s", filters.size());
+            filters.each(ctx -> {
+                String filterName = $(ctx).find("filter-name").text();
+                String className = $(ctx).find("filter-class").text();
+                CONF_LOG.tracef("filter-name: %s, filter-class: %s", filterName, className);
+                try {
+                    FilterInfo filter = new FilterInfo(filterName,
+                            (Class<? extends Filter>) info.getClassLoader().loadClass(className));
+                    Match initParams = $(ctx).find("init-param");
+                    CONF_LOG.debugf("Total no of %s init-params: %s", filterName, initParams.size());
+                    initParams.each(cctx -> {
+                        String pName = $(cctx).find("param-name").text();
+                        String pValue = $(cctx).find("param-value").text();
+                        filter.addInitParam(pName, pValue);
+                        CONF_LOG.tracef("%s init-param: param-name: %s  param-value: %s", filterName, pName, pValue);
+                    });
+                    if ($(ctx).find("async-supported").size() > 0) {
+                        trace("Async supported: %s", $(ctx).find("async-supported").text());
+                        filter.setAsyncSupported(Boolean.valueOf($(ctx).find("async-supported").text()));
+                    }
+                    filterMap.put(filterName, filter);
+                } catch (ClassNotFoundException e) {
+                    CONF_LOG.error(e);
+                }
+            });
+            info.addFilters(filterMap.values());
+
+            Match filterMappings = $(doc).find("filter-mapping");
+            trace("Total no of filters-mappings: %s", filterMappings.size());
+            filterMappings.each(ctx -> {
+                String filterName = $(ctx).find("filter-name").text();
+                FilterInfo filter = filterMap.get(filterName);
+                if (filter == null) {
+                    CONF_LOG.errorf("No filter found for filter-mapping: %s", filterName);
+                } else {
+                    String className = $(ctx).find("filter-class").text() != null ? $(ctx).find("filter-class").text() : filter.getFilterClass().getName();
+                    CONF_LOG.tracef("filter-name: %s, filter-class: %s", filterName, className);
+                    String urlPattern = $(ctx).find("url-pattern").text();
+                    Match dispatchers = $(ctx).find("dispatcher");
+                    if (dispatchers == null) {
+                        CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: REQUEST", filterName, urlPattern);
+                        info.addFilterUrlMapping(filterName, urlPattern, DispatcherType.valueOf("REQUEST"));
+                    } else {
+                        dispatchers.each(dCtx -> {
+                            String dispatcher = $(dCtx).text();
+                            CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: %s", filterName, urlPattern,
+                                    dispatcher);
+                            info.addFilterUrlMapping(filterName, urlPattern, DispatcherType.valueOf(dispatcher));
+                        });
+                    }
+                    String servletName = $(ctx).find("servlet-name").text();
+                    if (servletName != null) {
+                        CONF_LOG.debugf("Adding servlet mapping: %s", servletName);
+                        info.addFilterServletNameMapping(filterName, servletName, DispatcherType.valueOf("REQUEST"));
+                    }
+                }
+            });
 
             // do welcome files
             if (ignoreWelcomePages) {

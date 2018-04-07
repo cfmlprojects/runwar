@@ -61,6 +61,11 @@ public class LaunchUtil {
         LoggerFactory.initialize();
     }
 
+    public static void initializeLogging() {
+        System.out.println("Initialized logging");
+        LoggerFactory.initialize();
+    }
+
     public static File getJreExecutable() throws FileNotFoundException {
         String jreDirectory = System.getProperty("java.home");
         if (jreDirectory == null) {
@@ -110,6 +115,7 @@ public class LaunchUtil {
 
     public static void launch(List<String> cmdarray, int timeout, boolean andExit) throws IOException, InterruptedException {
         // byte[] buffer = new byte[1024];
+        LoggerFactory.initialize();
         boolean serverIsUp = false;
         ProcessBuilder processBuilder = new ProcessBuilder(cmdarray);
         processBuilder.redirectErrorStream(true);
@@ -226,6 +232,7 @@ public class LaunchUtil {
             if (relaunching)
                 return;
             relaunching = true;
+            LoggerFactory.initialize();
             String path = LaunchUtil.class.getProtectionDomain().getCodeSource().getLocation().getPath();
             RunwarLogger.LOG.info("Starting background " + processName + " from: " + path + " ");
             String decodedPath = URLDecoder.decode(path, "UTF-8");
