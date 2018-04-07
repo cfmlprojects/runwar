@@ -43,7 +43,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
     private List<String> jvmArgs = null;
     private Map<Integer, String> errorPages = null;
-    private boolean servletRestEnabled = true;
+    private boolean servletRestEnabled = false;
     private String[] servletRestMappings = { "/rest" };
     private boolean filterPathInfoEnabled = true;
     private String[] sslAddCerts = null;

@@ -926,6 +926,9 @@ public class CommandLineHandler {
             }
             if (hasOptionValue(line, Keys.SERVLETRESTMAPPINGS)) {
                 serverOptions.setServletRestMappings(line.getOptionValue(Keys.SERVLETRESTMAPPINGS));
+                if(!hasOptionValue(line, Keys.SERVLETREST)) {
+                    serverOptions.setServletRestEnabled(true);
+                }
             }
             if (hasOptionValue(line, Keys.FILTERPATHINFO)) {
                 serverOptions.setFilterPathInfoEnabled(Boolean.valueOf(line.getOptionValue(Keys.FILTERPATHINFO)));

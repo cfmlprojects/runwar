@@ -479,7 +479,7 @@ public class Server {
         }
         LOG.info("welcome pages in deployment manager: " + servletBuilder.getWelcomePages());
 
-        if(ignoreRestMappings) {
+        if(ignoreRestMappings && serverOptions.getServletRestEnabled()) {
             LOG.info("Overriding web.xml rest mappings with " + Arrays.toString( serverOptions.getServletRestMappings() ) );
             Iterator<Entry<String, ServletInfo>> it = servletBuilder.getServlets().entrySet().iterator();
             while (it.hasNext()) {
@@ -492,6 +492,8 @@ public class Server {
                     }
                 }
             }
+        } else if (!serverOptions.getServletRestEnabled()) {
+            LOG.trace("REST servlets disabled");
         }
         
         // TODO: probably best to create a new worker for websockets, if we want fastness, but for now we share
@@ -874,13 +876,12 @@ public class Server {
         internalCFMLServerRoot.mkdirs();
         servletBuilder.setResourceManager(getResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot));
 
-        Class<Servlet> cfmlServlet = getCFMLServletClass(cfengine);
+        servletBuilder.setClassLoader(_classLoader);
         if (webXmlFile != null) {
             LOG.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
-            servletBuilder.setClassLoader(_classLoader);
             WebXMLParser.parseWebXml(webXmlFile, webinf, servletBuilder, sessionConfig, ignoreWelcomePages, ignoreRestMappings);
         } else {
-            servletBuilder.setClassLoader(_classLoader);
+            Class<Servlet> cfmlServlet = getCFMLServletClass(cfengine);
             Class<Servlet> restServletClass = getRestServletClass(cfengine);
             LOG.debug("loaded servlet classes");
             servletBuilder.addServlet(
