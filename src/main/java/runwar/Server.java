@@ -780,18 +780,19 @@ public class Server {
 
     private void configureServerResourceHandler(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
         String cfusionDir = new File(webinf,"cfusion").getAbsolutePath();
+        final String cfClasspath = "%s/lib/updates/,%s/lib/,%s/lib/axis2,%s/gateway/lib/,%s/../cfform/jars,%s/../flex/jars,%s/lib/oosdk/lib,%s/lib/oosdk/classes".replaceAll("%s", cfusionDir);
+        
         if(cfengine.equals("adobe") || cfengine.equals("") && new File(cfusionDir).exists()){
             if (System.getProperty("coldfusion.home") == null) {
-                LOG.debug("Setting coldfusion home:" + cfusionDir);
+                LOG.debug("Setting coldfusion.home: '" + cfusionDir + "'");
+                LOG.debug("Setting coldfusion.classpath: '" + cfClasspath + "'");
                 System.setProperty("coldfusion.home", cfusionDir);
                 System.setProperty("coldfusion.rootDir", cfusionDir);
 //                System.setProperty("javax.servlet.context.tempdir", cfusionDir + "/../cfclasses");
                 System.setProperty("coldfusion.libPath", cfusionDir + "/lib");
                 System.setProperty("flex.dir", new File(webinf,"cfform").getAbsolutePath());
                 System.setProperty("coldfusion.jsafe.defaultalgo", "FIPS186Random");
-                System.setProperty("coldfusion.classPath", cfusionDir + "/lib/updates/," + cfusionDir + "/lib/,"
-                        + cfusionDir + "/lib/axis2,"+ cfusionDir + "/gateway/lib/,"+ cfusionDir + "/../cfform/jars,"
-                        + cfusionDir + "/../flex/jars,"+ cfusionDir + "/lib/oosdk/lib,"+ cfusionDir + "/lib/oosdk/classes");
+                System.setProperty("coldfusion.classPath", cfClasspath);
                 System.setProperty("java.security.policy", cfusionDir + "/lib/coldfusion.policy");
                 System.setProperty("java.security.auth.policy", cfusionDir + "/lib/neo_jaas.policy");
                 System.setProperty("java.nixlibrary.path", cfusionDir + "/lib");
@@ -809,7 +810,7 @@ public class Server {
                 throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
             }
             servletBuilder.setClassLoader(_classLoader);
-            LOG.debug("Running default web server" + warFile.getAbsolutePath());
+            LOG.debug("Running default web server '" + warFile.getAbsolutePath()+ "'");
         }
         if(cfengine.equals("adobe") || cfengine.equals("") && new File(cfusionDir).exists()) {
             String cfclassesDir = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
@@ -817,7 +818,7 @@ public class Server {
                 // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
                 File cfclassesDirFile = new File(webinf, "/cfclasses");
                 cfclassesDir = cfclassesDirFile.getAbsolutePath();
-                LOG.debug("ADOBE - coldfusion.compiler.outputDir set to " + cfclassesDir);
+                LOG.debug("Setting coldfusion.compiler.outputDir: '" + cfclassesDir + "'");
                 if( !cfclassesDirFile.exists() ) {
                     cfclassesDirFile.mkdir();
                 }
@@ -829,7 +830,7 @@ public class Server {
 
     private void configureServerWar(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
         Long transferMinSize= serverOptions.getTransferMinSize();
-        LOG.debug("found WEB-INF: " + webinf.getAbsolutePath());
+        LOG.debug("found WEB-INF: '" + webinf.getAbsolutePath() + "'");
         if (_classLoader == null) {
             throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
         }

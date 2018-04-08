@@ -15,6 +15,7 @@ import javax.servlet.Servlet;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.joox.Context;
 import org.joox.Match;
 import org.w3c.dom.Document;
 
@@ -25,6 +26,7 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.ServletInfo;
+import runwar.logging.RunwarLogger;
 
 public class WebXMLParser {
 
@@ -39,7 +41,7 @@ public class WebXMLParser {
     @SuppressWarnings("unchecked")
     public static void parseWebXml(File webxml, File webinf, DeploymentInfo info, SessionCookieConfig sessionConfig,
             boolean ignoreWelcomePages, boolean ignoreRestMappings) {
-        CONF_LOG.infof("Parsing %s", webxml.getPath());
+        CONF_LOG.infof("Parsing '%s'", webxml.getPath());
         if (!webxml.exists() || !webxml.canRead()) {
             CONF_LOG.error("Error reading web.xml! exists:" + webxml.exists() + "readable:" + webxml.canRead());
         }
@@ -52,7 +54,7 @@ public class WebXMLParser {
             } else {
                 webinfPath = webinf.getCanonicalPath();
             }
-            trace("parsing %s", webxml.getCanonicalPath());
+            trace("parsing '%s'", webxml.getCanonicalPath());
             DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 
             // disable validation, so we don't incur network calls
@@ -72,18 +74,18 @@ public class WebXMLParser {
             }
 
             $(doc).find("context-param").each(ctx -> {
-                String pName = $(ctx).find("param-name").text();
-                String pValue = $(ctx).find("param-value").text();
+                String pName = getRequired(ctx,"param-name");
+                String pValue = getRequired(ctx,"param-value");
                 info.addServletContextAttribute(pName, pValue);
                 info.addInitParameter(pName, pValue);
-                CONF_LOG.tracef("context param: %s = %s", pName, pValue);
+                CONF_LOG.tracef("context param: '%s' = '%s'", pName, pValue);
             });
             trace("Total no of context-params: %s", info.getServletContextAttributes().size());
 
             Match listeners = $(doc).find("listener");
             trace("Total no of listeners: %s", listeners.size());
             listeners.each(ctx -> {
-                String pName = $(ctx).find("listener-class").text();
+                String pName = getRequired(ctx,"listener-class");
                 CONF_LOG.tracef("Listener: %s", pName);
                 ListenerInfo listener;
                 try {
@@ -97,12 +99,12 @@ public class WebXMLParser {
 
             Match servlets = $(doc).find("servlet");
             trace("Total no of servlets: %s", servlets.size());
-            servlets.each(ctx -> {
-                String servletName = $(ctx).find("servlet-name").text();
-                String servletClassName = $(ctx).find("servlet-class").text();
-                String loadOnStartup = $(ctx).find("load-on-startup").text();
+            servlets.each(servletElement -> {
+                String servletName = getRequired(servletElement, "servlet-name");
+                String servletClassName = getRequired(servletElement, "servlet-class");
+                String loadOnStartup = get(servletElement, "load-on-startup");
                 CONF_LOG.tracef("servlet-name: %s, servlet-class: %s", servletName, servletClassName);
-                CONF_LOG.tracef("Adding servlet to undertow: ************* %s: %s *************", servletName,
+                CONF_LOG.tracef("Adding servlet: ***** %s: %s *****", servletName,
                         servletClassName);
                 Class<?> servletClass;
                 try {
@@ -118,14 +120,14 @@ public class WebXMLParser {
                     trace("Load on startup: %s", loadOnStartup);
                     servlet.setLoadOnStartup(Integer.valueOf(loadOnStartup));
                 }
-                Match initParams = $(ctx).find("init-param");
+                Match initParams = $(servletElement).find("init-param");
                 CONF_LOG.debugf("Total no of %s init-params: %s", servletName, initParams.size());
-                initParams.each(cctx -> {
-                    String pName = $(cctx).find("param-name").text();
-                    String pValue = $(cctx).find("param-value").text();
+                initParams.each(initParamElement -> {
+                    String pName = getRequired(initParamElement, "param-name");
+                    String pValue = getRequired(initParamElement, "param-value");
                     pValue = pValue.replaceAll(".?/WEB-INF",
                             SPECIAL_REGEX_CHARS.matcher(webinfPath).replaceAll("\\\\$0"));
-                    CONF_LOG.tracef("%s init-param: param-name: %s  param-value: %s", servletName, pName, pValue);
+                    CONF_LOG.tracef("%s init-param: param-name: '%s'  param-value: '%s'", servletName, pName, pValue);
                     servlet.addInitParam(pName, pValue);
                 });
                 servletMap.put(servlet.getName(), servlet);
@@ -133,21 +135,21 @@ public class WebXMLParser {
 
             Match servletMappings = $(doc).find("servlet-mapping");
             trace("Total no of servlet-mappings: %s", servletMappings.size());
-            servletMappings.each(ctx -> {
-                String servletName = $(ctx).find("servlet-name").text();
+            servletMappings.each(mappingElement -> {
+                String servletName = getRequired(mappingElement, "servlet-name");
                 ServletInfo servlet = servletMap.get(servletName);
                 if (servlet == null) {
                     CONF_LOG.errorf("No servlet found for servlet-mapping: %s", servletName);
                 } else {
-                    Match urlPatterns = $(ctx).find("url-pattern");
+                    Match urlPatterns = $(mappingElement).find("url-pattern");
                     urlPatterns.each(urlPatternElement -> {
                         String urlPattern = $(urlPatternElement).text();
                         if (ignoreRestMappings && (servletName.toLowerCase().equals("restservlet")
                                 || servletName.toLowerCase().equals("cfrestservlet"))) {
-                            CONF_LOG.tracef("Skipping mapping servlet-name:%s, url-partern: %s", servletName,
+                            CONF_LOG.tracef("Skipping mapping servlet-name: %s, url-partern: %s", servletName,
                                     urlPattern);
                         } else {
-                            CONF_LOG.tracef("mapping servlet-name:%s, url-pattern: %s", servletName, urlPattern);
+                            CONF_LOG.tracef("mapping servlet-name: %s, url-pattern: %s", servletName, urlPattern);
                             servlet.addMapping(urlPattern);
                         }
                     });
@@ -172,7 +174,7 @@ public class WebXMLParser {
                         String pName = $(cctx).find("param-name").text();
                         String pValue = $(cctx).find("param-value").text();
                         filter.addInitParam(pName, pValue);
-                        CONF_LOG.tracef("%s init-param: param-name: %s  param-value: %s", filterName, pName, pValue);
+                        CONF_LOG.tracef("%s init-param: param-name: '%s'  param-value: '%s'", filterName, pName, pValue);
                     });
                     if ($(ctx).find("async-supported").size() > 0) {
                         trace("Async supported: %s", $(ctx).find("async-supported").text());
@@ -282,10 +284,29 @@ public class WebXMLParser {
         }
     }
 
+    private static String getRequired(Context ctx, String param) {
+        final String result = $(ctx).find(param).text();
+        if(result == null) {
+            // ((RunwarLogger) CONF_LOG).missingRewuiredParam(string);
+            String msg = "Missing required parameter: '" + param + "'";
+            CONF_LOG.error(msg);
+            throw new RuntimeException(msg);
+        }
+        return result.trim();
+    }
+
+    private static String get(Context ctx, String param) {
+        final String result = $(ctx).find(param).text();
+        if(result == null) {
+            return null;
+        }
+        return result.trim();
+    }
+
     private static void trace(String string, Object elements) {
         CONF_LOG.tracef(string, elements);
         // System.out.printf(string,elements);
         // System.out.println();
     }
-
+    
 }

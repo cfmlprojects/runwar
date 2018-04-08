@@ -67,11 +67,12 @@ public class MappedResourceManager extends FileResourceManager {
     };
 
     public Resource getResource(String path) {
-        MAPPER_LOG.debug("* requested:" + path);
         if(path == null) {
-            MAPPER_LOG.error("** getResource got a null path!");
+            MAPPER_LOG.error("* getResource got a null path!");
             return null;
         }
+//        path = path.trim();
+        MAPPER_LOG.debug("* requested: '" + path + "'");
         File reqFile = null;
         try {
             final Matcher webInfMatcher = WEBINF_REGEX_MATCHER.reset(path);
@@ -87,7 +88,7 @@ public class MappedResourceManager extends FileResourceManager {
                 MAPPER_LOG.trace("** matched /CFIDE : " + reqFile.getAbsolutePath());
             } else if (!webInfMatcher.matches()) {
                 reqFile = new File(getBase(), path);
-                MAPPER_LOG.trace("* checking with base path: " + reqFile.getAbsolutePath());
+                MAPPER_LOG.trace("* checking with base path: '" + reqFile.getAbsolutePath() + "'");
                 if (!reqFile.exists()) {
                     reqFile = getAliasedFile(aliasMap, path);
                 }
@@ -95,9 +96,9 @@ public class MappedResourceManager extends FileResourceManager {
                     for (int x = 0; x < cfmlDirsFiles.length; x++) {
                         String absPath = cfmlDirsFiles[x].getCanonicalPath();
                         reqFile = new File(cfmlDirsFiles[x], path.replace(absPath, ""));
-                        MAPPER_LOG.tracef("checking:%s = %s",absPath,reqFile.getAbsolutePath());
+                        MAPPER_LOG.tracef("checking: '%s' = '%s'",absPath,reqFile.getAbsolutePath());
                         if (reqFile.exists()) {
-                            MAPPER_LOG.tracef("Exists: %s",reqFile.getAbsolutePath());
+                            MAPPER_LOG.tracef("Exists: '%s'",reqFile.getAbsolutePath());
                             break;
                         }
                     }
@@ -105,10 +106,10 @@ public class MappedResourceManager extends FileResourceManager {
             }
             if (reqFile != null && reqFile.exists()) {
                 reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
-                MAPPER_LOG.debugf("** path mapped to: %s", reqFile);
+                MAPPER_LOG.debugf("** path mapped to: '%s'", reqFile);
                 return new FileResource(reqFile, this, path);
             } else {
-                MAPPER_LOG.debugf("** No mapped resource for: %s (reqFile was:%s)",path,reqFile != null ? reqFile.getAbsolutePath() : "null");
+                MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.getAbsolutePath() : "null");
                 return super.getResource(path);
             }
         } catch (MalformedURLException e) {

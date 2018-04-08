@@ -430,4 +430,9 @@ public interface RunwarLogger extends BasicLogger {
     @LogMessage(level = DEBUG)
     @Message(id = 5092, value = "Failed to free direct buffer")
     void directBufferDeallocationFailed(@Cause Throwable t);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 6091, value = "Missing required param %s")
+    void missingRequiredParam(String param);
+    
 }
