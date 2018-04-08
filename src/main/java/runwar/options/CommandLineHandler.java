@@ -585,6 +585,8 @@ public class CommandLineHandler {
 
             if (hasOptionValue(line, Keys.LOGDIR)) {
                 serverOptions.setLogDir(line.getOptionValue(Keys.LOGDIR));
+            } else {
+                serverOptions.getLogDir();
             }
             return serverOptions;
         }

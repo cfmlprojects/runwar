@@ -31,8 +31,10 @@ public class LoggerFactory {
     private static volatile RollingFileAppender rewriteLogAppender;
     private static volatile ConsoleAppender consoleAppender;
 
-    public static void configure(ServerOptions serverOptions) {
+    public static synchronized void configure(ServerOptions serverOptions) {
+
         Logger.getRootLogger().getLoggerRepository().resetConfiguration();
+
         logLevel = serverOptions.getLoglevel().toUpperCase();
         logPattern = "%m%n";
         appenders = new ArrayList<Appender>();
@@ -44,6 +46,7 @@ public class LoggerFactory {
         layout.setConversionPattern(logPattern);
         layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;34,WARN:1;43,ERROR:37;41,FATAL:37;40");
         consoleAppender.setLayout(layout);
+        consoleAppender.setName("CONSOLE");
         consoleAppender.setThreshold(Level.toLevel(logLevel));
         consoleAppender.activateOptions();
         appenders.add(consoleAppender);
@@ -66,13 +69,16 @@ public class LoggerFactory {
         loggers.add(UNDERTOW_IO_LOG);
 
         Logger XNIO_LOG = Logger.getLogger("org.xnio.nio");
-        loggers.add(UNDERTOW_IO_LOG);
+        loggers.add(XNIO_LOG);
 
         Logger HTTP_CLIENT_LOG = Logger.getLogger("org.apache.http.client.protocol");
         loggers.add(HTTP_CLIENT_LOG);
 
         Logger RUNWAR_SERVER = Logger.getLogger("runwar.server");
         loggers.add(RUNWAR_SERVER);
+
+        Logger RUNWAR_CONTEXT = Logger.getLogger("runwar.context");
+        loggers.add(RUNWAR_CONTEXT);
 
         Logger RUNWAR_CONFIG = Logger.getLogger("runwar.config");
         loggers.add(RUNWAR_CONFIG);
@@ -89,7 +95,9 @@ public class LoggerFactory {
             rewriteLogAppender = new RollingFileAppender();
             rewriteLogAppender.setName("URLRewriteFileLogger");
             rewriteLogAppender.setFile(serverOptions.getURLRewriteLog().getAbsolutePath());
-            rewriteLogAppender.setLayout(new PatternLayout("%d %-5p [%c{1}] %m%n"));
+            // rewriteLogAppender.setLayout(new
+            // PatternLayout(serverOptions.getLogPattern()));
+            rewriteLogAppender.setLayout(new PatternLayout("[%-5p] %c{2}: %m%n"));
             rewriteLogAppender.setThreshold(Level.toLevel(logLevel));
             rewriteLogAppender.setAppend(true);
             rewriteLogAppender.setMaxFileSize("10MB");
@@ -98,6 +106,7 @@ public class LoggerFactory {
         }
 
         RUNWAR_SERVER.setLevel(level);
+        RUNWAR_CONTEXT.setLevel(level);
         RUNWAR_CONFIG.setLevel(Level.INFO);
         RUNWAR_SECURITY.setLevel(Level.WARN);
         RUNWAR_REQUEST.setLevel(Level.WARN);
@@ -116,11 +125,12 @@ public class LoggerFactory {
                 });
                 UNDERTOW_LOG.setLevel(level);
                 HTTP_CLIENT_LOG.setLevel(level);
-                RUNWAR_SERVER.setLevel(level);
                 RUNWAR_CONFIG.setLevel(level);
+                RUNWAR_SERVER.setLevel(level);
+                RUNWAR_CONTEXT.setLevel(level);
                 RUNWAR_SECURITY.setLevel(level);
                 RUNWAR_REQUEST.setLevel(level);
-                // Logger.getRootLogger().setLevel(level);
+                Logger.getRootLogger().setLevel(level);
                 configureUrlRewriteLoggers(true);
             } else {
                 configureUrlRewriteLoggers(false);
@@ -134,7 +144,7 @@ public class LoggerFactory {
             RollingFileAppender fa = new RollingFileAppender();
             fa.setName("FileLogger");
             fa.setFile(logFile);
-            fa.setLayout(new PatternLayout("%d %-5p [%c{1}] %m%n"));
+            fa.setLayout(new PatternLayout(serverOptions.getLogPattern()));
             fa.setThreshold(Level.toLevel(logLevel));
             fa.setAppend(true);
             fa.setMaxFileSize("10MB");
@@ -166,8 +176,12 @@ public class LoggerFactory {
         return initialized;
     }
 
-    public static boolean initialize() {
-        if (!initialized)
+    public static synchronized boolean initialize() {
+        return initialize(false);
+    }
+
+    public static synchronized boolean initialize(boolean force) {
+        if (!initialized || force)
             configure(new ServerOptionsImpl().setLogDir(""));
         return initialized;
     }
@@ -211,6 +225,7 @@ public class LoggerFactory {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "DEBUG");
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.WARN);
+                logger.addAppender(consoleAppender);
                 logger.setAdditivity(false);
             });
             REWRITE_EXECUTION_LOG.setLevel(Level.DEBUG);

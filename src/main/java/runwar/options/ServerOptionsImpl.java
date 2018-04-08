@@ -57,6 +57,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private boolean http2enabled = false;
     private boolean secureCookies = false, cookieHttpOnly = false, cookieSecure = false;
     private JSONArray trayConfigJSON;
+    private static String logPattern = "[%-5p] %c: %m%n";
 
     static {
         userPasswordList = new HashMap<String, String>();
@@ -457,6 +458,28 @@ public class ServerOptionsImpl implements ServerOptions {
     public ServerOptions setSocketNumber(int socketNumber) {
         this.socketNumber = socketNumber;
         return this;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#setLogPattern(java.lang.String)
+     */
+    @Override
+    public ServerOptions setLogPattern(String pattern) {
+        if (pattern != null && pattern.length() > 0)
+            logPattern = pattern;
+        return this;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see runwar.options.ServerOptions#getLogPattern()
+     */
+    @Override
+    public String getLogPattern() {
+        return logPattern;
     }
 
     /*

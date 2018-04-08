@@ -174,6 +174,10 @@ public interface ServerOptions {
 
     boolean hasLogDir();
 
+    ServerOptions setLogPattern(String logPattern);
+
+    String getLogPattern();
+
     ServerOptions setLogDir(String logDir);
 
     ServerOptions setLogDir(File logDir);

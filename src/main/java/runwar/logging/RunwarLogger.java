@@ -1,15 +1,11 @@
 package runwar.logging;
 
-import io.undertow.client.ClientConnection;
 import io.undertow.protocols.ssl.SslConduit;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
-import runwar.Server;
-import runwar.options.ServerOptionsImpl;
-
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Cause;
@@ -51,6 +47,7 @@ public interface RunwarLogger extends BasicLogger {
      * System.setProperty("runwar.logpattern", "%m%n" ); }
      */
     Logger LOG = Logger.getLogger("runwar.server");
+    Logger CONTEXT_LOG = Logger.getLogger("runwar.context");
     Logger CONF_LOG = Logger.getLogger("runwar.config");
     Logger MAPPER_LOG = Logger.getLogger("runwar.request");
     Logger SECURITY_LOGGER = Logger.getLogger("runwar.security");

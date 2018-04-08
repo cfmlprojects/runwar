@@ -29,7 +29,6 @@ import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -41,8 +40,6 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.xnio.BufferAllocator;
 import org.xnio.OptionMap;
 import org.xnio.Options;
@@ -94,6 +91,8 @@ import io.undertow.util.MimeMappings;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import runwar.logging.LoggerFactory;
+import runwar.logging.LoggerStream;
+import runwar.logging.RunwarLogger;
 import runwar.mariadb4j.MariaDB4jManager;
 import runwar.options.CommandLineHandler;
 import runwar.options.ServerOptions;
@@ -108,6 +107,7 @@ import runwar.util.ClassLoaderUtils;
 import runwar.util.RequestDumper;
 import runwar.util.TeeOutputStream;
 import static runwar.logging.RunwarLogger.LOG;
+import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 
 public class Server {
 
@@ -315,8 +315,9 @@ public class Server {
         }
         LOG.debugf("Server Mode: %s",serverMode);
 
-        sysOutTee = null;
-        sysErrTee = null;
+        // redirect out and err to context logger
+        System.setOut(new PrintStream(new LoggerStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.INFO)));
+        System.setErr(new PrintStream(new LoggerStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.ERROR,"^SLF4J:.*")));
 
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
@@ -356,9 +357,6 @@ public class Server {
         addShutDownHook();
         portNumber = getPortOrErrorOut(portNumber, host);
         socketNumber = getPortOrErrorOut(socketNumber, host);
-        
-        LOG.info("Adding mariadb manager");
-        mariadb4jManager = new MariaDB4jManager(_classLoader);
         
         if(serverOptions.getWelcomeFiles() != null && serverOptions.getWelcomeFiles().length > 0) {
             ignoreWelcomePages = true;
@@ -748,6 +746,8 @@ public class Server {
 //        System.out.println(appInstance.toString());
 
         if (serverOptions.isMariaDB4jEnabled()) {
+            LOG.info("MariaDB support enabled");
+            mariadb4jManager = new MariaDB4jManager(_classLoader);
             try {
                 mariadb4jManager.start(serverOptions.getMariaDB4jPort(), serverOptions.getMariaDB4jBaseDir(),
                         serverOptions.getMariaDB4jDataDir(), serverOptions.getMariaDB4jImportSQLFile());
@@ -755,6 +755,8 @@ public class Server {
                 LOG.error("Could not start MariaDB4j", dbStartException);
                 System.out.println("Error starting MariaDB4j: " + dbStartException.getMessage());
             }
+        } else {
+            LOG.trace("MariaDB support is disabled");
         }
         try{
 
@@ -822,13 +824,6 @@ public class Server {
                 servletBuilder.addServletContextAttribute("coldfusion.compiler.outputDir",cfclassesDir);
                 LOG.debug(servletBuilder.getServletContextAttributes().toString());
             }
-            PrintStream filterOut = new PrintStream(System.err) {
-                public void println(String l) {
-                    if (! l.startsWith("SLF4J") )
-                        super.println(l);
-                }
-            };
-            System.setErr(filterOut);
         }
     }
 
