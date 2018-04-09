@@ -18,7 +18,7 @@ public class MappedResourceManager extends FileResourceManager {
     private HashMap<String, File> aliasMap = new HashMap<String, File>();
     private File[] cfmlDirsFiles;
     private File WEBINF = null;
-    private static final Matcher CFIDE_REGEX_MATCHER = Pattern.compile("^.?CFIDE").matcher("");
+    private static final Matcher CFIDE_REGEX_MATCHER = Pattern.compile("^.?CFIDE(.+)?").matcher("");
     private static final Matcher WEBINF_REGEX_MATCHER = Pattern.compile(".*?WEB-INF(.+)?").matcher("");
     private final boolean allowResourceChangeListeners;
 

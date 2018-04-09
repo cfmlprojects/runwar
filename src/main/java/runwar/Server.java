@@ -779,7 +779,7 @@ public class Server {
     }
 
     private void configureServerResourceHandler(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
-        String cfusionDir = new File(webinf,"cfusion").getAbsolutePath();
+        String cfusionDir = new File(webinf,"cfusion").getAbsolutePath().replace('\\', '/');
         final String cfClasspath = "%s/lib/updates/,%s/lib/,%s/lib/axis2,%s/gateway/lib/,%s/../cfform/jars,%s/../flex/jars,%s/lib/oosdk/lib,%s/lib/oosdk/classes".replaceAll("%s", cfusionDir);
         
         if(cfengine.equals("adobe") || cfengine.equals("") && new File(cfusionDir).exists()){
@@ -818,6 +818,7 @@ public class Server {
                 // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
                 File cfclassesDirFile = new File(webinf, "/cfclasses");
                 cfclassesDir = cfclassesDirFile.getAbsolutePath();
+                cfclassesDirFile = cfclassesDirFile.getAbsoluteFile().toPath().normalize().toFile();
                 LOG.debug("Setting coldfusion.compiler.outputDir: '" + cfclassesDir + "'");
                 if( !cfclassesDirFile.exists() ) {
                     cfclassesDirFile.mkdir();
