@@ -18,6 +18,7 @@ public class MappedResourceManager extends FileResourceManager {
     private HashMap<String, File> aliasMap = new HashMap<String, File>();
     private File[] cfmlDirsFiles;
     private File WEBINF = null;
+    private File CFIDE = null;
     private static final Matcher CFIDE_REGEX_MATCHER = Pattern.compile("^.?CFIDE(.+)?").matcher("");
     private static final Matcher WEBINF_REGEX_MATCHER = Pattern.compile(".*?WEB-INF(.+)?").matcher("");
     private final boolean allowResourceChangeListeners;
@@ -31,6 +32,7 @@ public class MappedResourceManager extends FileResourceManager {
     public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, File webinfDir) {
         this(base, transferMinSize, cfmlDirList, false);
         WEBINF = webinfDir;
+        CFIDE = new File(WEBINF.getParentFile(),"CFIDE");
         MAPPER_LOG.debugf("Initialized MappedResourceManager - base: %s, web-inf: %s, aliases: %s",base.getAbsolutePath(), webinfDir.getAbsolutePath(), cfmlDirList);
         if (!WEBINF.exists()) {
             throw new RuntimeException("The specified WEB-INF does not exist: " + WEBINF.getAbsolutePath());
@@ -76,6 +78,7 @@ public class MappedResourceManager extends FileResourceManager {
         File reqFile = null;
         try {
             final Matcher webInfMatcher = WEBINF_REGEX_MATCHER.reset(path);
+            final Matcher cfideMatcher = CFIDE_REGEX_MATCHER.reset(path);
             if (WEBINF != null && webInfMatcher.matches()) {
                 if(webInfMatcher.group(1) == null) {
                     reqFile = WEBINF;
@@ -83,8 +86,12 @@ public class MappedResourceManager extends FileResourceManager {
                     reqFile = new File(WEBINF, webInfMatcher.group(1).replace("WEB-INF", ""));
                 }
                 MAPPER_LOG.trace("** matched WEB-INF : " + reqFile.getAbsolutePath());
-            } else if (CFIDE_REGEX_MATCHER.reset(path).matches()) {
-                reqFile = new File(WEBINF.getParentFile(), path);
+            } else if (cfideMatcher.matches()) {
+                if(cfideMatcher.group(1) == null) {
+                    reqFile = CFIDE;
+                } else {
+                    reqFile = new File(CFIDE, cfideMatcher.group(1).replace("CFIDE", ""));
+                }
                 MAPPER_LOG.trace("** matched /CFIDE : " + reqFile.getAbsolutePath());
             } else if (!webInfMatcher.matches()) {
                 reqFile = new File(getBase(), path);
@@ -105,7 +112,10 @@ public class MappedResourceManager extends FileResourceManager {
                 }
             }
             if (reqFile != null && reqFile.exists()) {
-                reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
+                if(reqFile.getPath().indexOf('\\') > 0){
+                    reqFile = new File(reqFile.getPath().replace('/', '\\'));
+                }
+//                reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
                 MAPPER_LOG.debugf("** path mapped to: '%s'", reqFile);
                 return new FileResource(reqFile, this, path);
             } else {
