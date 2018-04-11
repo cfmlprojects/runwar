@@ -16,6 +16,10 @@ ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
  }
  */
 
+ext {
+    deployToMaven = false
+}
+
 artifacts { archives javadocJar, sourceJar }
 
 signing { sign configurations.archives }
@@ -120,4 +124,8 @@ model {
     }
     tasks.publishRunwarPublicationToMavenLocal { dependsOn project.tasks.proguard, project.tasks.signArchives }
     tasks.publishRunwarPublicationToMavenRepository { dependsOn project.tasks.proguard, project.tasks.signArchives }
+}
+
+tasks.matching { it.name.startsWith("publish") }.all {
+    onlyIf { !project.deployToMaven }
 }

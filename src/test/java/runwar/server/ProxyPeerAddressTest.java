@@ -33,8 +33,7 @@ public class ProxyPeerAddressTest {
         String port = "8088";
         String forwardFor = "some.domain.forwarded";
         assertTrue(DefaultServer.getServerOptions().isProxyPeerAddressEnabled());
-        final TestHttpClient client = new TestHttpClient();
-        try {
+        TestHttpClient client = DefaultServer.getClient();
             HttpGet get = new HttpGet(DefaultServer.getDefaultServerURL() + "/dumprunwarrequest");
             get.addHeader(Headers.X_FORWARDED_FOR_STRING, forwardFor);
             HttpResponse result = client.execute(get);
@@ -45,9 +44,6 @@ public class ProxyPeerAddressTest {
             assertEquals("localhost:" + port, responseData.get("host"));
             assertEquals(forwardFor,
                     ((JSONObject) responseData.get("headers")).get(Headers.X_FORWARDED_FOR_STRING));
-        } finally {
-            client.getConnectionManager().shutdown();
-        }
     }
 
     @Test
@@ -56,8 +52,7 @@ public class ProxyPeerAddressTest {
         String forwardFor = "localhost";
         String forwardPort = "8765";
         assertTrue(DefaultServer.getServerOptions().isProxyPeerAddressEnabled());
-        final TestHttpClient client = new TestHttpClient();
-        try {
+        TestHttpClient client = DefaultServer.getClient();
             HttpGet get = new HttpGet(DefaultServer.getDefaultServerURL() + "/dumprunwarrequest");
             get.addHeader(Headers.X_FORWARDED_FOR_STRING, forwardFor);
             get.addHeader(Headers.X_FORWARDED_HOST_STRING, forwardFor);
@@ -69,8 +64,5 @@ public class ProxyPeerAddressTest {
             assertEquals(forwardFor, responseData.get("remoteHost"));
             assertEquals(forwardFor,
                     ((JSONObject) responseData.get("headers")).get(Headers.X_FORWARDED_FOR_STRING));
-        } finally {
-            client.getConnectionManager().shutdown();
-        }
     }
 }

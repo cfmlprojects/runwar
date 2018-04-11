@@ -25,6 +25,7 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
     public static final int SSL_PORT = 9443;
     public static final int BUFFER_SIZE = Integer.getInteger("test.bufferSize", 8192 * 3);
     public static final String WARPATH = "src/test/resources/war/simple.war";
+    private static volatile TestHttpClient client = null;
 
     private static volatile Server server = null;
     private static final boolean https = Boolean.getBoolean("test.https");
@@ -39,8 +40,10 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
+        System.out.println("started test");
         try {
             server = new Server();
+            client = new TestHttpClient();
             serverOptions.setWarFile(new File(WARPATH)).setDebug(true).setBackground(false).setTrayEnabled(false);
             server.startServer(serverOptions);
         } catch (Exception e) {
@@ -50,13 +53,22 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
+        System.out.println("finished test");
         server.stopServer();
+        client.getConnectionManager().shutdown();
+        System.out.println("stopped server");
+        server = null;
+        client = null;
     }
 
     public static ServerOptions getServerOptions() {
         return serverOptions;
     }
 
+    public static TestHttpClient getClient() {
+        return client;
+    }
+    
     public static String getDefaultServerURL() {
         return "http://" + NetworkUtils.formatPossibleIpv6Address(getHostAddress(DEFAULT)) + ":" + getHostPort(DEFAULT);
     }

@@ -112,7 +112,6 @@ import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 
 public class Server {
 
-    private TeeOutputStream sysOutTee, sysErrTee;
     private volatile static ServerOptionsImpl serverOptions;
     private static MariaDB4jManager mariadb4jManager;
     int portNumber;
@@ -135,6 +134,8 @@ public class Server {
     private Thread shutDownThread;
     private SecurityManager securityManager;
     private String serverMode;
+    private PrintStream originalSystemOut;
+    private PrintStream originalSystemErr;
 
     private static final int METADATA_MAX_AGE = 2000;
     private static final Thread mainThread = Thread.currentThread();
@@ -301,7 +302,7 @@ public class Server {
             cp.add(jarURL);
         
         if(serverOptions.getMariaDB4jImportSQLFile() != null){
-            System.out.println("ADDN"+serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
+            LOG.info("Importing sql file: "+serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
             cp.add(serverOptions.getMariaDB4jImportSQLFile().toURI().toURL());
         }
         cp.addAll(getClassesList(new File(webinf, "/classes")));
@@ -317,8 +318,7 @@ public class Server {
         LOG.debugf("Server Mode: %s",serverMode);
 
         // redirect out and err to context logger
-        System.setOut(new PrintStream(new LoggerStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.INFO)));
-        System.setErr(new PrintStream(new LoggerStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.ERROR,"^SLF4J:.*")));
+        hookSystemStreams();
 
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
@@ -385,6 +385,7 @@ public class Server {
                 .setContextPath(contextPath.equals("/") ? "" : contextPath)
                 .setTempDir(new File(System.getProperty("java.io.tmpdir")))
                 .setDeploymentName(warPath)
+                .setDisplayName(serverName)
                 .setServerName( "WildFly / Undertow" );
 
         // hack to prevent . being picked up as the system path (jacob.x.dll)
@@ -779,6 +780,24 @@ public class Server {
         }
     }
 
+    private void hookSystemStreams() {
+        LOG.trace("Piping system streams to logger");
+        originalSystemOut = System.out;
+        originalSystemErr = System.err;
+        System.setOut(new PrintStream(new LoggerStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.INFO)));
+        System.setErr(new PrintStream(new LoggerStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.ERROR,"^SLF4J:.*")));
+    }
+
+    private void unhookSystemStreams() {
+        LOG.trace("Unhooking system streams logger");
+        if(originalSystemOut != null) {
+            System.setOut(originalSystemOut);
+            System.setErr(originalSystemErr);
+        } else {
+            LOG.trace("Original System streams were null, probably never piped to logger.");
+        }
+    }
+
     private void configureServerResourceHandler(DeploymentInfo servletBuilder, SessionCookieConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
         String cfusionDir = new File(webinf,"cfusion").getAbsolutePath().replace('\\', '/');
         String cfformDir = new File(webinf,"cfform").getAbsolutePath().replace('\\', '/');
@@ -793,6 +812,7 @@ public class Server {
         cfprops.put("flex.dir", cfformDir);
         cfprops.put("coldfusion.jsafe.defaultalgo", "FIPS186Random");
         cfprops.put("coldfusion.classPath", cfClasspath);
+        cfprops.put("com.sun.media.jai.disableMediaLib", "true");
         cfprops.put("java.security.policy", cfusionDir + "/lib/coldfusion.policy");
         cfprops.put("java.security.auth.policy", cfusionDir + "/lib/neo_jaas.policy");
         cfprops.put("java.nixlibrary.path", cfusionDir + "/lib");
@@ -985,19 +1005,9 @@ public class Server {
                 LOG.error("Errserver", e);
                 exitCode = 1;
             }
-            try {
-                if (sysOutTee != null) {
-                    sysOutTee.flush();
-                    sysOutTee.closeBranch();
-                }
-                if (sysErrTee != null) {
-                    sysErrTee.flush();
-                    sysErrTee.closeBranch();
-                }
-            } catch (Exception e) {
-                LOG.error("Redirect:  Unable to close this log file!");
-            }
-            
+
+            unhookSystemStreams();
+
             if(exitCode != 0) {
                 System.exit(exitCode);
             }
@@ -1014,7 +1024,6 @@ public class Server {
                 monitorThread.stopListening(false);
                 monitorThread.interrupt();
             }
-
 
         }
 
@@ -1237,7 +1246,10 @@ public class Server {
     }
 
     public static String getVersion() {
-        String[] version = LaunchUtil.getResourceAsString("runwar/version.properties").split("=");
+        String versionProp = LaunchUtil.getResourceAsString("runwar/version.properties");
+        if(versionProp == null)
+            return "unknown";
+        String[] version = versionProp.split("=");
         return version[version.length - 1].trim();
     }
 

@@ -465,7 +465,10 @@ public class LaunchUtil {
     }
 
     public static String getResourceAsString(String path) {
-        return readStream(LaunchUtil.class.getClassLoader().getResourceAsStream(path));
+        InputStream streamPath = LaunchUtil.class.getClassLoader().getResourceAsStream(path);
+        if(streamPath == null)
+            return null;
+        return readStream(streamPath);
     }
 
     public static void unzipInteralZip(ClassLoader classLoader, String resourcePath, File libDir, boolean debug) {

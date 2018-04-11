@@ -12,6 +12,7 @@ allprojects {
 apply plugin: "com.diffplug.gradle.oomph.ide"
 oomphIde {
     splash 'src/main/resources/icon.png'
+    name 'IDE'
 
     repo 'https://dl.bintray.com/de-jcup/asciidoctoreditor'
     iu   'de.jcup.asciidoctoreditor'

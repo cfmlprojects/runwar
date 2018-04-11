@@ -68,7 +68,7 @@ public class WebXMLParser {
 
             trace("Root element of the doc is %s", doc.getDocumentElement().getNodeName());
 
-            String displayName = $(doc).find("context-param").text();
+            String displayName = $(doc).find("display-name").text();
             if (displayName != null) {
                 info.setDisplayName(displayName);
             }

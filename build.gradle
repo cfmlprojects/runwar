@@ -9,6 +9,8 @@ plugins {
     id "org.ajoberstar.grgit" version "2.1.1"
 }
 
+defaultTasks 'clean', 'shadow'
+
 buildDir = file('dist')
 
 apply plugin: 'java'
@@ -56,31 +58,29 @@ test {
 }
 
 
-	//////////
-	// OSGI //
-	//////////
-	// create the manifest
-	apply plugin: 'com.diffplug.gradle.osgi.bndmanifest'
-	osgiBndManifest {
-		copyTo 'META-INF/MANIFEST.MF'
-	}
-	
+//////////
+// OSGI //
+//////////
+// create the manifest
+apply plugin: 'com.diffplug.gradle.osgi.bndmanifest'
+osgiBndManifest { copyTo 'META-INF/MANIFEST.MF' }
+
 jar {
     classifier = 'core'
     manifest.attributes (
-        'Main-Class': 'runwar.Start',
-         'Can-Redefine-Classes': 'true',
-         'Can-Retransform-Classes': 'true',
-         'Implementation-Version': project.version,
-		'-exportcontents': 'runwar.*',
-		'-removeheaders': 'Bnd-LastModified,Bundle-Name,Created-By,Tool,Private-Package,Require-Capability',
-		'Import-Package': '!javax.annotation.*,*',
-		'Bundle-SymbolicName': project.name,
-		'Bundle-RequiredExecutionEnvironment': 'JavaSE-1.8',
-		'Require-Capability': 'osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"',
-		'Bundle-Vendor': 'cfmlprojects.org',
-		'Bundle-License': "MIT"
-    )
+            'Main-Class': 'runwar.Start',
+            'Can-Redefine-Classes': 'true',
+            'Can-Retransform-Classes': 'true',
+            'Implementation-Version': project.version,
+            '-exportcontents': 'runwar.*',
+            '-removeheaders': 'Bnd-LastModified,Bundle-Name,Created-By,Tool,Private-Package,Require-Capability',
+            'Import-Package': '!javax.annotation.*,*',
+            'Bundle-SymbolicName': project.name,
+            'Bundle-RequiredExecutionEnvironment': 'JavaSE-1.8',
+            'Require-Capability': 'osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"',
+            'Bundle-Vendor': 'cfmlprojects.org',
+            'Bundle-License': "MIT"
+            )
 }
 
 task javadocJar(type: Jar) {
@@ -107,26 +107,26 @@ task copyToLib(type: Copy) {
 }
 
 /*
-task generateGitChangelogTemplateWithGitHubIssues(type: se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask) {
-    gitHubApi = "https://api.github.com/repos/cfmlprojects/runwar"
-    gitHubToken = System.properties['GITHUB_OAUTH2TOKEN']
-    gitHubIssuePattern = "#([0-9]*)"
-    file = new File("${buildDir}/CHANGELOG.md")
-    templateContent = file('gradle/changelog/changelog.mustache').getText('UTF-8')
-}
-*/
+ task generateGitChangelogTemplateWithGitHubIssues(type: se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask) {
+ gitHubApi = "https://api.github.com/repos/cfmlprojects/runwar"
+ gitHubToken = System.properties['GITHUB_OAUTH2TOKEN']
+ gitHubIssuePattern = "#([0-9]*)"
+ file = new File("${buildDir}/CHANGELOG.md")
+ templateContent = file('gradle/changelog/changelog.mustache').getText('UTF-8')
+ }
+ */
 
 task gitChangelogTask() {
     doLast {
         GitChangelogApi builder;
         builder = gitChangelogApiBuilder()
         /*
-            println builder.withGitHubApi("https://api.github.com/repos/cfmlprojects/runwar")
-            .withGitHubToken(System.properties['GITHUB_OAUTH2TOKEN'])
-           .withGitHubIssuePattern("#([0-9]*)")
-           .withTemplatePath('gradle/changelog/changelog.mustache')
-            .render();
-        */
+         println builder.withGitHubApi("https://api.github.com/repos/cfmlprojects/runwar")
+         .withGitHubToken(System.properties['GITHUB_OAUTH2TOKEN'])
+         .withGitHubIssuePattern("#([0-9]*)")
+         .withTemplatePath('gradle/changelog/changelog.mustache')
+         .render();
+         */
         println builder.withFromRef("master")
                 .withToRef("HEAD")
                 .withGitHubApi("https://api.github.com/repos/cfmlprojects/runwar")
@@ -163,12 +163,12 @@ task gitChangelogTask() {
                 """.stripIndent())
                 .render()
 
-/*
-        println builder.withFromRef("refs/tags/3.7.0")
-                .withToRef("refs/tags/3.8.0")
-                .withTemplatePath('gradle/changelog/changelog.mustache')
-                .render()
-*/
+        /*
+         println builder.withFromRef("refs/tags/3.7.0")
+         .withToRef("refs/tags/3.8.0")
+         .withTemplatePath('gradle/changelog/changelog.mustache')
+         .render()
+         */
         //    file = new File("${buildDir}/CHANGELOG.md");
         //    templateContent = file('gradle/changelog/changelog.mustache').getText('UTF-8');
     }
@@ -194,12 +194,8 @@ task listUsedClasses() {
             String className = line.substring(8, pos - 1)
             usedClasses.add(className)
         }
-        usedJars.each {
-            println "used jar ${it}"
-        }
-        usedClasses.each {
-            println "keep 'class ${it}'"
-        }
+        usedJars.each { println "used jar ${it}" }
+        usedClasses.each { println "keep 'class ${it}'" }
     }
 
 }
