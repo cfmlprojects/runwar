@@ -2,3 +2,9 @@ RewriteRule ^$ index.cfm [QSA,NS]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.cfm%{REQUEST_URI} [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^.*$ - [NC,L]
+# Otherwise, use our smart page handler!
+RewriteRule ^(.*)\.cfm$ virtualPage.cfm?page=$1 [L]

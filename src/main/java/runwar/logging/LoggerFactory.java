@@ -36,19 +36,12 @@ public class LoggerFactory {
         Logger.getRootLogger().getLoggerRepository().resetConfiguration();
 
         logLevel = serverOptions.getLoglevel().toUpperCase();
-        logPattern = "%m%n";
-        appenders = new ArrayList<Appender>();
-        loggers = new ArrayList<Logger>();
+        logPattern = "%color{%m%n}";
+        appenders = new ArrayList<>();
+        loggers = new ArrayList<>();
         Level level = Level.toLevel(logLevel);
 
-        consoleAppender = new ConsoleAppender();
-        MulticolorLayout layout = new MulticolorLayout();
-        layout.setConversionPattern(logPattern);
-        layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;34,WARN:1;43,ERROR:37;41,FATAL:37;40");
-        consoleAppender.setLayout(layout);
-        consoleAppender.setName("CONSOLE");
-        consoleAppender.setThreshold(Level.toLevel(logLevel));
-        consoleAppender.activateOptions();
+        consoleAppender = consoleAppender(logPattern);
         appenders.add(consoleAppender);
         Logger.getRootLogger().setLevel(Level.WARN);
         Logger.getRootLogger().addAppender(consoleAppender);
@@ -115,14 +108,12 @@ public class LoggerFactory {
         HTTP_CLIENT_LOG.setLevel(Level.WARN);
 
         if (serverOptions.isDebug() || !logLevel.equalsIgnoreCase("info")) {
-            logPattern = "[%color{%-5p}] %c: %m%n";
-            layout.setConversionPattern(logPattern);
+            logPattern = "[%color{%-5p}] %c: %color{%m%n}";
+               ((MulticolorLayout) consoleAppender.getLayout()).setConversionPattern(logPattern);
 
             if (logLevel.equalsIgnoreCase("trace")) {
                 DORKBOX_LOG.setLevel(level);
-                appenders.forEach(appender -> {
-                    DORKBOX_LOG.addAppender(appender);
-                });
+                appenders.forEach(DORKBOX_LOG::addAppender);
                 UNDERTOW_LOG.setLevel(level);
                 HTTP_CLIENT_LOG.setLevel(level);
                 RUNWAR_CONFIG.setLevel(level);
@@ -155,12 +146,10 @@ public class LoggerFactory {
         }
         Logger.getRootLogger().addAppender(consoleAppender);
 
-        loggers.forEach(logger -> {
-            appenders.forEach(appender -> {
-                logger.addAppender(appender);
-                logger.setAdditivity(false);
-            });
-        });
+        loggers.forEach(logger -> appenders.forEach(appender -> {
+            logger.addAppender(appender);
+            logger.setAdditivity(false);
+        }));
 
         initialized = true;
 
@@ -170,6 +159,18 @@ public class LoggerFactory {
             RunwarLogger.LOG.warn("This is a WARN message");
             RunwarLogger.LOG.error("This is an ERROR message");
         }
+    }
+
+    private static ConsoleAppender consoleAppender(String pattern) {
+        ConsoleAppender appender = new ConsoleAppender();
+        MulticolorLayout layout = new MulticolorLayout();
+        layout.setConversionPattern(pattern);
+        layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;34,WARN:35,ERROR:1;31,FATAL:1;40");
+        appender.setLayout(layout);
+        appender.setName("CONSOLE");
+        appender.setThreshold(Level.toLevel(logLevel));
+        appender.activateOptions();
+        return appender;
     }
 
     public static boolean isInitialized() {
@@ -196,7 +197,7 @@ public class LoggerFactory {
         Logger REWRITE_URL_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite");
         Logger REWRITE_FILTER = Logger.getLogger("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
         Logger REWRITE_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.utils.Log");
-        urlrewriteLoggers = new ArrayList<Logger>();
+        urlrewriteLoggers = new ArrayList<>();
         urlrewriteLoggers.add(REWRITE_CONDITION_LOG);
         urlrewriteLoggers.add(REWRITE_RULE_LOG);
         urlrewriteLoggers.add(REWRITE_SUBSTITUTION_LOG);
@@ -218,14 +219,14 @@ public class LoggerFactory {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "TRACE");
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.TRACE);
-                logger.addAppender(consoleAppender);
+                logger.addAppender(consoleAppender("[%color{%-5p}] %c{2}: %color{%m%n}"));
                 logger.setAdditivity(false);
             });
         } else {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "DEBUG");
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.WARN);
-                logger.addAppender(consoleAppender);
+                logger.addAppender(consoleAppender("[%color{%-5p}] %c{2}: %color{%m%n}"));
                 logger.setAdditivity(false);
             });
             REWRITE_EXECUTION_LOG.setLevel(Level.DEBUG);

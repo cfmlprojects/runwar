@@ -57,7 +57,6 @@ test {
     testLogging.showStandardStreams = true
 }
 
-
 //////////
 // OSGI //
 //////////
@@ -67,7 +66,7 @@ osgiBndManifest { copyTo 'META-INF/MANIFEST.MF' }
 
 jar {
     classifier = 'core'
-    manifest.attributes (
+    manifest.attributes(
             'Main-Class': 'runwar.Start',
             'Can-Redefine-Classes': 'true',
             'Can-Retransform-Classes': 'true',
@@ -80,7 +79,7 @@ jar {
             'Require-Capability': 'osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"',
             'Bundle-Vendor': 'cfmlprojects.org',
             'Bundle-License': "MIT"
-            )
+    )
 }
 
 task javadocJar(type: Jar) {

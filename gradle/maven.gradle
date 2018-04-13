@@ -1,7 +1,7 @@
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
-ext['signing.keyId'] =  project.config.gpg.cfmlprojects.signkeyid
+ext['signing.keyId'] = project.config.gpg.cfmlprojects.signkeyid
 ext['signing.password'] = project.config.gpg.cfmlprojects.pass
 ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
 
@@ -67,7 +67,7 @@ publishing {
     }
     repositories {
         maven {
-            if(project.isSnapshot) {
+            if (project.isSnapshot) {
                 url "https://oss.sonatype.org/content/repositories/snapshots"
             } else {
                 url "https://oss.sonatype.org/service/local/staging/deploy/maven2"

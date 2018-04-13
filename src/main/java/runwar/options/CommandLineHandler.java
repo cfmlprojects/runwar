@@ -1032,7 +1032,7 @@ public class CommandLineHandler {
     static File getFile(String path) {
         File file = new File(path);
         if(!file.exists() || file == null) {
-            throw new RuntimeException("File not found: " + path +" (" + file.getAbsolutePath() + ")");
+            throw new RuntimeException("File not found: " + path + " (" + file.getAbsolutePath() + ")");
         }
       return file;
     }

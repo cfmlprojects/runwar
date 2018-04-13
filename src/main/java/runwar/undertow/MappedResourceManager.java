@@ -2,7 +2,6 @@ package runwar.undertow;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Matcher;
@@ -11,16 +10,22 @@ import java.util.regex.Pattern;
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.Resource;
+
 import static runwar.logging.RunwarLogger.MAPPER_LOG;
 
 public class MappedResourceManager extends FileResourceManager {
 
-    private HashMap<String, File> aliasMap = new HashMap<String, File>();
+    private HashMap<String, File> aliasMap = new HashMap<>();
     private File[] cfmlDirsFiles;
-    private File WEBINF = null;
-    private File CFIDE = null;
-    private static final Matcher CFIDE_REGEX_MATCHER = Pattern.compile("^.?CFIDE(.+)?").matcher("");
-    private static final Matcher WEBINF_REGEX_MATCHER = Pattern.compile(".*?WEB-INF(.+)?").matcher("");
+    private File WEBINF = null, CFIDE = null;
+    private static final Matcher CFIDE_REGEX_MATCHER;
+    private static final Matcher WEBINF_REGEX_MATCHER;
+
+    static {
+        CFIDE_REGEX_MATCHER = Pattern.compile("^.*[\\\\/]CFIDE([\\\\/].*)?").matcher("");
+        WEBINF_REGEX_MATCHER = Pattern.compile(".*[\\\\/]WEB-INF([\\\\/].*)?").matcher("");
+    }
+
     private final boolean allowResourceChangeListeners;
 
     public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, boolean allowResourceChangeListeners) {
@@ -40,21 +45,21 @@ public class MappedResourceManager extends FileResourceManager {
     }
 
     private void processMappings(String cfmlDirList) {
-        HashSet<File> dirs = new HashSet<File>();
+        HashSet<File> dirs = new HashSet<>();
         String[] dirList = cfmlDirList.split(",");
-        for (int x = 0; x < dirList.length; x++) {
+        for (String aDirList : dirList) {
             File dir;
             String virtual = "";
-            String[] splitted = dirList[x].split("=");
-            if (splitted.length == 1) {
-                dir = new File(dirList[x].trim());
+            String[] directoryAndAliasList = aDirList.split("=");
+            if (directoryAndAliasList.length == 1) {
+                dir = new File(aDirList.trim());
                 dir = dir.getPath().startsWith("..") ? dir.getAbsoluteFile() : dir;
                 dirs.add(dir.toPath().normalize().toFile());
             } else {
-                virtual = splitted[0].trim();
+                virtual = directoryAndAliasList[0].trim();
                 virtual = virtual.startsWith("/") ? virtual : "/" + virtual;
-                virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length()-1) : virtual;
-                dir = new File(splitted[1].trim());
+                virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length() - 1) : virtual;
+                dir = new File(directoryAndAliasList[1].trim());
                 dir = dir.getPath().startsWith("..") ? dir.getAbsoluteFile() : dir;
                 aliasMap.put(virtual.toLowerCase(), dir.toPath().normalize().toFile());
             }
@@ -65,15 +70,16 @@ public class MappedResourceManager extends FileResourceManager {
                 MAPPER_LOG.info("Serving content from " + dir.getAbsolutePath() + aliasInfo);
             }
         }
-        cfmlDirsFiles = dirs.toArray(new File[dirs.size()]);
-    };
+        int directoriesAliased = dirs.size();
+        cfmlDirsFiles = dirs.toArray(new File[directoriesAliased]);
+    }
 
     public Resource getResource(String path) {
         if(path == null) {
             MAPPER_LOG.error("* getResource got a null path!");
             return null;
         }
-//        path = path.trim();
+        path = '/' + path;
         MAPPER_LOG.debug("* requested: '" + path + "'");
         File reqFile = null;
         try {
@@ -100,12 +106,12 @@ public class MappedResourceManager extends FileResourceManager {
                     reqFile = getAliasedFile(aliasMap, path);
                 }
                 if (reqFile == null) {
-                    for (int x = 0; x < cfmlDirsFiles.length; x++) {
-                        String absPath = cfmlDirsFiles[x].getCanonicalPath();
-                        reqFile = new File(cfmlDirsFiles[x], path.replace(absPath, ""));
-                        MAPPER_LOG.tracef("checking: '%s' = '%s'",absPath,reqFile.getAbsolutePath());
+                    for (File cfmlDirsFile : cfmlDirsFiles) {
+                        String absPath = cfmlDirsFile.getCanonicalPath();
+                        reqFile = new File(cfmlDirsFile, path.replace(absPath, ""));
+                        MAPPER_LOG.tracef("checking: '%s' = '%s'", absPath, reqFile.getAbsolutePath());
                         if (reqFile.exists()) {
-                            MAPPER_LOG.tracef("Exists: '%s'",reqFile.getAbsolutePath());
+                            MAPPER_LOG.tracef("Exists: '%s'", reqFile.getAbsolutePath());
                             break;
                         }
                     }
@@ -122,8 +128,6 @@ public class MappedResourceManager extends FileResourceManager {
                 MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.getAbsolutePath() : "null");
                 return super.getResource(path);
             }
-        } catch (MalformedURLException e) {
-            MAPPER_LOG.error(e.getMessage());
         } catch (IOException e) {
             MAPPER_LOG.error(e.getMessage());
         }
@@ -158,10 +162,10 @@ public class MappedResourceManager extends FileResourceManager {
         return null;
     }
     
-    public HashMap<String, File> getAliasMap() {
+    HashMap<String, File> getAliasMap() {
         return aliasMap;
     }
-    
+
     @Override
     public boolean isResourceChangeListenerSupported() {
         return allowResourceChangeListeners;

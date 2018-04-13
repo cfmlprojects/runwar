@@ -15,11 +15,11 @@ oomphIde {
     name 'IDE'
 
     repo 'https://dl.bintray.com/de-jcup/asciidoctoreditor'
-    iu   'de.jcup.asciidoctoreditor'
+    iu 'de.jcup.asciidoctoreditor'
 
     repo 'http://dist.springsource.org/release/GRECLIPSE/e4.7'
-    feature   'org.codehaus.groovy.eclipse.feature'
-    feature   'org.codehaus.groovy24.feature'
+    feature 'org.codehaus.groovy.eclipse.feature'
+    feature 'org.codehaus.groovy24.feature'
 
     repo 'http://www.mihai-nita.net/eclipse'
     feature 'net.mihai-nita.ansicon'
@@ -37,7 +37,8 @@ oomphIde {
 
     repoEclipseLatest()
     jdt {}
-    eclipseIni { vmargs('-Xmx2g')    // IDE can have up to 2 gigs of RAM
+    eclipseIni {
+        vmargs('-Xmx2g')    // IDE can have up to 2 gigs of RAM
     }
     //addProjectFolder('../')
     //addProjectFolder('./')
