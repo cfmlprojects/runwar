@@ -33,6 +33,7 @@ import io.undertow.util.StatusCodes;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.xnio.*;
 import runwar.logging.LoggerFactory;
+import runwar.logging.LoggerPrintStream;
 import runwar.logging.LoggerStream;
 import runwar.mariadb4j.MariaDB4jManager;
 import runwar.options.CommandLineHandler;
@@ -158,9 +159,9 @@ public class Server {
     }
     public synchronized void restartServer(final ServerOptions options) throws Exception {
         LaunchUtil.displayMessage("Info", "Restarting server...");
-        System.out.println(bar);
-        System.out.println("***  Restarting server");
-        System.out.println(bar);
+        LOG.info(bar);
+        LOG.info("***  Restarting server");
+        LOG.info(bar);
         stopServer();
         LaunchUtil.restartApplication(() -> {
             LOG.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
@@ -176,6 +177,8 @@ public class Server {
     public synchronized void startServer(final ServerOptions options) throws Exception {
         serverOptions = (ServerOptionsImpl) options;
         LoggerFactory.configure(serverOptions);
+        // redirect out and err to context logger
+        hookSystemStreams();
         serverState = ServerState.STARTING;
         if(serverOptions.getAction().equals("stop")){
             Stop.stopServer(serverOptions,true);
@@ -199,6 +202,14 @@ public class Server {
         // unset this so things that reconfigure will find theirs
         System.setProperty("log4j.configuration", "");
         ensureJavaVersion();
+        try {
+            LOG.debugf("Requisitioning %s:%s (http) %s:%s (stop socket)", host, portNumber, host, socketNumber);
+            portNumber = getPortOrErrorOut(portNumber, host);
+            socketNumber = getPortOrErrorOut(socketNumber, host);
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+            return;
+        }
 
         securityManager = new SecurityManager();
 
@@ -276,7 +287,7 @@ public class Server {
         LOG.debugf("Server Mode: %s",serverMode);
 
         // redirect out and err to context logger
-        hookSystemStreams();
+        //hookSystemStreams();
 
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
@@ -314,10 +325,8 @@ public class Server {
         LOG.info("Log Directory: " + serverOptions.getLogDir().getAbsolutePath());
         LOG.info(bar);
         addShutDownHook();
-        portNumber = getPortOrErrorOut(portNumber, host);
-        socketNumber = getPortOrErrorOut(socketNumber, host);
-        
-        if(serverOptions.getWelcomeFiles() != null && serverOptions.getWelcomeFiles().length > 0) {
+
+        if (serverOptions.getWelcomeFiles() != null && serverOptions.getWelcomeFiles().length > 0) {
             ignoreWelcomePages = true;
         } else {
             serverOptions.setWelcomeFiles(defaultWelcomeFiles);
@@ -692,6 +701,7 @@ public class Server {
         String sslInfo = serverOptions.isEnableSSL() ? " https-port:" + serverOptions.getSSLPort() : "";
         String msg = "Server is up - http-port:" + portNumber + sslInfo + " stop-port:" + socketNumber +" PID:" + PID + " version " + getVersion();
         LOG.info(msg);
+        // if the status line output would be suppressed due to logging levels, send it to sysout
         if(serverOptions.getLoglevel().equalsIgnoreCase("WARN") || serverOptions.getLoglevel().equalsIgnoreCase("ERROR")) {
             System.out.println(msg);
         }
@@ -719,7 +729,6 @@ public class Server {
                         serverOptions.getMariaDB4jDataDir(), serverOptions.getMariaDB4jImportSQLFile());
             } catch (Exception dbStartException) {
                 LOG.error("Could not start MariaDB4j", dbStartException);
-                System.out.println("Error starting MariaDB4j: " + dbStartException.getMessage());
             }
         } else {
             LOG.trace("MariaDB support is disabled");
@@ -748,12 +757,16 @@ public class Server {
         return exchange.getRequestPath() + (exchange.getQueryString().length() > 0 ? "?" + exchange.getQueryString() : "");
     }
 
-    private void hookSystemStreams() {
+    private void hookSystemStreams() throws FileNotFoundException {
         LOG.trace("Piping system streams to logger");
-        originalSystemOut = System.out;
-        originalSystemErr = System.err;
-        System.setOut(new PrintStream(new LoggerStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.INFO)));
-        System.setErr(new PrintStream(new LoggerStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.ERROR,"^SLF4J:.*")));
+        if (System.out instanceof LoggerPrintStream) {
+            LOG.trace("streams already piped");
+        } else {
+            originalSystemOut = System.out;
+            originalSystemErr = System.err;
+            System.setOut(new LoggerPrintStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.INFO));
+            System.setErr(new LoggerPrintStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.ERROR, "^SLF4J:.*"));
+        }
     }
 
     private void unhookSystemStreams() {
@@ -1123,7 +1136,7 @@ public class Server {
             nextAvail.close();
             return portNumber;
         } catch (java.net.BindException e) {
-            throw new RuntimeException("Error getting port " + portNumber + "!  Cannot start.  " + e.getMessage());
+            throw new RuntimeException("Error getting port " + portNumber + "!  Cannot start:  " + e.getMessage());
         } catch (UnknownHostException e) {
             throw new RuntimeException("Unknown host (" + host + ")");
         } catch (IOException e) {
@@ -1135,7 +1148,7 @@ public class Server {
         try {
             return InetAddress.getByName(host);
         } catch (UnknownHostException e) {
-            throw new RuntimeException("Error getting host address");
+            throw new RuntimeException("Error getting inet address for " + host);
         }
     }
 
@@ -1417,13 +1430,13 @@ public class Server {
                 openbrowserURL = (!openbrowserURL.startsWith("/")) ? "/" + openbrowserURL : openbrowserURL;
                 openbrowserURL = protocol + "://" + host + ":" + portNumber + openbrowserURL;
             }
-            System.out.println("Waiting up to " + (timeout/1000) + " seconds for " + host + ":" + portNumber + "...");
+            LOG.info("Waiting up to " + (timeout/1000) + " seconds for " + host + ":" + portNumber + "...");
             try {
                 if (serverCameUp(timeout, 3000, InetAddress.getByName(host), portNumber)) {
-                    System.out.println("Opening browser to..." + openbrowserURL);
+                    LOG.infof("Opening browser to url: %s", openbrowserURL);
                     BrowserOpener.openURL(openbrowserURL.trim());
                 } else {
-                    System.out.println("could not open browser to..." + openbrowserURL + "... timeout...");
+                    LOG.errorf("Timeout of %s reached, could not open browser to url: %s", timeout, openbrowserURL);
                 }
             } catch (Exception e) {
                 LOG.error(e.getMessage());

@@ -82,6 +82,11 @@ public class LoggerFactory {
         Logger RUNWAR_REQUEST = Logger.getLogger("runwar.request");
         loggers.add(RUNWAR_REQUEST);
 
+        Logger RUNWAR_BACKGROUND = Logger.getLogger("runwar.background");
+        RUNWAR_BACKGROUND.addAppender(consoleAppender("%m%n"));
+        RUNWAR_BACKGROUND.setLevel(Level.TRACE);
+        RUNWAR_BACKGROUND.setAdditivity(false);
+        
         if (serverOptions.getURLRewriteLog() != null) {
             // errLogFile = serverOptions.getLogDir().getPath() + '/' +
             // serverOptions.getLogFileName() + ".err.txt";
@@ -165,7 +170,7 @@ public class LoggerFactory {
         ConsoleAppender appender = new ConsoleAppender();
         MulticolorLayout layout = new MulticolorLayout();
         layout.setConversionPattern(pattern);
-        layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;34,WARN:35,ERROR:1;31,FATAL:1;40");
+        layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;34,WARN:38;5;208,ERROR:1;31,FATAL:1;40");
         appender.setLayout(layout);
         appender.setName("CONSOLE");
         appender.setThreshold(Level.toLevel(logLevel));
@@ -188,6 +193,10 @@ public class LoggerFactory {
     }
 
     public static void configureUrlRewriteLoggers(boolean isTrace) {
+        if(urlrewriteLoggers != null) {
+        	RunwarLogger.LOG.trace("urlrewrite logger has alredy been configured");
+            return;
+        }
         Logger REWRITE_CONDITION_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.Condition");
         Logger REWRITE_RULE_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.RuleBase");
         Logger REWRITE_SUBSTITUTION_LOG = Logger

@@ -192,10 +192,10 @@ public class LaunchUtil {
     }
 
     private static boolean processOutout(String line, Process process, boolean exitWhenUp) {
-        RunwarLogger.LOG.info("processoutput: " + line);
+        RunwarLogger.BACKGROUNDED_LOG.debug(line);
         if (line.indexOf("Server is up - ") != -1) {
             // start up was successful, quit out
-            System.out.println(line);
+//             System.out.println(line);
             if(exitWhenUp) {
                 System.exit(0);
             } else {

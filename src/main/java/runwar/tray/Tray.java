@@ -426,7 +426,7 @@ public class Tray {
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
-                System.out.println("Exiting...");
+                RunwarLogger.LOG.info("Exiting...");
                 server.stopServer();
                 String message = "Server shut down " + (server.serverWentDown() ? "" : "un") + "successfully, shutting down tray";
                 RunwarLogger.LOG.debug( message );
