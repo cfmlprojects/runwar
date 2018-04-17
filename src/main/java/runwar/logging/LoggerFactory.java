@@ -129,6 +129,7 @@ public class LoggerFactory {
                 Logger.getRootLogger().setLevel(level);
                 configureUrlRewriteLoggers(true);
             } else {
+                RUNWAR_REQUEST.setLevel(Level.DEBUG);
                 configureUrlRewriteLoggers(false);
             }
         }
@@ -193,10 +194,10 @@ public class LoggerFactory {
     }
 
     public static void configureUrlRewriteLoggers(boolean isTrace) {
-        if(urlrewriteLoggers != null) {
-        	RunwarLogger.LOG.trace("urlrewrite logger has alredy been configured");
-            return;
-        }
+//        if(urlrewriteLoggers != null) {
+//        	RunwarLogger.LOG.trace("urlrewrite logger has alredy been configured");
+//            return;
+//        }
         Logger REWRITE_CONDITION_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.Condition");
         Logger REWRITE_RULE_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.RuleBase");
         Logger REWRITE_SUBSTITUTION_LOG = Logger
@@ -239,6 +240,7 @@ public class LoggerFactory {
                 logger.setAdditivity(false);
             });
             REWRITE_EXECUTION_LOG.setLevel(Level.DEBUG);
+            REWRITE_WRITER_LOG.setLevel(Level.DEBUG);
         }
     }
 

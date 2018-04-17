@@ -45,7 +45,7 @@ dependencies {
     //    compile("org.apache.logging.log4j:log4j-slf4j-impl:2.10.0")
 
     // forked version of tuckey for now
-    compile group: 'org.cfmlprojects', name: 'urlrewritefilter', version:project.tuckeyRewriteVersion
+    compile("org.cfmlprojects:urlrewritefilter:${project.tuckeyRewriteVersion}")
     // regexpathinfofilter lets us handle *.cfm/* paths
     compile("org.cfmlprojects:regexpathinfofilter:1.0.1")
     compile("com.dorkbox:Notify:3.7")

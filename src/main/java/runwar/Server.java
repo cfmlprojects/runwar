@@ -567,6 +567,7 @@ public class Server {
                         if(httpServerExchange.getStatusCode() != 200) {
                             CONTEXT_LOG.warnf("responded: Status Code %s (%s)", httpServerExchange.getStatusCode(), fullExchangePath(httpServerExchange));
                         }
+                        nextListener.proceed();
                     });
                 }
                 if(serverOptions.isDebug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
@@ -680,7 +681,6 @@ public class Server {
         monitor.start();
         LOG.debug("started stop monitor");
 
-
         if(serverOptions.isTrayEnabled()) {
             try {
                 Tray.hookTray(this);
@@ -749,6 +749,7 @@ public class Server {
             } else {
                 any.printStackTrace();
             }
+            LOG.error(any);
             System.exit(1);
         }
     }
@@ -981,12 +982,16 @@ public class Server {
                             case UNDEPLOYED:
                                 break;
                             default:
+                                manager.stop();
                                 manager.undeploy();
                         }
                         undertow.stop();
+                        if(worker != null) {
+                            worker.shutdown();
+                        }
 //                Thread.sleep(1000);
                     } catch (Exception notRunning) {
-                        LOG.error("*** server did not appear to be running");
+                        LOG.error("*** server did not appear to be running", notRunning);
                     }
                     LOG.info(bar);
                     setServerState(ServerState.STOPPED);
@@ -1113,7 +1118,7 @@ public class Server {
     
     private ResourceManager getResourceManager(File warFile, Long transferMinSize, String cfmlDirs, File internalCFMLServerRoot) {
         MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot);
-        if(serverOptions.isDirectoryListingRefreshEnabled()) {
+        if(serverOptions.isDirectoryListingRefreshEnabled() || !serverOptions.isBufferEnabled()) {
             return mappedResourceManager;
         }
         final DirectBufferCache dataCache = new DirectBufferCache(1000, 10, 1000 * 10 * 1000, BufferAllocator.DIRECT_BYTE_BUFFER_ALLOCATOR, METADATA_MAX_AGE);

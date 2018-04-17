@@ -98,6 +98,7 @@ public interface ServerOptions {
         final static String COOKIEHTTPONLY = "cookiehttponly";
         final static String COOKIESECURE = "cookiesecure";
         final static String SERVERMODE = "mode";
+        final static String BUFFERENABLED = "bufferenabled";
     }
 
     ServerOptions setCommandLineArgs(String[] args);
@@ -475,4 +476,9 @@ public interface ServerOptions {
     boolean isHTTP2Enabled();
     
     String getServerMode();
+    
+    boolean isBufferEnabled();
+    
+    ServerOptions setBufferEnabled(boolean enable);
+
 }

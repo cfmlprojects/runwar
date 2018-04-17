@@ -57,6 +57,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private boolean http2enabled = false;
     private boolean secureCookies = false, cookieHttpOnly = false, cookieSecure = false;
     private JSONArray trayConfigJSON;
+    private boolean bufferEnabled = false;
     private static String logPattern = "[%-5p] %c: %m%n";
 
     static {
@@ -2087,6 +2088,23 @@ public class ServerOptionsImpl implements ServerOptions {
             return Mode.WAR;
         }
         return Mode.DEFAULT;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#isSecureCookies()
+     */
+    @Override
+    public ServerOptions setBufferEnabled(boolean enabled) {
+        this.bufferEnabled = enabled;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#isSecureCookies()
+     */
+    @Override
+    public boolean isBufferEnabled() {
+        return this.bufferEnabled ;
     }
     
 }

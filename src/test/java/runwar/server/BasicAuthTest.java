@@ -98,5 +98,5 @@ public class BasicAuthTest {
         } finally {
             client.getConnectionManager().shutdown();
         }
-}
+    }
 }
