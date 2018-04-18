@@ -372,6 +372,8 @@ public class Server {
 
         final SessionCookieConfig sessionConfig = new SessionCookieConfig();
         final SessionAttachmentHandler sessionAttachmentHandler = new SessionAttachmentHandler(new InMemorySessionManager("", 1, true), sessionConfig);
+        sessionConfig.setHttpOnly(serverOptions.isCookieHttpOnly());
+        sessionConfig.setSecure(serverOptions.isCookieSecure());
 
         configureServerResourceHandler(servletBuilder,sessionConfig,warFile,webinf,webXmlFile,cfmlDirs,cfengine,ignoreWelcomePages,ignoreRestMappings);
         /*      
@@ -579,10 +581,6 @@ public class Server {
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
 
-        if(serverOptions.isSecureCookies()) {
-                sessionConfig.setHttpOnly(true);
-                sessionConfig.setSecure(true);
-        }
         sessionAttachmentHandler.setNext(pathHandler);
 
         HttpHandler httpHandler;
