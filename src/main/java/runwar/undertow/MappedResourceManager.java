@@ -79,7 +79,6 @@ public class MappedResourceManager extends FileResourceManager {
             MAPPER_LOG.error("* getResource got a null path!");
             return null;
         }
-        path = path.startsWith("/") ? path : '/' + path;
         MAPPER_LOG.debug("* requested: '" + path + "'");
         File reqFile = null;
         try {

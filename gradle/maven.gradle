@@ -127,5 +127,5 @@ model {
 }
 
 tasks.matching { it.name.startsWith("publish") }.all {
-    onlyIf { !project.deployToMaven }
+    onlyIf { project.deployToMaven }
 }

@@ -18,7 +18,7 @@ ext {
     version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') +
             (isSnapshot ? "-SNAPSHOT" : "")
     // + (git.status().isClean() ? "" : "+dirty")
-
+    println "Building Version ${version}"
 }
 version = ext.version
 
