@@ -15,9 +15,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class MappedResourceManagerTest {
     private HashMap<String, File> aliasMap = new HashMap<String, File>();
+    private File baseDir = new File(System.getProperty("java.io.tmpdir") + "/mapper");
     private File reqFile = null;
 
     public MappedResourceManagerTest() {
+        baseDir.mkdirs();
         String mappings = "/images=C:\\someplace\\somewhereelse, "
                 + "/moreimages=/this/is/somewhere,"
                 + "/docs/=C:\\someplace\\docs,"

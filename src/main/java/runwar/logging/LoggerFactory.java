@@ -129,7 +129,7 @@ public class LoggerFactory {
                 Logger.getRootLogger().setLevel(level);
                 configureUrlRewriteLoggers(true);
             } else {
-                RUNWAR_REQUEST.setLevel(Level.DEBUG);
+                RUNWAR_REQUEST.setLevel(Level.INFO);
                 configureUrlRewriteLoggers(false);
             }
         }
