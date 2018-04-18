@@ -12,13 +12,13 @@ ext {
     describedCommit = git.describe().toString().trim()
     revision = git.head().id
 
-//    isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
-    isSnapshot = git.branch.current().name.equalsIgnoreCase('develop')
+    isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
+//    isSnapshot = git.branch.current().name.equalsIgnoreCase('develop') // grr, HEAD in CI
 
     version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') +
             (isSnapshot ? "-SNAPSHOT" : "")
     // + (git.status().isClean() ? "" : "+dirty")
-    println "Building Version ${version}"
+    println "Building Version ${version} - Branch ${git.branch.current().name}"
 }
 version = ext.version
 
