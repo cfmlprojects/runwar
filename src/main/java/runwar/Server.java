@@ -35,6 +35,7 @@ import org.xnio.*;
 import runwar.logging.LoggerFactory;
 import runwar.logging.LoggerPrintStream;
 import runwar.logging.LoggerStream;
+import runwar.logging.RunwarAccessLogReceiver;
 import runwar.mariadb4j.MariaDB4jManager;
 import runwar.options.CommandLineHandler;
 import runwar.options.ServerOptions;
@@ -596,14 +597,14 @@ public class Server {
 
         if (serverOptions.logAccessEnable()) {
 //            final String PATTERN = "cs-uri cs(test-header) x-O(aa) x-H(secure)";
-            DefaultAccessLogReceiver accessLogReceiver = DefaultAccessLogReceiver.builder().setLogWriteExecutor(worker)
+            RunwarAccessLogReceiver accessLogReceiver = RunwarAccessLogReceiver.builder().setLogWriteExecutor(worker)
                 .setRotate(true)
-                .setOutputDirectory(options.getLogAccessDir().toPath())
-                .setLogBaseName(options.getLogAccessBaseFileName())
-                .setLogNameSuffix(options.getLogSuffix())
+                .setOutputDirectory(serverOptions.getLogAccessDir().toPath())
+                .setLogBaseName(serverOptions.getLogAccessBaseFileName())
+                .setLogNameSuffix(serverOptions.getLogSuffix())
 //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
                 .build();
-            LOG.info("Logging combined access to " + options.getLogAccessDir() + " base name of '" + options.getLogAccessBaseFileName() + "'");
+            LOG.info("Logging combined access to " + serverOptions.getLogAccessDir() + " base name of '" + serverOptions.getLogAccessBaseFileName() + "." + serverOptions.getLogSuffix() + ", rotated daily'");
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
             httpHandler = new AccessLogHandler(httpHandler, accessLogReceiver,"combined", Server.class.getClassLoader());
