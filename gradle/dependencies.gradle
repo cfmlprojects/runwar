@@ -1,6 +1,6 @@
 ext {
     undertowVersion = '1.4.24.Final'
-    tuckeyRewriteVersion = '5.0.1'
+    tuckeyRewriteVersion = '5.0.2'
     proguardVersion = '6.0.1'
     goomphVersion='3.13.0'
     bndVersion='1.5.0'
