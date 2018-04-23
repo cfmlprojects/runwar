@@ -111,6 +111,8 @@ public class LoggerFactory {
         DORKBOX_LOG.setLevel(Level.ERROR);
         UNDERTOW_LOG.setLevel(Level.WARN);
         HTTP_CLIENT_LOG.setLevel(Level.WARN);
+        System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+
 
         if (serverOptions.isDebug() || !logLevel.equalsIgnoreCase("info")) {
             logPattern = "[%color{%-5p}] %c: %color{%m%n}";
@@ -127,6 +129,7 @@ public class LoggerFactory {
                 RUNWAR_SECURITY.setLevel(level);
                 RUNWAR_REQUEST.setLevel(level);
                 Logger.getRootLogger().setLevel(level);
+                System.setProperty("org.eclipse.jetty.LEVEL", "TRACE");
                 configureUrlRewriteLoggers(true);
             } else {
                 RUNWAR_REQUEST.setLevel(Level.INFO);

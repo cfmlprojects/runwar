@@ -796,7 +796,6 @@ public class Server {
         // Hide error messages about MediaLib stuff
         cfprops.put("com.sun.media.jai.disableMediaLib", "true");
         // Make the embedded version of Jetty inside Adobe CF shut up since it dumps everything to the error stream
-        cfprops.put("org.eclipse.jetty.LEVEL", "WARN");
         cfprops.put("java.security.policy", cfusionDir + "/lib/coldfusion.policy");
         cfprops.put("java.security.auth.policy", cfusionDir + "/lib/neo_jaas.policy");
         cfprops.put("java.nixlibrary.path", cfusionDir + "/lib");
