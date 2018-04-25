@@ -18,12 +18,12 @@ public class MappedResourceManager extends FileResourceManager {
     private HashMap<String, File> aliasMap = new HashMap<>();
     private File[] cfmlDirsFiles;
     private File WEBINF = null, CFIDE = null;
-    private static final Matcher CFIDE_REGEX_MATCHER;
-    private static final Matcher WEBINF_REGEX_MATCHER;
+    private static final Pattern CFIDE_REGEX_PATTERN;
+    private static final Pattern WEBINF_REGEX_PATTERN;
 
     static {
-        CFIDE_REGEX_MATCHER = Pattern.compile("(?i)^.*[\\\\/]?CFIDE([\\\\/].*)?").matcher("");
-        WEBINF_REGEX_MATCHER = Pattern.compile("(?i).*[\\\\/]?WEB-INF([\\\\/].*)?").matcher("");
+        CFIDE_REGEX_PATTERN = Pattern.compile("(?i)^.*[\\\\/]?CFIDE([\\\\/].*)?");
+        WEBINF_REGEX_PATTERN = Pattern.compile("(?i)^.*[\\\\/]?WEB-INF([\\\\/].*)?");
     }
 
     private final boolean allowResourceChangeListeners;
@@ -82,8 +82,8 @@ public class MappedResourceManager extends FileResourceManager {
         MAPPER_LOG.debug("* requested: '" + path + "'");
         File reqFile = null;
         try {
-            final Matcher webInfMatcher = WEBINF_REGEX_MATCHER.reset(path);
-            final Matcher cfideMatcher = CFIDE_REGEX_MATCHER.reset(path);
+            final Matcher webInfMatcher = WEBINF_REGEX_PATTERN.matcher(path);
+            final Matcher cfideMatcher = CFIDE_REGEX_PATTERN.matcher(path);
             if (WEBINF != null && webInfMatcher.matches()) {
                 if(webInfMatcher.group(1) == null) {
                     reqFile = WEBINF;

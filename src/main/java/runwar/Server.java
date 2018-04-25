@@ -453,7 +453,7 @@ public class Server {
             LOG.info("Overriding web.xml rest mappings with " + Arrays.toString( serverOptions.getServletRestMappings() ) );
             for (Entry<String, ServletInfo> stringServletInfoEntry : servletBuilder.getServlets().entrySet()) {
                 ServletInfo restServlet = stringServletInfoEntry.getValue();
-                LOG.trace("Checking servlet named: " + restServlet.getName() + "to see if it's a REST servlet.");
+//                LOG.trace("Checking servlet named: " + restServlet.getName() + " to see if it's a REST servlet.");
                 if (restServlet.getName().toLowerCase().equals("restservlet") || restServlet.getName().toLowerCase().equals("cfrestservlet")) {
                     for (String path : serverOptions.getServletRestMappings()) {
                         restServlet.addMapping(path);
@@ -567,7 +567,7 @@ public class Server {
                 if(serverOptions.isDebug()){
                     // output something if in debug mode and response is other than OK
                     exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                        if(httpServerExchange.getStatusCode() != 200) {
+                        if(httpServerExchange.getStatusCode() != 200 && httpServerExchange.getStatusCode() != 302) {
                             CONTEXT_LOG.warnf("responded: Status Code %s (%s)", httpServerExchange.getStatusCode(), fullExchangePath(httpServerExchange));
                         }
                         nextListener.proceed();
