@@ -22,8 +22,8 @@ public class MappedResourceManager extends FileResourceManager {
     private static final Matcher WEBINF_REGEX_MATCHER;
 
     static {
-        CFIDE_REGEX_MATCHER = Pattern.compile("^.*[\\\\/]?[C|c|F|f|I|i|D|d|E|e]([\\\\/].*)?").matcher("");
-        WEBINF_REGEX_MATCHER = Pattern.compile(".*[\\\\/]?[W|w|E|e|B|b|-|I|i|N|n|F|f]([\\\\/].*)?").matcher("");
+        CFIDE_REGEX_MATCHER = Pattern.compile("(?i)^.*[\\\\/]?[CFIDE]([\\\\/].*)?").matcher("");
+        WEBINF_REGEX_MATCHER = Pattern.compile("(?i)^.*[\\\\/]?[WEB-INF]([\\\\/].*)?").matcher("");
     }
 
     private final boolean allowResourceChangeListeners;
