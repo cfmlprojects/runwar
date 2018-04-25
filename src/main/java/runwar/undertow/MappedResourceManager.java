@@ -22,8 +22,8 @@ public class MappedResourceManager extends FileResourceManager {
     private static final Matcher WEBINF_REGEX_MATCHER;
 
     static {
-        CFIDE_REGEX_MATCHER = Pattern.compile("(?i)^.*[\\\\/]?[CFIDE]([\\\\/].*)?").matcher("");
-        WEBINF_REGEX_MATCHER = Pattern.compile("(?i)^.*[\\\\/]?[WEB-INF]([\\\\/].*)?").matcher("");
+        CFIDE_REGEX_MATCHER = Pattern.compile("(?i)^.*[\\\\/]?CFIDE([\\\\/].*)?").matcher("");
+        WEBINF_REGEX_MATCHER = Pattern.compile("(?i).*[\\\\/]?WEB-INF([\\\\/].*)?").matcher("");
     }
 
     private final boolean allowResourceChangeListeners;
@@ -160,7 +160,7 @@ public class MappedResourceManager extends FileResourceManager {
         }
         return null;
     }
-    
+
     HashMap<String, File> getAliasMap() {
         return aliasMap;
     }

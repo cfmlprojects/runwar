@@ -129,7 +129,7 @@ public class LoggerFactory {
                 RUNWAR_SECURITY.setLevel(level);
                 RUNWAR_REQUEST.setLevel(level);
                 Logger.getRootLogger().setLevel(level);
-                System.setProperty("org.eclipse.jetty.LEVEL", "ALL");
+                System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
                 configureUrlRewriteLoggers(true);
             } else {
                 RUNWAR_REQUEST.setLevel(Level.INFO);
