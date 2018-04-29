@@ -975,21 +975,23 @@ public class Server {
                     if (serverOptions.isMariaDB4jEnabled()) {
                         mariadb4jManager.stop();
                     }
-                    try {
-                        switch (manager.getState()) {
-                            case UNDEPLOYED:
-                                break;
-                            default:
-                                manager.stop();
-                                manager.undeploy();
+                    if(manager != null){
+                        try {
+                            switch (manager.getState()) {
+                                case UNDEPLOYED:
+                                    break;
+                                default:
+                                    manager.stop();
+                                    manager.undeploy();
+                            }
+                            undertow.stop();
+                            if(worker != null) {
+                                worker.shutdown();
+                            }
+    //                Thread.sleep(1000);
+                        } catch (Exception notRunning) {
+                            LOG.error("*** server did not appear to be running", notRunning);
                         }
-                        undertow.stop();
-                        if(worker != null) {
-                            worker.shutdown();
-                        }
-//                Thread.sleep(1000);
-                    } catch (Exception notRunning) {
-                        LOG.error("*** server did not appear to be running", notRunning);
                     }
                     LOG.info(bar);
                     setServerState(ServerState.STOPPED);
