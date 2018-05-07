@@ -62,7 +62,7 @@ dependencies {
 
     // java 9+ compat
     compile 'com.sun.activation:javax.activation:1.2.0'
-    compile 'org.cfmlprojects:javashim:1.0.3'
+    compile 'org.cfmlprojects:javashim:1.0.0'
 
     // configuration
     compile group: 'net.minidev', name: 'json-smart-mini', version: '1.0.8'
