@@ -18,11 +18,7 @@ import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -39,6 +35,7 @@ import java.util.zip.GZIPInputStream;
 import javax.swing.JOptionPane;
 
 
+import com.vdurmont.semver4j.Semver;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
 import dorkbox.util.ActionHandler;
@@ -648,7 +645,6 @@ public class LaunchUtil {
         } catch (Exception e) {
             RunwarLogger.LOG.error("Error copying stream.", e);
         }
-
     }
 
     public static int writeStreamTo(final InputStream input, final OutputStream output, int bufferSize)
@@ -698,20 +694,32 @@ public class LaunchUtil {
         }
     }
 
-    public static void assertJavaVersion8() {
-        String version = System.getProperty("java.version");
-        System.out.println("Java version " + version);
-        if (version.charAt(0) == '1' && Integer.parseInt(version.charAt(2) + "") < 8) {
-            System.out.println("** Requires Java 1.8 or later");
-            System.out.println("The HTTP2 spec requires certain cyphers that are not present in older JVM's");
-            System.out.println("See section 9.2.2 of the HTTP2 specification for details");
+    public static void assertMinimumJavaVersion(String minVersion) {
+        Semver systemJavaVersion = new Semver(System.getProperty("java.version","").replace('_','.'), Semver.SemverType.LOOSE);
+        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
+        System.out.println("Java version " + systemJavaVersion.toString() + " (requires >= " + minVersion + ")");
+        if (systemJavaVersion.toStrict().isLowerThan(minimumJavaVersion.toStrict())) {
+            System.out.println("** Requires Java " + minimumJavaVersion.toStrict() + " or later, current: " + systemJavaVersion.toStrict());
             System.exit(1);
         }
+    }
+
+    public static boolean versionLowerThanOrEqualTo(String version, String minVersion) {
+        Semver systemJavaVersion = new Semver(version.replace('_','.'), Semver.SemverType.LOOSE);
+        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
+        return systemJavaVersion.isLowerThanOrEqualTo(minimumJavaVersion);
+    }
+
+    public static boolean versionGreaterThanOrEqualTo(String version, String minVersion) {
+        Semver systemJavaVersion = new Semver(version.replace('_','.'), Semver.SemverType.LOOSE);
+        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
+        return systemJavaVersion.isGreaterThanOrEqualTo(minimumJavaVersion);
     }
 
     public static String getOS() {
         return OS_NAME;
     }
+
     public static String getDataDirectory() {
         String parent;
         String folder = "runwar";
@@ -727,6 +735,7 @@ public class LaunchUtil {
         }
         return parent + File.separator + folder;
     }
+
     public static boolean isWindows() {
         return (OS_NAME.contains("win"));
     }
@@ -884,4 +893,28 @@ public class LaunchUtil {
             throw new IOException("Error while trying to restart the application", e);
         }
     }
+
+    public static int getPortOrErrorOut(int portNumber, String host) {
+        try(ServerSocket nextAvail = new ServerSocket(portNumber, 1, getInetAddress(host))) {
+            portNumber = nextAvail.getLocalPort();
+            nextAvail.close();
+            return portNumber;
+        } catch (java.net.BindException e) {
+            throw new RuntimeException("Error getting port " + portNumber + "!  Cannot start:  " + e.getMessage());
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Unknown host (" + host + ")");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static InetAddress getInetAddress(String host) {
+        try {
+            return InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Error getting inet address for " + host);
+        }
+    }
+
+
 }

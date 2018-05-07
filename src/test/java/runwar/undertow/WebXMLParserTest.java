@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 
+import io.undertow.servlet.api.ServletSessionConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -18,13 +19,11 @@ import lucee.loader.servlet.CFMLServlet;
 
 public class WebXMLParserTest {
     private DeploymentInfo deploymentInfo;
-    CFMLServlet servlet;
-    private SessionCookieConfig sessionConfig;
 
     public WebXMLParserTest() {
-        sessionConfig = new SessionCookieConfig();
         deploymentInfo = deployment()
                 .setContextPath("")
+                .setServletSessionConfig(new ServletSessionConfig())
                 .setTempDir(new File(System.getProperty("java.io.tmpdir")))
                 .setDeploymentName("test").setClassLoader(this.getClass().getClassLoader());
     }
@@ -40,7 +39,7 @@ public class WebXMLParserTest {
         File webxml = new File(webinf, "lucee4.web.xml");
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
-        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, sessionConfig, ignoreWelcomePages, ignoreRestMappings);
+        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, ignoreWelcomePages, ignoreRestMappings);
         assertEquals(2, deploymentInfo.getServlets().size());
     }
 
@@ -50,7 +49,7 @@ public class WebXMLParserTest {
         File webxml = new File(webinf, "web.xml");
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
-        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, sessionConfig, ignoreWelcomePages, ignoreRestMappings);
+        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, ignoreWelcomePages, ignoreRestMappings);
         assertEquals(2, deploymentInfo.getServlets().size());
     }
 
@@ -60,16 +59,16 @@ public class WebXMLParserTest {
         File webxml = new File(webinf, "web.xml");
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
-        assertFalse(sessionConfig.isSecure());
-        assertFalse(sessionConfig.isHttpOnly());
-        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, sessionConfig, ignoreWelcomePages, ignoreRestMappings);
+        assertFalse(deploymentInfo.getServletSessionConfig().isSecure());
+        assertFalse(deploymentInfo.getServletSessionConfig().isHttpOnly());
+        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, ignoreWelcomePages, ignoreRestMappings);
         assertEquals(2, deploymentInfo.getServletContextAttributes().size());
         assertEquals(2, deploymentInfo.getServlets().size());
         assertEquals(5, deploymentInfo.getWelcomePages().size());
         assertEquals(6, deploymentInfo.getErrorPages().size());
         assertEquals(2, deploymentInfo.getMimeMappings().size());
-        assertTrue(sessionConfig.isSecure());
-        assertTrue(sessionConfig.isHttpOnly());
+        assertTrue(deploymentInfo.getServletSessionConfig().isSecure());
+        assertTrue(deploymentInfo.getServletSessionConfig().isHttpOnly());
     }
 
 

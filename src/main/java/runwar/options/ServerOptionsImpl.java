@@ -15,9 +15,9 @@ import runwar.Server.Mode;
 public class ServerOptionsImpl implements ServerOptions {
     private String serverName = "default", processName = "RunWAR", loglevel = "INFO";
     private String host = "127.0.0.1", contextPath = "/";
-    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
+    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779, http2ProxySSLPort = 1444;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
-    private boolean debug = false, isBackground = true, logAccessEnable = false, logRequestsEnable = false, openbrowser = false;
+    private boolean debug = false, isBackground = true, logAccessEnable = false, logRequestsEnable = false, openbrowser = false, startedFromCommandline = false;
     private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server", logRequestBaseFileName="requests", logAccessBaseFileName="access", logSuffix="txt", libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
@@ -34,7 +34,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private char[] sslKeyPass = null;
     private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
     private String action = "start";
-    private String cfengineName = "lucee";
+    private String cfengineName = "";
     private boolean customHTTPStatusEnabled = true;
     private boolean gzipEnabled = false;
     private Long transferMinSize = (long) 100;
@@ -90,7 +90,7 @@ public class ServerOptionsImpl implements ServerOptions {
         if (cmdlineArgs == null) {
             cmdlineArgs = "".split("");
             argarray.add("-war");
-            argarray.add(getWarFile().getAbsolutePath());
+            argarray.add(getWarFile() != null ? getWarFile().getAbsolutePath() : new File(".").getAbsolutePath());
         }
         for (String arg : cmdlineArgs) {
             if (arg.contains("background") || arg.startsWith("-b") || arg.contains("balance")
@@ -1302,6 +1302,8 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public String getWarPath() {
+        if(getWarFile() == null)
+            return "";
         try {
             return getWarFile().toURI().toURL().toString();
         } catch (MalformedURLException e) {
@@ -1328,6 +1330,9 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public File getSSLCertificate() {
+        if(sslCertificate != null && !sslCertificate.exists()){
+            throw new IllegalArgumentException("Certificate file does not exist: " + sslCertificate.getAbsolutePath());
+        }
         return this.sslCertificate;
     }
 
@@ -1439,7 +1444,10 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public String getCFEngineName() {
-        return this.cfengineName;
+        if(cfengineName.isEmpty() && getWebInfDir() != null && getWebInfDir().exists() && new File(getWebInfDir(),"cfusion").exists()){
+            cfengineName = "adobe";
+        }
+        return cfengineName;
     }
 
     /*
@@ -2091,7 +2099,7 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
     /*
-     * @see runwar.options.ServerOptions#isSecureCookies()
+     * @see runwar.options.ServerOptions#setBufferEnabled(boolean)
      */
     @Override
     public ServerOptions setBufferEnabled(boolean enabled) {
@@ -2100,11 +2108,46 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
     /*
-     * @see runwar.options.ServerOptions#isSecureCookies()
+     * @see runwar.options.ServerOptions#isBufferEnabled()
      */
     @Override
     public boolean isBufferEnabled() {
         return this.bufferEnabled ;
     }
     
+    /*
+     * @see runwar.options.ServerOptions#setStartedFromCommandLine(boolean)
+     */
+    @Override
+    public ServerOptions setStartedFromCommandLine(boolean enabled) {
+        this.startedFromCommandline = enabled;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#startedFromCommandLine()
+     */
+    @Override
+    public boolean startedFromCommandLine() {
+        return this.startedFromCommandline;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#getHttp2ProxySSLPort()
+     */
+    @Override
+    public int getHttp2ProxySSLPort() {
+        return http2ProxySSLPort;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#setsetHttp2ProxySSLPort(int)
+     */
+    @Override
+    public ServerOptions setHttp2ProxySSLPort(int portNumber) {
+        http2ProxySSLPort = portNumber;
+        return this;
+    }
+
+
 }

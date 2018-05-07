@@ -56,7 +56,7 @@ public class SSLUtil
     private static final String SERVER_TRUST_STORE = "runwar/runwar.truststore";
     private static final String CLIENT_KEY_STORE = "runwar/client.keystore";
     private static final String CLIENT_TRUST_STORE = "runwar/client.truststore";
-    private static final char[] DEFAULT_STORE_PASSWORD;
+    public static final char[] DEFAULT_STORE_PASSWORD;
     
     static {
         DEFAULT_STORE_PASSWORD = "password".toCharArray();
@@ -64,7 +64,7 @@ public class SSLUtil
     
     public static SSLContext createSSLContext() throws IOException {
         RunwarLogger.SECURITY_LOGGER.debug("Creating SSL context from: runwar/runwar.keystore trust store: runwar/runwar.truststore");
-        return createSSLContext(loadKeyStore(SERVER_KEY_STORE), loadKeyStore(SERVER_TRUST_STORE), DEFAULT_STORE_PASSWORD.clone(), null);
+        return createSSLContext(getServerKeyStore(), getTrustStore(), DEFAULT_STORE_PASSWORD.clone(), null);
     }
 
     public static SSLContext createClientSSLContext() throws IOException {
@@ -145,7 +145,15 @@ public class SSLUtil
         Arrays.fill(passphrase, '*');
         return sslContext;
     }
-    
+
+    public static KeyStore getTrustStore() throws IOException {
+        return loadKeyStore(SERVER_TRUST_STORE);
+    }
+
+    public static KeyStore getServerKeyStore() throws IOException {
+        return loadKeyStore(SERVER_KEY_STORE);
+    }
+
     private static KeyStore loadKeyStore(final String resourcePath) throws IOException {
         final InputStream resourceAsStream = SSLUtil.class.getClassLoader().getResourceAsStream(resourcePath);
         if (resourceAsStream == null) {
@@ -283,7 +291,7 @@ public class SSLUtil
         try {
             final Certificate generateCertificate = CertificateFactory.getInstance("X.509").generateCertificate(fullStream(file));
             keyStore.setCertificateEntry(alias, generateCertificate);
-            RunwarLogger.SECURITY_LOGGER.error("Added certificate file:" + file.getAbsolutePath());
+            RunwarLogger.SECURITY_LOGGER.debug("Added certificate file:" + file.getAbsolutePath());
             RunwarLogger.SECURITY_LOGGER.debug("   " + generateCertificate.getType() + "  certificate, public key [ " + generateCertificate.getPublicKey().getAlgorithm() + " " + generateCertificate.getPublicKey().getFormat() + " ]");
         }
         catch (Exception ex) {

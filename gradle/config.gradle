@@ -30,5 +30,5 @@ task printConfig() {
     }
 }
 
-apply from: 'gradle/dependencies.gradle'
+apply from: 'dependencies.gradle'
 apply from: 'gradle/ide.gradle'

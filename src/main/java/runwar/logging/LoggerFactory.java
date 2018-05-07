@@ -49,6 +49,9 @@ public class LoggerFactory {
         Logger DORKBOX_LOG = Logger.getLogger("dorkbox.systemTray.SystemTray");
         loggers.add(DORKBOX_LOG);
 
+        Logger OSCACHE_LOG = Logger.getLogger("com.opensymphony.oscache.base.Config");
+        loggers.add(OSCACHE_LOG);
+
         Logger JBOSS_LOG = Logger.getLogger("org.jboss.logging");
         loggers.add(JBOSS_LOG);
 
@@ -129,7 +132,7 @@ public class LoggerFactory {
                 RUNWAR_SECURITY.setLevel(level);
                 RUNWAR_REQUEST.setLevel(level);
                 Logger.getRootLogger().setLevel(level);
-                System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+                System.setProperty("org.eclipse.jetty.LEVEL", "ALL");
                 configureUrlRewriteLoggers(true);
             } else {
                 RUNWAR_REQUEST.setLevel(Level.INFO);
@@ -174,7 +177,7 @@ public class LoggerFactory {
         ConsoleAppender appender = new ConsoleAppender();
         MulticolorLayout layout = new MulticolorLayout();
         layout.setConversionPattern(pattern);
-        layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;34,WARN:38;5;208,ERROR:1;31,FATAL:1;40");
+        layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;,WARN:38;5;208,ERROR:1;31,FATAL:1;40");
         appender.setLayout(layout);
         appender.setName("CONSOLE");
         appender.setThreshold(Level.toLevel(logLevel));

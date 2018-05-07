@@ -40,7 +40,7 @@ public class Start {
         int port = Integer.parseInt(schemeHostAndPort[2]);
         int stopPort = port+1;
         RunwarLogger.LOG.info("Starting instance: " + host + " on port "+ schemeHostAndPort[2]);
-        LaunchUtil.relaunchAsBackgroundProcess(serverOptions.setHost(host)
+        LaunchUtil.relaunchAsBackgroundProcess(serverOptions.setHost(host).setStartedFromCommandLine(true)
                 .setPortNumber(port).setSocketNumber(stopPort).setLoadBalance(""), false);
 	    
 	}
@@ -61,6 +61,7 @@ public class Start {
         } else {
             serverOptions = CommandLineHandler.parseArguments(args);
         }
+        serverOptions.setStartedFromCommandLine(true);
         if(serverOptions.getLoadBalance() != null && serverOptions.getLoadBalance().length > 0) {
             final List<String> balanceHosts = new ArrayList<String>();
             RunwarLogger.LOG.info("Initializing...");
@@ -112,7 +113,7 @@ public class Start {
                                 int port = schemeHostAndPort.length >2 ? Integer.parseInt(schemeHostAndPort[2]) : 80 ;
                                 response += balanceHost + " <a href='?removeHost=" + balanceHost + "'>remove</a> Listening: "+serverListening(host, port)+"<br/>";
                             }
-                            exchange.getResponseSender().send("<h3>Balanced Hosts</h3><form action='?'> Add Host:<input type='text' name='addHost' placeholder='http://127.0.0.1:7070'><input type='submit'></form>" + response);
+                            exchange.getResponseSender().send("<h3>Balanced Hosts</h3><form action='?'> Add Host:<input name='text' name='addHost' placeholder='http://127.0.0.1:7070'><input name='submit'></form>" + response);
                         }
                     }).build();
             adminServer.start();

@@ -1,0 +1,71 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '2.0.3'
+    id 'com.zyxist.chainsaw' version '0.3.1'
+}
+
+defaultTasks 'clean', 'shadow'
+version = '3.13-SNAPSHOT'
+archivesBaseName = 'dorkbox'
+buildDir = file('../dist')
+
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+group = 'org.cfmlprojects'
+
+ext {
+    artifactId = archivesBaseName
+    mavenRepo = "${System.getProperty("user.home")}/cfdistro/artifacts/"
+}
+
+tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
+
+shadowJar {
+    classifier = null
+    mergeServiceFiles()
+    dependencies {
+        include(dependency('com.dorkbox:.*:.*'))
+    }
+}
+
+
+repositories {
+    maven { url "http://cfmlprojects.org/artifacts" }
+    mavenLocal()
+    maven { url "http://repo.maven.apache.org/maven2" }
+}
+dependencies {
+    compile("com.dorkbox:Notify:3.7")
+    compile("com.dorkbox:SystemTray:3.13-SNAPSHOT") {
+        //    compile("com.dorkbox:SystemTray:3.12"){
+        exclude group: 'ch.qos.logback', module: 'logback-core'
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+    }
+}
+
+artifacts { }
+
+publishing {
+    repositories {
+        maven {
+            url project.mavenRepo
+        }
+    }
+    publications {
+        java(MavenPublication) { publication ->
+            project.shadow.component(publication)
+            groupId 'org.cfmlprojects'
+            artifactId 'dorkbox'
+            version project.version
+        }
+    }
+}
+
+gradle.buildFinished {
+    def repoDir = "${mavenRepo}${project.group.replace('.','/')}/${artifactId}/${version}"
+    println repoDir
+    file(repoDir).list().each{
+        println it
+    }
+
+}

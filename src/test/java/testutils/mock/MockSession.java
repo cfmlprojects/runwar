@@ -40,9 +40,7 @@ public class MockSession implements HttpSession {
         return 0;
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public HttpSessionContext getSessionContext() {
         return null;
     }
@@ -51,9 +49,7 @@ public class MockSession implements HttpSession {
         return attrs.get(s);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public Object getValue(String s) {
         return null;
     }
@@ -62,9 +58,7 @@ public class MockSession implements HttpSession {
         return null;
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public String[] getValueNames() {
         return new String[0];
     }
@@ -73,9 +67,7 @@ public class MockSession implements HttpSession {
         attrs.put(s, o);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public void putValue(String s, Object o) {
 
     }
@@ -84,9 +76,7 @@ public class MockSession implements HttpSession {
         attrs.remove(s);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public void removeValue(String s) {
 
     }
