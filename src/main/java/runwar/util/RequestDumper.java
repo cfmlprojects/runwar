@@ -53,6 +53,14 @@ public class RequestDumper implements HttpHandler {
         }
         jsonObject.put("headers", headerData);
 
+        final JSONObject responseHeaderData = new JSONObject();
+        for (HeaderValues header : exchange.getResponseHeaders()) {
+            for (String value : header) {
+                responseHeaderData.put(header.getHeaderName().toString(), value);
+            }
+        }
+        jsonObject.put("responseHeaders", responseHeaderData);
+
         jsonObject.put("locale", LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE)));
         jsonObject.put("method", exchange.getRequestMethod());
 

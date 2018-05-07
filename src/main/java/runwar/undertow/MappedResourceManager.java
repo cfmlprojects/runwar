@@ -2,10 +2,14 @@ package runwar.undertow;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
@@ -15,8 +19,8 @@ import static runwar.logging.RunwarLogger.MAPPER_LOG;
 
 public class MappedResourceManager extends FileResourceManager {
 
-    private HashMap<String, File> aliasMap = new HashMap<>();
-    private File[] cfmlDirsFiles;
+    private HashMap<String, Path> aliasMap = new HashMap<>();
+    private HashSet<Path> cfmlDirsFiles;
     private File WEBINF = null, CFIDE = null;
     private static final Pattern CFIDE_REGEX_PATTERN;
     private static final Pattern WEBINF_REGEX_PATTERN;
@@ -45,33 +49,38 @@ public class MappedResourceManager extends FileResourceManager {
     }
 
     private void processMappings(String cfmlDirList) {
-        HashSet<File> dirs = new HashSet<>();
-        String[] dirList = cfmlDirList.split(",");
-        for (String aDirList : dirList) {
-            File dir;
+        HashSet<Path> dirs = new HashSet<>();
+        //        Stream.of(cfmlDirList.split(","))
+        //                .map (elem -> new String(elem))
+        //                .collect(Collectors.toList());
+        Stream.of(cfmlDirList.split(",")).forEach( aDirList -> {
+            Path path;
+            String dir = "";
             String virtual = "";
-            String[] directoryAndAliasList = aDirList.split("=");
-            if (directoryAndAliasList.length == 1) {
-                dir = new File(aDirList.trim());
-                dir = dir.getPath().startsWith("..") ? dir.getAbsoluteFile() : dir;
-                dirs.add(dir.toPath().normalize().toFile());
+            String[] directoryAndAliasList = aDirList.trim().split("=");
+            if(directoryAndAliasList.length == 1){
+                dir = directoryAndAliasList[0].trim();
             } else {
+                dir = directoryAndAliasList[1].trim();
                 virtual = directoryAndAliasList[0].trim();
+            }
+            dir = dir.endsWith("/") ? dir : dir + '/';
+            path = Paths.get(dir).normalize().toAbsolutePath();
+            if(virtual.length() == 0){
+                dirs.add(path);
+            } else {
                 virtual = virtual.startsWith("/") ? virtual : "/" + virtual;
                 virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length() - 1) : virtual;
-                dir = new File(directoryAndAliasList[1].trim());
-                dir = dir.getPath().startsWith("..") ? dir.getAbsoluteFile() : dir;
-                aliasMap.put(virtual.toLowerCase(), dir.toPath().normalize().toFile());
+                aliasMap.put(virtual.toLowerCase(), path);
             }
             String aliasInfo = virtual.isEmpty() ? "" : " as " + virtual;
-            if (!dir.exists()) {
-                MAPPER_LOG.error("Does not exist, cannot serve content from: " + dir.getAbsolutePath() + aliasInfo);
+            if (!path.toFile().exists()) {
+                MAPPER_LOG.errorf("Does not exist, cannot serve content from: " + path + aliasInfo);
             } else {
-                MAPPER_LOG.info("Serving content from " + dir.getAbsolutePath() + aliasInfo);
+                MAPPER_LOG.info("Serving content from " + path + aliasInfo);
             }
-        }
-        int directoriesAliased = dirs.size();
-        cfmlDirsFiles = dirs.toArray(new File[directoriesAliased]);
+        });
+        cfmlDirsFiles = dirs;
     }
 
     public Resource getResource(String path) {
@@ -80,80 +89,74 @@ public class MappedResourceManager extends FileResourceManager {
             return null;
         }
         MAPPER_LOG.debug("* requested: '" + path + "'");
-        File reqFile = null;
-        try {
-            final Matcher webInfMatcher = WEBINF_REGEX_PATTERN.matcher(path);
-            final Matcher cfideMatcher = CFIDE_REGEX_PATTERN.matcher(path);
-            if (WEBINF != null && webInfMatcher.matches()) {
-                if(webInfMatcher.group(1) == null) {
-                    reqFile = WEBINF;
-                } else {
-                    reqFile = new File(WEBINF, webInfMatcher.group(1).replace("WEB-INF", ""));
-                }
-                MAPPER_LOG.trace("** matched WEB-INF : " + reqFile.getAbsolutePath());
-            } else if (cfideMatcher.matches()) {
-                if(cfideMatcher.group(1) == null) {
-                    reqFile = CFIDE;
-                } else {
-                    reqFile = new File(CFIDE, cfideMatcher.group(1).replace("CFIDE", ""));
-                }
-                MAPPER_LOG.trace("** matched /CFIDE : " + reqFile.getAbsolutePath());
-            } else if (!webInfMatcher.matches()) {
-                reqFile = new File(getBase(), path);
-                MAPPER_LOG.trace("* checking with base path: '" + reqFile.getAbsolutePath() + "'");
-                if (!reqFile.exists()) {
-                    reqFile = getAliasedFile(aliasMap, path);
-                }
-                if (reqFile == null) {
-                    for (File cfmlDirsFile : cfmlDirsFiles) {
-                        String absPath = cfmlDirsFile.getCanonicalPath();
-                        reqFile = new File(cfmlDirsFile, path.replace(absPath, ""));
-                        MAPPER_LOG.tracef("checking: '%s' = '%s'", absPath, reqFile.getAbsolutePath());
-                        if (reqFile.exists()) {
-                            MAPPER_LOG.tracef("Exists: '%s'", reqFile.getAbsolutePath());
-                            break;
-                        }
+        Path reqFile = null;
+        final Matcher webInfMatcher = WEBINF_REGEX_PATTERN.matcher(path);
+        final Matcher cfideMatcher = CFIDE_REGEX_PATTERN.matcher(path);
+        if (WEBINF != null && webInfMatcher.matches()) {
+            if(webInfMatcher.group(1) == null) {
+                reqFile = Paths.get(WEBINF.toURI());
+            } else {
+                reqFile = Paths.get(WEBINF.getAbsolutePath(), webInfMatcher.group(1).replace("WEB-INF", ""));
+            }
+            MAPPER_LOG.trace("** matched WEB-INF : " + reqFile.toAbsolutePath().toString());
+        } else if (cfideMatcher.matches()) {
+            if(cfideMatcher.group(1) == null) {
+                reqFile = Paths.get(CFIDE.toURI());
+            } else {
+                reqFile = Paths.get(CFIDE.getAbsolutePath(), cfideMatcher.group(1).replace("CFIDE", ""));
+            }
+            MAPPER_LOG.trace("** matched /CFIDE : " + reqFile.toAbsolutePath().toString());
+        } else if (!webInfMatcher.matches()) {
+            reqFile = Paths.get(getBase().getAbsolutePath(), path);
+            MAPPER_LOG.trace("* checking with base path: '" + reqFile.toAbsolutePath().toString() + "'");
+            if (!Files.exists(reqFile)) {
+                reqFile = getAliasedFile(aliasMap, path);
+            }
+            if (reqFile == null) {
+                for (Path cfmlDirsFile : cfmlDirsFiles) {
+                    reqFile = Paths.get(cfmlDirsFile.toString(), path.replace(cfmlDirsFile.toAbsolutePath().toString(), ""));
+                    MAPPER_LOG.tracef("checking: '%s' = '%s'", cfmlDirsFile.toAbsolutePath().toString(), reqFile.toAbsolutePath());
+                    if (Files.exists(reqFile)) {
+                        MAPPER_LOG.tracef("Exists: '%s'", reqFile.toAbsolutePath().toString());
+                        break;
                     }
                 }
             }
-            if (reqFile != null && reqFile.exists()) {
-                if(reqFile.getPath().indexOf('\\') > 0){
-                    reqFile = new File(reqFile.getPath().replace('/', '\\'));
-                }
-//                reqFile = reqFile.getAbsoluteFile().toPath().normalize().toFile();
-                MAPPER_LOG.debugf("** path mapped to: '%s'", reqFile);
-                return new FileResource(reqFile, this, path);
-            } else {
-                MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.getAbsolutePath() : "null");
-                return super.getResource(path);
-            }
-        } catch (IOException e) {
-            MAPPER_LOG.error(e.getMessage());
         }
-        return null;
+        if (reqFile != null && Files.exists(reqFile)) {
+            if(reqFile.toString().indexOf('\\') > 0) {
+                reqFile = Paths.get(reqFile.toString().replace('/', '\\'));
+            }
+            MAPPER_LOG.debugf("** path mapped to: '%s'", reqFile);
+            return new FileResource(reqFile.toFile(), this, path);
+        } else {
+            MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.toString() : "null");
+            return super.getResource(path);
+        }
     }
 
-    public static File getAliasedFile(HashMap<String, File> aliasMap, String path) {
+    public static Path getAliasedFile(HashMap<String, Path> aliasMap, String path) {
         if(path.startsWith("/file:")){
             // groovy servlet asks for /file:... for some reason, when scripts are in an aliased dir
             path = path.replace("/file:", "");
-            for( File file : aliasMap.values()) {
-                if(path.startsWith(file.getPath())) {
-                    return new File(path);
+            for( Path file : aliasMap.values()) {
+                if(path.startsWith(file.toAbsolutePath().toString())) {
+                    return Paths.get(path);
                 }
             }
         }
+
         String pathDir = path.startsWith("/") ? path : "/" + path;
-        File file = aliasMap.get(pathDir.toLowerCase());
+        Path file = aliasMap.get(pathDir.toLowerCase());
         if(file != null) {
-            return new File(file.getPath());
+            return file;
         }
         while (pathDir.lastIndexOf('/') > 0) {
             pathDir = pathDir.substring(0, pathDir.lastIndexOf('/'));
             if (aliasMap.containsKey(pathDir.toLowerCase())) {
-                file = new File(aliasMap.get(pathDir.toLowerCase()), path.substring(pathDir.length()));
-                if(file.getPath().indexOf('\\') > 0){
-                    file = new File(file.getPath().replace('/', '\\'));
+                file = Paths.get(aliasMap.get(pathDir.toLowerCase()).toString() + '/' + path.substring(pathDir.length())).normalize();
+                if(file.toString().indexOf('\\') > 0){
+                    file = Paths.get(file.toString().replace('/', '\\'));
                 }
                 return file;
             }
@@ -161,7 +164,7 @@ public class MappedResourceManager extends FileResourceManager {
         return null;
     }
 
-    HashMap<String, File> getAliasMap() {
+    HashMap<String, Path> getAliasMap() {
         return aliasMap;
     }
 

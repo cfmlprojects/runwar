@@ -124,6 +124,7 @@ model {
     }
     tasks.publishRunwarPublicationToMavenLocal { dependsOn project.tasks.proguard, project.tasks.signArchives }
     tasks.publishRunwarPublicationToMavenRepository { dependsOn project.tasks.proguard, project.tasks.signArchives }
+    tasks.publishRunwarPublicationToCfdistroRepository { dependsOn project.tasks.proguard, project.tasks.signArchives }
 }
 
 tasks.matching { it.name.startsWith("publish") }.all {

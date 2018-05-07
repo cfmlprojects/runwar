@@ -1,0 +1,21 @@
+module runwar {
+//    requires jdk.unsupported;
+    requires java.desktop;
+    requires java.management;
+    requires java.instrument;
+    requires undertow.core;
+    requires undertow.servlet;
+    requires undertow.websockets.jsr;
+    requires jboss.logging;
+    requires jboss.logging.annotations;
+    requires dorkbox;
+    requires xnio.api;
+    requires jcabi.log;
+    requires java.logging;
+    requires org.slf4j;
+    requires beta.jboss.servlet.api_4_0;
+    requires json.smart.mini;
+    requires javashim;
+    requires semver4j;
+}
+

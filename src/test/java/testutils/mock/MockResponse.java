@@ -47,16 +47,12 @@ public class MockResponse implements HttpServletResponse {
         return encodeURL(s);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public String encodeUrl(String s) {
         return encodeURL(s);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public String encodeRedirectUrl(String s) {
         return encodeURL(s);
     }
@@ -101,9 +97,7 @@ public class MockResponse implements HttpServletResponse {
         status = i;
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public void setStatus(int i, String s) {
 
     }

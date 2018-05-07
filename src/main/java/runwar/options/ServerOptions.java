@@ -481,4 +481,12 @@ public interface ServerOptions {
     
     ServerOptions setBufferEnabled(boolean enable);
 
+    boolean startedFromCommandLine();
+
+    ServerOptions setStartedFromCommandLine(boolean enable);
+
+    int getHttp2ProxySSLPort();
+
+    ServerOptions setHttp2ProxySSLPort(int portNumber);
+
 }

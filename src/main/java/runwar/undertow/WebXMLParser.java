@@ -15,18 +15,10 @@ import javax.servlet.Servlet;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import io.undertow.servlet.api.*;
 import org.joox.Context;
 import org.joox.Match;
 import org.w3c.dom.Document;
-
-import io.undertow.server.session.SessionCookieConfig;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.ErrorPage;
-import io.undertow.servlet.api.FilterInfo;
-import io.undertow.servlet.api.ListenerInfo;
-import io.undertow.servlet.api.MimeMapping;
-import io.undertow.servlet.api.ServletInfo;
-import runwar.logging.RunwarLogger;
 
 public class WebXMLParser {
 
@@ -34,12 +26,9 @@ public class WebXMLParser {
 
     /**
      * Parses the web.xml and configures the context.
-     *
-     * @param webxml
-     * @param info
      */
     @SuppressWarnings("unchecked")
-    public static void parseWebXml(File webxml, File webinf, DeploymentInfo info, SessionCookieConfig sessionConfig,
+    public static void parseWebXml(File webxml, File webinf, DeploymentInfo info,
             boolean ignoreWelcomePages, boolean ignoreRestMappings) {
         CONF_LOG.infof("Parsing '%s'", webxml.getPath());
         if (!webxml.exists() || !webxml.canRead()) {
@@ -258,7 +247,7 @@ public class WebXMLParser {
                     CONF_LOG.tracef("error-code: %s - location: %s", location, errorCode);
                     info.addErrorPage(new ErrorPage(location, Integer.parseInt(errorCode)));
                 } else {
-                    CONF_LOG.tracef("exception-type: %s - location: %s", location, errorCode);
+                    CONF_LOG.tracef("exception-type: %s - location: %s", location, exceptionType);
                     try {
                         info.addErrorPage(new ErrorPage(location,
                                 (Class<? extends Throwable>) info.getClassLoader().loadClass(exceptionType)));
@@ -273,8 +262,8 @@ public class WebXMLParser {
             sessionConfigElement.find("cookie-config").each(welcomeFileElement -> {
                 String httpOnly = $(welcomeFileElement).find("http-only").text();
                 String secure = $(welcomeFileElement).find("secure").text();
-                sessionConfig.setHttpOnly(Boolean.valueOf(httpOnly));
-                sessionConfig.setSecure(Boolean.valueOf(secure));
+                info.getServletSessionConfig().setHttpOnly(Boolean.valueOf(httpOnly));
+                info.getServletSessionConfig().setSecure(Boolean.valueOf(secure));
                 CONF_LOG.debugf("http-only: %s", Boolean.valueOf(httpOnly).toString());
                 CONF_LOG.debugf("secure: %s", Boolean.valueOf(secure).toString());
             });

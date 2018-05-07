@@ -3,10 +3,11 @@ import se.bjurr.gitchangelog.api.GitChangelogApi
 import static se.bjurr.gitchangelog.api.GitChangelogApi.gitChangelogApiBuilder
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '2.0.3'
+    id 'com.github.johnrengelman.shadow' version '2.0.4'
     id "com.diffplug.gradle.oomph.ide" version "3.13.0"
     id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "1.55"
     id "org.ajoberstar.grgit" version "2.1.1"
+//    id 'com.zyxist.chainsaw' version '0.3.1'
 }
 
 defaultTasks 'clean', 'shadow'
@@ -17,13 +18,14 @@ apply plugin: 'java'
 
 group = 'org.cfmlprojects'
 description = 'RunWar Gradle build script'
+archivesBaseName = 'runwar'
 apply from: 'gradle/config.gradle'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
 
-task wrapper(type: Wrapper) { gradleVersion = '4.6' }
+task wrapper(type: Wrapper) { gradleVersion = '4.7' }
 
 
 sourceSets {
@@ -69,6 +71,7 @@ jar {
     manifest.attributes(
             'Main-Class': 'runwar.Start',
             'Can-Redefine-Classes': 'true',
+            'Automatic-Module-Name': 'runwar',
             'Can-Retransform-Classes': 'true',
             'Implementation-Version': project.version,
             '-exportcontents': 'runwar.*',
@@ -92,9 +95,21 @@ task sourceJar(type: Jar) {
     from sourceSets.main.allSource
 }
 
+/*
+tasks.withType(JavaCompile) {
+    options.compilerArgs.addAll([
+            "--add-exports",
+            "java.base/jdk.internal.misc=ALL-UNNAMED",
+            "--add-exports",
+            "java.base/jdk.internal.misc=runwar"
+    ])
+}
+*/
+
 shadowJar {
     classifier = null
     mergeServiceFiles()
+    exclude('**/*.java')
 }
 apply from: 'gradle/proguard.gradle'
 apply from: 'gradle/maven.gradle'
