@@ -38,6 +38,7 @@ import runwar.tray.Tray;
 import runwar.undertow.MappedResourceManager;
 import runwar.undertow.RequestDebugHandler;
 import runwar.util.ClassLoaderUtils;
+import runwar.util.FusionReactor;
 import runwar.util.RequestDumper;
 import runwar.util.PortRequisitioner;
 
@@ -86,6 +87,7 @@ public class Server {
     private runwar.util.PortRequisitioner ports;
     private static HTTP2Proxy http2proxy;
     private Tray tray;
+    private FusionReactor fusionReactor;
 
     public Server() {
     }
@@ -337,6 +339,8 @@ public class Server {
 //        cp.addAll(getClassesList(new File(webinf, "/cfclasses")));
         initClassLoader(cp);
 
+        fusionReactor = new FusionReactor(_classLoader);
+
         // redirect out and err to context logger
         //hookSystemStreams();
 
@@ -520,6 +524,11 @@ public class Server {
                 if(!exchange.getResponseHeaders().contains("Secure") && addSecureHeader){
                     exchange.getResponseHeaders().add(SECURE, "true");
                 }
+
+                if(fusionReactor.hasFusionReactor()){
+                    fusionReactor.setFusionReactorInfo("myTransaction","myTransacitonApplication");
+                }
+
 
                 CONTEXT_LOG.debug("requested: '" + fullExchangePath(exchange) + "'" );
                 // sessionConfig.setSessionId(exchange, ""); // TODO: see if this suppresses jsessionid
