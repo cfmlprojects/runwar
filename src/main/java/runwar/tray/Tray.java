@@ -196,14 +196,43 @@ public class Tray {
         }
     }
 
+    public static JSONArray loadItems(JSONArray loadItems) {
+        JSONArray items = new JSONArray();
+        if (loadItems == null) {
+            loadItems = (JSONArray) JSONValue.parse("[]");
+        }
+
+        for (Object ob : loadItems) {
+            JSONObject itemInfo = (JSONObject) ob;
+            if(itemInfo.get("label") == null) {
+                RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
+                continue;
+            }
+            String label = getString(itemInfo, "label", "");
+            itemInfo.put("label",label);
+            if(itemInfo.get("action") != null) {
+//                String action = itemInfo.get("action").toString();
+            }
+            if(itemInfo.get("url") != null) {
+                itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
+                itemInfo.put("url", getString(itemInfo, "url", ""));
+            } else if(itemInfo.get("items") != null) {
+                itemInfo.put("items", loadItems((JSONArray)itemInfo.get("items")));
+            }
+
+            items.add(itemInfo);
+        }
+        return items;
+    }
+
     public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {
         JSONObject config;
         JSONArray loadItems;
-        JSONArray items = new JSONArray();
         setVariableMap(variableMap);
         if(jsonText == null) {
             return null;
         }
+
         Object menuObject = JSONValue.parse(jsonText);
         if(menuObject instanceof JSONArray) {
             config = new JSONObject();
@@ -221,31 +250,8 @@ public class Tray {
             tooltip = tooltip.substring(0, Math.min(tooltip.length(), tooltip.lastIndexOf(" "))) + "...";
         }
         config.put("tooltip", tooltip );
-        if (loadItems == null) {
-            loadItems = (JSONArray) JSONValue.parse("[]");
-        }
 
-        for (Object ob : loadItems) {
-            JSONObject itemInfo = (JSONObject) ob;
-            if(itemInfo.get("label") == null) {
-                RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
-                continue;
-            }
-            String label = getString(itemInfo, "label", "");
-            itemInfo.put("label",label);
-            if(itemInfo.get("action") != null) {
-                String action = itemInfo.get("action").toString();
-                if (action.toLowerCase().equals("stopserver") && action.toLowerCase().equals("openbrowser")) {
-                    RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
-                    itemInfo.put("action",null);
-                }
-            }
-            if(itemInfo.get("url") != null) {
-                itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
-                itemInfo.put("url", getString(itemInfo, "url", ""));
-            }
-            items.add(itemInfo);
-        }
+        JSONArray items = loadItems(loadItems);
         config.put("items",items);
 
         return config;

@@ -29,6 +29,11 @@ public class TestGetTrayConfig {
                 + "{label:\"Blank Item\", disabled:\"true\"}"
                 + "{label:\"Stop Server (${runwar.processName})\", action:\"stopserver\"}"
                 + ",{label:\"Open Browser\", action:\"openbrowser\", url:\"http://${runwar.host}:${runwar.port}/\"}"
+                + "{label:\"Advanced\",\"items\": [" +
+                ",{label:\"Version\", action:\"getversion\", image:\"dialog-reload.png\"}" +
+                ",{label:\"Start on boot ${runwar.processName} http://${runwar.host}:${runwar.port}\", checkbox:\"true\", image:\"dialog-information.png\", disabled:\"true\"}" +
+                ",{label:\"Browse File System\", hotkey:\"B\", action:\"openfilesystem\", path:\"\", image:\"resources/dialog-information.png\"}" +
+                "]}"
                 + "]}";
 
         final String menuJSONTooltip = "{\"title\" : \"${defaultTitle}\",\"tooltip\" : \"Cooltool ${runwar.host}\", \"items\": ["
@@ -51,24 +56,32 @@ public class TestGetTrayConfig {
         menu = Tray.getTrayConfig( menuJSON , statusText, variableMap );
         assertEquals(statusText, menu.get("title").toString());
         assertEquals(statusText, menu.get("tooltip").toString());
-        assertEquals(3, ((JSONArray) menu.get("items")) .size() );
-        assertEquals("http://localhost:8099/", ((JSONObject) ((JSONArray) menu.get("items")) .get(2)).get("url").toString() );
-        assertEquals("true", ((JSONObject) ((JSONArray) menu.get("items")) .get(0)).get("disabled").toString() );
+        JSONArray menuArray = (JSONArray) menu.get("items");
+        assertEquals(4, menuArray .size() );
+        assertEquals("http://localhost:8099/", ((JSONObject) menuArray .get(2)).get("url").toString() );
+        assertEquals("true", ((JSONObject) menuArray .get(0)).get("disabled").toString() );
+
+        JSONArray submenuArray = (JSONArray) ((JSONObject) menuArray .get(3)).get("items");
+        assertEquals(3, submenuArray.size());
+        assertEquals("Start on boot Awesome http://localhost:8099", ((JSONObject)submenuArray.get(1)).get("label"));
 
         menu = Tray.getTrayConfig( menuJSONTooltip , statusText, variableMap );
+        menuArray = (JSONArray) menu.get("items");
         assertEquals("Cooltool localhost", menu.get("tooltip").toString());
         assertEquals(statusText, menu.get("title").toString());
-        assertEquals(3, ((JSONArray) menu.get("items")) .size() );
+        assertEquals(3, menuArray .size() );
 
         menu = Tray.getTrayConfig( legacyMenuJSON , statusText, variableMap );
+        menuArray = (JSONArray) menu.get("items");
         assertEquals(statusText, menu.get("title").toString());
-        assertEquals(2, ((JSONArray) menu.get("items")) .size() );
+        assertEquals(2, menuArray .size() );
         
         menu = Tray.getTrayConfig( menuJSONnoActions , statusText, variableMap );
+        menuArray = (JSONArray) menu.get("items");
         assertEquals(statusText, menu.get("title").toString());
-        assertEquals(2, ((JSONArray) menu.get("items")) .size() );
-        assertEquals("http://localhost:8099/", ((JSONObject) ((JSONArray) menu.get("items")) .get(1)).get("url").toString() );
-        assertEquals("openbrowser", ((JSONObject) ((JSONArray) menu.get("items")) .get(1)).get("action").toString() );
+        assertEquals(2, menuArray .size() );
+        assertEquals("http://localhost:8099/", ((JSONObject) menuArray .get(1)).get("url").toString() );
+        assertEquals("openbrowser", ((JSONObject) menuArray .get(1)).get("action").toString() );
 
     
     }
