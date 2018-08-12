@@ -47,16 +47,19 @@ public class Tray {
             + "]}";
 
     private static HashMap<String,String> variableMap;
-    
+    private Server server;
+
     public static void setVariableMap(HashMap<String,String> vm) {
         variableMap = vm;
     }
 
-    public static void hookTray(final Server server) {
+    public void hookTray(final Server server) {
+        this.server = server;
         if(trayIsHooked){
             return;
         }
-        SystemTray.AUTO_SIZE = true;
+//        available 3.13+
+//        SystemTray.AUTO_SIZE = true;
         SystemTray.FORCE_GTK2 = true;
         System.setProperty("SWT_GTK3", "0");
 //        SystemTray.FORCE_TRAY_TYPE = TrayType.;
@@ -77,14 +80,14 @@ public class Tray {
             return;
         }
 
-        ServerOptions serverOptions = Server.getServerOptions();
-        String iconImage = serverOptions.getIconImage();
-        String host = serverOptions.getHost();
-        int portNumber = serverOptions.getPortNumber();
-        final int stopSocket = serverOptions.getSocketNumber();
-        String processName = serverOptions.getProcessName();
+        ServerOptions serverOptions = server.getServerOptions();
+        String iconImage = serverOptions.iconImage();
+        String host = serverOptions.host();
+        int portNumber = serverOptions.httpPort();
+        final int stopSocket = serverOptions.stopPort();
+        String processName = serverOptions.processName();
         String PID = server.getPID();
-        String warpath = serverOptions.getWarPath();
+        String warpath = serverOptions.warUriString();
 
         final String statusText = processName + " server on " + host + ":" + portNumber + " PID:" + PID;
 
@@ -98,8 +101,8 @@ public class Tray {
         variableMap.put("runwar.stopsocket", Integer.toString(stopSocket));
 
         String trayConfigJSON;
-        if (serverOptions.getTrayConfig() != null) {
-            trayConfigJSON = readFile( serverOptions.getTrayConfig() );
+        if (serverOptions.trayConfig() != null) {
+            trayConfigJSON = readFile( serverOptions.trayConfig() );
         } else {
             trayConfigJSON = getResourceAsString("runwar/taskbar.json");
         }
@@ -168,7 +171,7 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new OpenBrowserAction(url));
                     menuItem.setShortcut('o');
                 } else if (action.toLowerCase().equals("openfilesystem")) {
-                    File path = new File(getString(itemInfo, "path", Server.getServerOptions().getWarPath()));
+                    File path = new File(getString(itemInfo, "path", server.getServerOptions().warUriString()));
                     menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
                 } else {
@@ -267,10 +270,11 @@ public class Tray {
     public static void unhookTray() {
         if (systemTray != null) {
             try {
-                RunwarLogger.LOG.debug("Removing tray icon");
+                RunwarLogger.LOG.debug("Removing tray");
                 systemTray.shutdown();
+                systemTray = null;
             } catch (Exception e) {
-                e.printStackTrace();
+                RunwarLogger.LOG.trace(e);
             }
         }
     }
@@ -410,7 +414,7 @@ public class Tray {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            displayMessage("Info", "Opening browser to " + url);
+            displayMessage( "Info", "Opening browser to " + url);
             openURL(url);
         }
     }
@@ -437,7 +441,7 @@ public class Tray {
                 }
                 System.exit(0);
             } catch (Exception e1) {
-                displayMessage("Error", e1.getMessage());
+                displayMessage(Server.processName, "Error", e1.getMessage());
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e2) {
@@ -478,7 +482,7 @@ public class Tray {
     }
     
     private static class GetVersionAction implements ActionListener {
-        
+
         @Override
         public void actionPerformed(ActionEvent e) {
             try {

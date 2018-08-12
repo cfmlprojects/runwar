@@ -1,5 +1,6 @@
 package runwar;
 
+import daevil.Daevil;
 import runwar.options.ServerOptions;
 import runwar.util.PortRequisitioner;
 
@@ -10,8 +11,9 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
-import static runwar.logging.RunwarLogger.LOG;
+import static runwar.logging.RunwarLogger.MONITOR_LOG;
 import static runwar.Server.bar;
 
 class MonitorThread extends Thread {
@@ -26,8 +28,8 @@ class MonitorThread extends Thread {
 
     MonitorThread(Server server) {
         this.server = server;
-        serverOptions = Server.getServerOptions();
-        this.stopPassword = serverOptions.getStopPassword();
+        serverOptions = server.getServerOptions();
+        this.stopPassword = serverOptions.stopPassword();
         this.ports = server.getPorts();
         setDaemon(true);
         setName("StopMonitor");
@@ -37,15 +39,16 @@ class MonitorThread extends Thread {
 
     @Override
     public void run() {
-        try(ServerSocket serverSocket = new ServerSocket(ports.get("stop").socket, 1, InetAddress.getByName(serverOptions.getHost()))) {
+        try(ServerSocket serverSocket = new ServerSocket(ports.get("stop").socket, 1, InetAddress.getByName(serverOptions.host()))) {
             listening = true;
-            LOG.info(bar);
-            LOG.info("*** starting 'stop' listener thread - Host: " + serverOptions.getHost()
+            MONITOR_LOG.info(bar);
+            MONITOR_LOG.info("*** starting 'stop' listener thread - Host: " + serverOptions.host()
                     + " - Socket: " + ports.get("stop").socket);
-            LOG.info(bar);
+            MONITOR_LOG.info(bar);
             while (listening) {
-                LOG.debug("StopMonitor listening for password");
+                MONITOR_LOG.debug("StopMonitor listening for password");
                 if (server.getServerState().equals(Server.ServerState.STOPPED) || server.getServerState().equals(Server.ServerState.STOPPING)) {
+                    MONITOR_LOG.debug("Server is in a stopping state, stopping listing for shutdown call");
                     listening = false;
                 }
                 try (Socket clientSocket = serverSocket.accept()) {
@@ -60,37 +63,45 @@ class MonitorThread extends Thread {
                             }
                         }
                         if (i == stopPassword.length) {
+                            Daevil.log.debug("Password matched, stopping");
                             listening = false;
                         } else {
                             if (listening) {
-                                LOG.warn("Incorrect password used when trying to stop server.");
+                                MONITOR_LOG.warn("Incorrect password used when trying to stop server.");
                             } else {
-                                LOG.debug("stopped listening for stop password.");
+                                MONITOR_LOG.debug("stopped listening for stop password.");
                             }
 
                         }
-                    } catch (java.net.SocketException e) {
+                    } catch (SocketException e) {
                         // reset
+                        MONITOR_LOG.debug(e);
                     }
                 }
             }
         } catch (Exception e) {
-            LOG.error(e);
+            MONITOR_LOG.error(e);
             e.printStackTrace();
         } finally {
-            LOG.trace("Closed server socket");
+            MONITOR_LOG.trace("Closed stop socket");
             try {
                 if (mainThread.isAlive()) {
-                    LOG.debug("monitor joining main thread");
+                    MONITOR_LOG.trace("monitor joining main thread");
                     try {
                         mainThread.interrupt();
                         mainThread.join();
                     } catch (InterruptedException ie) {
-                        // expected
+                        MONITOR_LOG.trace(ie);
+                    }
+                } else {
+                    MONITOR_LOG.trace("main thread is dead, not joining");
+                    if(shutDownThread != null && Thread.currentThread() != shutDownThread) {
+                        MONITOR_LOG.trace("shutdown hook is there-- running it");
+                        shutDownThread.run();
                     }
                 }
             } catch (Exception e) {
-                LOG.error(e);
+                MONITOR_LOG.error(e);
                 e.printStackTrace();
             }
         }
@@ -98,9 +109,9 @@ class MonitorThread extends Thread {
 
     void stopListening() {
         listening = false;
-        LOG.trace("Stopping listening");
+        MONITOR_LOG.trace("Stopping listening");
         // send a char to the reader so it will stop waiting
-        try (Socket s = new Socket(InetAddress.getByName(serverOptions.getHost()), ports.get("stop").socket)) {
+        try (Socket s = new Socket(InetAddress.getByName(serverOptions.host()), ports.get("stop").socket)) {
             try (OutputStream out = s.getOutputStream()) {
                 for (char aStopPassword : stopPassword) {
                     out.write(aStopPassword);
@@ -108,43 +119,45 @@ class MonitorThread extends Thread {
                 out.flush();
             }
         } catch (IOException e) {
-            LOG.trace(e);
             // expected if already stopping
+            //MONITOR_LOG.trace(e);
         }
-
     }
 
     void removeShutDownHook() {
         if(shutDownThread != null && Thread.currentThread() != shutDownThread) {
-            LOG.debug("Removed shutdown hook");
-            Runtime.getRuntime().removeShutdownHook(shutDownThread);
+            if(Runtime.getRuntime().removeShutdownHook(shutDownThread)){
+                MONITOR_LOG.debug("Removed shutdown hook");
+            } else {
+                MONITOR_LOG.trace("Already removed shutdown hook, or it wasn't there yet.");
+            }
         }
     }
 
     private void addShutDownHook() {
         if(shutDownThread == null) {
             shutDownThread = new Thread(() -> {
-                LOG.debug("Running shutdown hook");
+                MONITOR_LOG.debug("Running shutdown hook");
                 try {
                     if(!server.getServerState().equals(Server.ServerState.STOPPING) && !server.getServerState().equals(Server.ServerState.STOPPED)) {
-                        LOG.debug("shutdown hook:stopServer()");
+                        MONITOR_LOG.debug("shutdown hook:stopServer()");
                         server.stopServer();
                     }
 //                    if(tempWarDir != null) {
 //                        LaunchUtil.deleteRecursive(tempWarDir);
 //                    }
                     if(mainThread.isAlive()) {
-                        LOG.debug("shutdown hook joining main thread");
+                        MONITOR_LOG.debug("shutdown hook joining main thread from shutdown hook");
                         mainThread.interrupt();
                         mainThread.join();
                     }
                 } catch ( Exception e) {
                     e.printStackTrace();
                 }
-                LOG.debug("Shutdown hook finished");
+                MONITOR_LOG.debug("Shutdown hook finished");
             });
             Runtime.getRuntime().addShutdownHook(shutDownThread);
-            LOG.debug("Added shutdown hook");
+            MONITOR_LOG.debug("Added shutdown hook");
         }
     }
 

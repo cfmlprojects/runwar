@@ -2,9 +2,7 @@ package testutils;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.List;
 
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.Headers;
@@ -12,8 +10,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.*;
 
 import io.undertow.util.NetworkUtils;
-import org.junit.jupiter.params.ParameterizedTest;
-import runwar.LaunchUtil;
 import runwar.Server;
 import runwar.logging.LoggerFactory;
 import runwar.options.ServerOptions;
@@ -43,7 +39,7 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
     public void beforeAll(ExtensionContext context) throws Exception {
         serverOptions = getServerOptions();
         LoggerFactory.configure(serverOptions);
-        System.out.println("DefaultServer: Running before all:" + serverOptions.getServerName());
+        System.out.println("DefaultServer: Running before all:" + serverOptions.serverName());
         server = new Server();
         System.out.println("DefaultServer: Starting...");
         try {
@@ -60,9 +56,9 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
 
     @Override
     public void beforeEach(ExtensionContext context) {
-        System.out.println("DefaultServer: http port:" + serverOptions.getPortNumber());
-        System.out.println("DefaultServer: https port:" + serverOptions.getSSLPort());
-        System.out.println("DefaultServer: basic auth:" + serverOptions.isEnableBasicAuth());
+        System.out.println("DefaultServer: http port:" + serverOptions.httpPort());
+        System.out.println("DefaultServer: https port:" + serverOptions.sslPort());
+        System.out.println("DefaultServer: basic auth:" + serverOptions.basicAuthEnable());
         System.out.println("started test...");
         client = new TestHttpClient();
         client.setSSLContext(getClientSSLContext());
@@ -82,20 +78,20 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
         server = null;
     }
 
-    public static synchronized ServerOptions getServerOptions() {
+    public static synchronized ServerOptionsImpl getServerOptions() {
         if(serverOptions == null){
             serverOptions = new ServerOptionsImpl();
-            serverOptions.setWarFile(new File(WARPATH))
-                    .setDebug(true)
-//                    .setLoglevel("TRACE")
-                    .setBackground(false)
-                    .setPortNumber(0)
-                    .setSocketNumber(0)
-                    .setSSLPort(0)
-                    .setHttp2ProxySSLPort(0)
-                    .setTrayEnabled(false);
+            serverOptions.warFile(new File(WARPATH))
+                    .debug(true)
+//                    .logLevel("TRACE")
+                    .background(false)
+                    .httpPort(0)
+                    .stopPort(0)
+                    .sslPort(0)
+                    .http2ProxySSLPort(0)
+                    .trayEnable(false);
         }
-        return serverOptions.setDebug(true).setBackground(false);
+        return (ServerOptionsImpl) serverOptions.debug(true).background(false);
     }
 
     public static synchronized ServerOptions resetServerOptions() {
@@ -133,16 +129,20 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
         return getHostAddress(DEFAULT);
     }
 
+    public static File getWarFile(String serverName) {
+        return serverOptions.warFile();
+    }
+
     public static int getHostPort(String serverName) {
-        return serverOptions.getPortNumber();
+        return serverOptions.httpPort();
     }
 
     public static int getHTTP2Port(String serverName) {
-        return getServerOptions().getHttp2ProxySSLPort();
+        return getServerOptions().http2ProxySSLPort();
     }
 
     public static int getHostSSLPort(String serverName) {
-        return getServerOptions().getSSLPort();
+        return getServerOptions().sslPort();
     }
 
     public static boolean isHttps() {

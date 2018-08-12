@@ -26,6 +26,11 @@ public class WebXMLParser {
 
     /**
      * Parses the web.xml and configures the context.
+     * @param webinf WEB-INF directory
+     * @param webxml web.xml file
+     * @param info DeploymentInfo
+     * @param ignoreRestMappings rest mappings
+     * @param ignoreWelcomePages ignore welcome pages or not
      */
     @SuppressWarnings("unchecked")
     public static void parseWebXml(File webxml, File webinf, DeploymentInfo info,

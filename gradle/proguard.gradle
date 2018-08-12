@@ -7,6 +7,7 @@ buildscript {
 }
 
 task proguard(type: proguard.gradle.ProGuardTask) {
+    dependsOn configurations.dorkboxDependency
     ext.outJar = "${project.buildDir}/proguard/${jar.archiveName.replace("core.jar","mini.jar")}"
     doFirst{
         println "Running proguard task with java ${System.getProperty("java.home")} : ${ext.outJar}"
@@ -35,11 +36,11 @@ task proguard(type: proguard.gradle.ProGuardTask) {
         libraryjars "${System.getProperty('java.home')}/jmods/*.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
     }
 
-    configurations.testRuntime.resolvedConfiguration.resolvedArtifacts.each { dep ->
-
-        //        libraryjars dep.getFile()
-
-    }
+//    configurations.testRuntime.resolvedConfiguration.resolvedArtifacts.each { dep ->
+//
+//        //        libraryjars dep.getFile()
+//
+//    }
 
 
     // Save the obfuscation mapping to a file, so you can de-obfuscate any stack

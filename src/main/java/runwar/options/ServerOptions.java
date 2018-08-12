@@ -3,8 +3,10 @@ package runwar.options;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import net.minidev.json.JSONArray;
 import runwar.Server.Mode;
@@ -14,6 +16,7 @@ public interface ServerOptions {
     public static final class Keys {
         final static String CONFIG = "config";
         final static String DIRS = "dirs";
+        final static String CONTENTDIRS = "contentdirs";
         final static String WAR = "war";
         final static String WEBINF = "webinf";
         final static String NAME = "name";
@@ -28,7 +31,7 @@ public interface ServerOptions {
         final static String HTTPENABLE = "httpenable";
         final static String AJPENABLE = "ajpenable";
         final static String URLREWRITEENABLE = "urlrewriteenable";
-        final static String LOGLEVEL = "loglevel";
+        final static String LOGLEVEL = "logLevel";
         final static String LOGBASENAME = "logbasename";
         final static String LOGDIR = "logDir";
         final static String LOGREQUESTSBASENAME = "logrequestsbasename";
@@ -98,120 +101,119 @@ public interface ServerOptions {
         final static String COOKIEHTTPONLY = "cookiehttponly";
         final static String COOKIESECURE = "cookiesecure";
         final static String SERVERMODE = "mode";
-        final static String BUFFERENABLED = "bufferenabled";
+        final static String BUFFEREnable = "bufferenable";
+        final static String SSLECCDISABLE = "SSLECCDISABLE";
+        final static String SSLSELFSIGN = "sslselfsign";
+        final static String SERVICE = "service";
     }
 
-    ServerOptions setCommandLineArgs(String[] args);
+    ServerOptions commandLineArgs(String[] args);
 
-    String[] getCommandLineArgs();
+    String[] commandLineArgs();
 
-    String getServerName();
+    String serverName();
 
-    ServerOptions setServerName(String serverName);
+    ServerOptions serverName(String serverName);
 
-    String getLoglevel();
+    String logLevel();
 
-    ServerOptions setLoglevel(String loglevel);
+    ServerOptions logLevel(String level);
 
-    String getContextPath();
+    String contextPath();
 
-    File getConfigFile();
+    File configFile();
 
-    ServerOptions setConfigFile(File file);
+    ServerOptions configFile(File file);
 
-    ServerOptions setContextPath(String contextPath);
+    ServerOptions contextPath(String contextPath);
 
-    String getHost();
+    String host();
 
-    ServerOptions setHost(String host);
+    ServerOptions host(String host);
 
-    int getPortNumber();
+    int httpPort();
 
-    ServerOptions setPortNumber(int portNumber);
+    ServerOptions httpPort(int portNumber);
 
-    int getAJPPort();
+    int ajpPort();
 
-    ServerOptions setAJPPort(int ajpPort);
+    ServerOptions ajpPort(int ajpPort);
 
-    int getSSLPort();
+    int sslPort();
 
-    ServerOptions setSSLPort(int sslPort);
+    ServerOptions sslPort(int sslPort);
 
-    boolean isEnableSSL();
+    boolean sslEnable();
 
-    ServerOptions setEnableSSL(boolean enableSSL);
+    ServerOptions sslEnable(boolean enableSSL);
 
-    boolean isEnableHTTP();
+    boolean httpEnable();
 
-    ServerOptions setEnableHTTP(boolean bool);
+    ServerOptions httpEnable(boolean bool);
 
-    boolean isURLRewriteApacheFormat();
+    boolean urlRewriteApacheFormat();
 
-    boolean isEnableURLRewrite();
+    boolean urlRewriteEnable();
 
-    ServerOptions setEnableURLRewrite(boolean bool);
+    ServerOptions urlRewriteEnable(boolean bool);
 
-    ServerOptions setURLRewriteFile(File file);
+    ServerOptions urlRewriteFile(File file);
 
-    File getURLRewriteFile();
+    File urlRewriteFile();
 
-    ServerOptions setURLRewriteLog(File file);
+    ServerOptions urlRewriteLog(File file);
 
-    File getURLRewriteLog();
+    File urlRewriteLog();
 
-    ServerOptions setURLRewriteCheckInterval(String interval);
+    ServerOptions urlRewriteCheckInterval(String interval);
 
-    String getURLRewriteCheckInterval();
+    String urlRewriteCheckInterval();
 
-    ServerOptions setURLRewriteStatusPath(String path);
+    ServerOptions urlRewriteStatusPath(String path);
 
-    String getURLRewriteStatusPath();
+    String urlRewriteStatusPath();
 
-    int getSocketNumber();
+    int stopPort();
 
-    ServerOptions setSocketNumber(int socketNumber);
+    ServerOptions stopPort(int socketNumber);
 
-    File getLogDir();
+    File logDir();
 
     boolean hasLogDir();
 
-    ServerOptions setLogPattern(String logPattern);
+    ServerOptions logPattern(String logPattern);
 
-    String getLogPattern();
+    String logPattern();
 
-    ServerOptions setLogDir(String logDir);
+    ServerOptions logDir(String logDir);
 
-    ServerOptions setLogDir(File logDir);
+    ServerOptions logDir(File logDir);
 
-    ServerOptions setLogFileName(String name);
+    ServerOptions logFileName(String name);
 
-    ServerOptions setLogSuffix(String suffix);
+    ServerOptions logSuffix(String suffix);
 
-    String getLogSuffix();
+    String logSuffix();
 
-    String getLogFileName();
+    String logFileName();
 
-    String getCfmlDirs();
+    String contentDirs();
 
-    ServerOptions setCfmlDirs(String cfmlDirs);
+    Set<String> contentDirectories();
 
-    boolean isBackground();
+    ServerOptions contentDirectories(List<String> dirs);
 
-    ServerOptions setBackground(boolean isBackground);
+    ServerOptions contentDirectories(Set<String> dirs);
 
-    /**
-     * Will be removed eventually.  Use logRequestsEnabled() instead.
-     * @return boolean
-     */
-    @Deprecated
-    boolean isKeepRequestLog();
+    ServerOptions contentDirs(String dirs);
 
-    /**
-     * Will be removed eventually.  Use logRequestsEnabled() instead.
-     * @return boolean
-     */
-    @Deprecated
-    ServerOptions setKeepRequestLog(boolean keepRequestLog);
+    public Map<String,String> aliases();
+
+    ServerOptions aliases(Map<String,String> aliases);
+
+    boolean background();
+
+    ServerOptions background(boolean isBackground);
 
     boolean logRequestsEnable();
 
@@ -221,272 +223,287 @@ public interface ServerOptions {
 
     ServerOptions logAccessEnable(boolean enable);
 
-    ServerOptions setLogAccessDir(File logDir);
-    ServerOptions setLogAccessDir(String logDir);
+    ServerOptions logAccessDir(File logDir);
+    ServerOptions logAccessDir(String logDir);
 
-    File getLogAccessDir();
+    File logAccessDir();
 
-    ServerOptions setLogAccessBaseFileName(String name);
+    ServerOptions logAccessBaseFileName(String name);
 
-    public String getLogAccessBaseFileName();
+    public String logAccessBaseFileName();
 
-    ServerOptions setLogRequestsDir(File logDir);
-    ServerOptions setLogRequestsDir(String logDir);
+    ServerOptions logRequestsDir(File logDir);
+    ServerOptions logRequestsDir(String logDir);
 
-    File getLogRequestsDir();
+    File logRequestsDir();
 
-    ServerOptions setLogRequestsBaseFileName(String name);
+    ServerOptions logRequestsBaseFileName(String name);
 
-    public String getLogRequestsBaseFileName();
+    public String logRequestsBaseFileName();
 
-    boolean isOpenbrowser();
+    boolean openbrowser();
 
-    ServerOptions setOpenbrowser(boolean openbrowser);
+    ServerOptions openbrowser(boolean openbrowser);
 
-    String getOpenbrowserURL();
+    String openbrowserURL();
 
-    ServerOptions setOpenbrowserURL(String openbrowserURL);
+    ServerOptions openbrowserURL(String openbrowserURL);
 
-    String getPidFile();
+    String pidFile();
 
-    ServerOptions setPidFile(String pidFile);
+    ServerOptions pidFile(String pidFile);
 
-    boolean isEnableAJP();
+    boolean ajpEnable();
 
-    ServerOptions setEnableAJP(boolean enableAJP);
+    ServerOptions ajpEnable(boolean enableAJP);
 
-    int getLaunchTimeout();
+    int launchTimeout();
 
-    ServerOptions setLaunchTimeout(int launchTimeout);
+    ServerOptions launchTimeout(int launchTimeout);
 
-    String getProcessName();
+    String processName();
 
-    ServerOptions setProcessName(String processName);
+    ServerOptions processName(String processName);
 
-    String getLibDirs();
+    String libDirs();
 
-    ServerOptions setLibDirs(String libDirs);
+    ServerOptions libDirs(String libDirs);
 
-    URL getJarURL();
+    URL jarURL();
 
-    ServerOptions setJarURL(URL jarURL);
+    ServerOptions jarURL(URL jarURL);
 
-    boolean isDebug();
+    boolean debug();
 
-    ServerOptions setDebug(boolean debug);
+    ServerOptions debug(boolean debug);
 
-    File getWarFile();
+    File warFile();
 
-    ServerOptions setWarFile(File warFile);
+    ServerOptions warFile(File warFile);
 
-    File getWebInfDir();
+    File webInfDir();
 
-    ServerOptions setWebInfDir(File WebInfDir);
+    ServerOptions webInfDir(File WebInfDir);
 
-    File getWebXmlFile();
+    File webXmlFile();
 
-    String getWebXmlPath() throws MalformedURLException;
+    String webXmlPath() throws MalformedURLException;
 
-    ServerOptions setWebXmlFile(File webXmlFile);
+    ServerOptions webXmlFile(File webXmlFile);
 
-    String getIconImage();
+    String iconImage();
 
-    ServerOptions setIconImage(String iconImage);
+    ServerOptions iconImage(String iconImage);
 
-    File getTrayConfig();
+    File trayConfig();
 
-    JSONArray getTrayConfigJSON();
+    JSONArray trayConfigJSON();
 
-    ServerOptions setTrayConfig(File trayConfig);
+    ServerOptions trayConfig(File trayConfig);
 
-    ServerOptions setTrayConfig(JSONArray trayConfig);
+    ServerOptions trayConfig(JSONArray trayConfig);
 
-    boolean isTrayEnabled();
+    boolean trayEnable();
 
-    ServerOptions setTrayEnabled(boolean enabled);
+    ServerOptions trayEnable(boolean enable);
 
-    File getStatusFile();
+    File statusFile();
 
-    ServerOptions setStatusFile(File statusFile);
+    ServerOptions statusFile(File statusFile);
 
-    String getCFMLServletConfigWebDir();
+    String cfmlServletConfigWebDir();
 
-    ServerOptions setCFMLServletConfigWebDir(String cfmlServletConfigWebDir);
+    ServerOptions cfmlServletConfigWebDir(String cfmlServletConfigWebDir);
 
-    String getCFMLServletConfigServerDir();
+    String cfmlServletConfigServerDir();
 
-    ServerOptions setCFMLServletConfigServerDir(String cfmlServletConfigServerDir);
+    ServerOptions cfmlServletConfigServerDir(String cfmlServletConfigServerDir);
 
-    boolean isCacheEnabled();
+    boolean cacheEnable();
 
-    ServerOptions setCacheEnabled(boolean cacheEnabled);
+    ServerOptions cacheEnable(boolean cacheEnable);
 
-    boolean isDirectoryListingEnabled();
+    boolean directoryListingEnable();
 
-    ServerOptions setDirectoryListingEnabled(boolean directoryListingEnabled);
+    ServerOptions directoryListingEnable(boolean directoryListingEnable);
 
-    boolean isDirectoryListingRefreshEnabled();
+    boolean directoryListingRefreshEnable();
 
-    ServerOptions setDirectoryListingRefreshEnabled(boolean directoryListingRefreshEnabled);
+    ServerOptions directoryListingRefreshEnable(boolean directoryListingRefreshEnable);
 
-    String[] getWelcomeFiles();
+    String[] welcomeFiles();
 
-    ServerOptions setWelcomeFiles(String[] welcomeFiles);
+    ServerOptions welcomeFiles(String[] welcomeFiles);
 
-    String getWarPath();
+    String warUriString();
 
-    ServerOptions setSSLCertificate(File file);
+    ServerOptions sslCertificate(File file);
 
-    File getSSLCertificate();
+    File sslCertificate();
 
-    ServerOptions setSSLKey(File file);
+    ServerOptions sslKey(File file);
 
-    File getSSLKey();
+    File sslKey();
 
-    ServerOptions setSSLKeyPass(char[] pass);
+    ServerOptions sslKeyPass(char[] pass);
 
-    char[] getSSLKeyPass();
+    char[] sslKeyPass();
 
-    ServerOptions setStopPassword(char[] password);
+    ServerOptions stopPassword(char[] password);
 
-    char[] getStopPassword();
+    char[] stopPassword();
 
-    ServerOptions setAction(String action);
+    ServerOptions action(String action);
 
-    String getAction();
+    String action();
 
-    ServerOptions setCFEngineName(String cfengineName);
+    ServerOptions cfEngineName(String cfengineName);
 
-    String getCFEngineName();
+    String cfEngineName();
 
-    ServerOptions setCustomHTTPStatusEnabled(boolean enabled);
+    ServerOptions customHTTPStatusEnable(boolean enable);
 
-    boolean isCustomHTTPStatusEnabled();
+    boolean customHTTPStatusEnable();
 
-    ServerOptions setSendfileEnabled(boolean enabled);
+    ServerOptions sendfileEnable(boolean enable);
 
-    ServerOptions setTransferMinSize(Long minSize);
+    ServerOptions transferMinSize(Long minSize);
 
-    Long getTransferMinSize();
+    Long transferMinSize();
 
-    ServerOptions setGzipEnabled(boolean enabled);
+    ServerOptions gzipEnable(boolean enable);
 
-    boolean isGzipEnabled();
+    boolean gzipEnable();
 
-    ServerOptions setMariaDB4jEnabled(boolean enabled);
+    ServerOptions mariaDB4jEnable(boolean enable);
 
-    boolean isMariaDB4jEnabled();
+    boolean mariaDB4jEnable();
 
-    ServerOptions setMariaDB4jPort(int port);
+    ServerOptions mariaDB4jPort(int port);
 
-    int getMariaDB4jPort();
+    int mariaDB4jPort();
 
-    ServerOptions setMariaDB4jBaseDir(File dir);
+    ServerOptions mariaDB4jBaseDir(File dir);
 
-    File getMariaDB4jBaseDir();
+    File mariaDB4jBaseDir();
 
-    ServerOptions setMariaDB4jDataDir(File dir);
+    ServerOptions mariaDB4jDataDir(File dir);
 
-    File getMariaDB4jDataDir();
+    File mariaDB4jDataDir();
 
-    ServerOptions setMariaDB4jImportSQLFile(File file);
+    ServerOptions mariaDB4jImportSQLFile(File file);
 
-    File getMariaDB4jImportSQLFile();
+    File mariaDB4jImportSQLFile();
 
-    ServerOptions setJVMArgs(List<String> args);
+    ServerOptions jvmArgs(List<String> args);
 
-    List<String> getJVMArgs();
+    List<String> jvmArgs();
 
-    ServerOptions setErrorPages(String errorpages);
+    ServerOptions errorPages(String errorpages);
 
-    ServerOptions setErrorPages(Map<Integer, String> errorpages);
+    ServerOptions errorPages(Map<Integer, String> errorpages);
 
-    Map<Integer, String> getErrorPages();
+    Map<Integer, String> errorPages();
 
-    ServerOptions setServletRestEnabled(boolean enabled);
+    ServerOptions servletRestEnable(boolean enable);
 
-    boolean getServletRestEnabled();
+    boolean servletRestEnable();
 
-    ServerOptions setServletRestMappings(String mappings);
+    ServerOptions servletRestMappings(String mappings);
 
-    ServerOptions setServletRestMappings(String[] mappings);
+    ServerOptions servletRestMappings(String[] mappings);
 
-    String[] getServletRestMappings();
+    String[] servletRestMappings();
 
-    ServerOptions setFilterPathInfoEnabled(boolean enabled);
+    ServerOptions filterPathInfoEnable(boolean enable);
 
-    boolean isFilterPathInfoEnabled();
+    boolean filterPathInfoEnable();
 
-    ServerOptions setEnableBasicAuth(boolean enable);
+    ServerOptions basicAuthEnable(boolean enable);
 
-    boolean isEnableBasicAuth();
+    boolean basicAuthEnable();
 
-    ServerOptions setBasicAuth(String userPasswordList);
+    ServerOptions basicAuth(String userPasswordList);
 
-    ServerOptions setBasicAuth(Map<String, String> userPassList);
+    ServerOptions basicAuth(Map<String, String> userPassList);
 
-    Map<String, String> getBasicAuth();
+    Map<String, String> basicAuth();
 
-    ServerOptions setSSLAddCerts(String sslCerts);
+    ServerOptions sslAddCerts(String sslCerts);
 
-    ServerOptions setSSLAddCerts(String[] sslCerts);
+    ServerOptions sslAddCerts(String[] sslCerts);
 
-    String[] getSSLAddCerts();
+    String[] sslAddCerts();
 
-    int getBufferSize();
+    boolean sslEccDisable();
 
-    ServerOptions setBufferSize(int bufferSize);
+    ServerOptions sslEccDisable(boolean enable);
 
-    int getIoThreads();
+    boolean sslSelfSign();
 
-    ServerOptions setIoThreads(int ioThreads);
+    ServerOptions sslSelfSign(boolean enable);
 
-    int getWorkerThreads();
+    int bufferSize();
 
-    ServerOptions setWorkerThreads(int workerThreads);
+    ServerOptions bufferSize(int bufferSize);
 
-    ServerOptions setDirectBuffers(boolean enable);
+    int ioThreads();
 
-    boolean isDirectBuffers();
+    ServerOptions ioThreads(int ioThreads);
 
-    ServerOptions setLoadBalance(String hosts);
+    int workerThreads();
 
-    ServerOptions setLoadBalance(String[] hosts);
+    ServerOptions workerThreads(int workerThreads);
 
-    String[] getLoadBalance();
+    ServerOptions directBuffers(boolean enable);
 
-    ServerOptions setProxyPeerAddressEnabled(boolean enable);
+    boolean directBuffers();
 
-    boolean isProxyPeerAddressEnabled();
+    ServerOptions loadBalance(String hosts);
 
-    ServerOptions setHTTP2Enabled(boolean enable);
+    ServerOptions loadBalance(String[] hosts);
 
-    boolean isSecureCookies();
+    String[] loadBalance();
 
-    ServerOptions setSecureCookies(boolean enable);
+    ServerOptions proxyPeerAddressEnable(boolean enable);
 
-    boolean isCookieHttpOnly();
+    boolean proxyPeerAddressEnable();
+
+    ServerOptions http2Enable(boolean enable);
+
+    boolean secureCookies();
+
+    ServerOptions secureCookies(boolean enable);
+
+    boolean cookieHttpOnly();
     
-    ServerOptions setCookieHttpOnly(boolean enable);
+    ServerOptions cookieHttpOnly(boolean enable);
     
-    boolean isCookieSecure();
+    boolean cookieSecure();
     
-    ServerOptions setCookieSecure(boolean enable);
+    ServerOptions cookieSecure(boolean enable);
     
-    boolean isHTTP2Enabled();
+    boolean http2Enable();
     
-    String getServerMode();
+    String serverMode();
+
+    boolean bufferEnable();
     
-    boolean isBufferEnabled();
-    
-    ServerOptions setBufferEnabled(boolean enable);
+    ServerOptions bufferEnable(boolean enable);
 
     boolean startedFromCommandLine();
 
-    ServerOptions setStartedFromCommandLine(boolean enable);
+    ServerOptions startedFromCommandLine(boolean enable);
 
-    int getHttp2ProxySSLPort();
+    int http2ProxySSLPort();
 
-    ServerOptions setHttp2ProxySSLPort(int portNumber);
+    ServerOptions http2ProxySSLPort(int portNumber);
+
+    boolean ignoreWebXmlWelcomePages();
+
+    boolean ignoreWebXmlRestMappings();
+
+    boolean service();
+    ServerOptions service(boolean enable);
 
 }

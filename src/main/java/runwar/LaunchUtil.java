@@ -215,9 +215,9 @@ public class LaunchUtil {
     }
 
     public static void relaunchAsBackgroundProcess(ServerOptions serverOptions, boolean andExit) {
-        serverOptions.setBackground(false);
-        relaunchAsBackgroundProcess(serverOptions.getLaunchTimeout(), serverOptions.getCommandLineArgs(),
-                serverOptions.getJVMArgs(), serverOptions.getProcessName(), andExit);
+        serverOptions.background(false);
+        relaunchAsBackgroundProcess(serverOptions.launchTimeout(), serverOptions.commandLineArgs(),
+                serverOptions.jvmArgs(), serverOptions.processName(), andExit);
     }
 
     public static void relaunchAsBackgroundProcess(int timeout, String[] args, List<String> jvmArgs, String processName) {
@@ -316,7 +316,10 @@ public class LaunchUtil {
     }
 
     public static void displayMessage(String type, String text) {
-        String processName = Server.getServerOptions() != null ? Server.getServerOptions().getProcessName() : "RunWAR";
+        displayMessage("RunWWAR",type, text);
+    }
+    
+    public static void displayMessage(String processName, String type, String text) {
         try{
             if(type.toLowerCase().startsWith("warn")) {
                 displayMessage(processName, text, MessageType.WARNING);
@@ -329,7 +332,7 @@ public class LaunchUtil {
             e.printStackTrace();
         }
     }
-    
+
     public static void printMessage(String title, String text, MessageType type) {
         if(type == MessageType.ERROR) {
             System.err.println(title + " " + text);
@@ -339,7 +342,7 @@ public class LaunchUtil {
     }
     
     public static void displayMessage(String title, String text, MessageType type) {
-//        boolean trayEnable = Server.getServerOptions() != null ? Server.getServerOptions().isTrayEnabled() : false;
+//        boolean trayEnable = Server.getServerOptions() != null ? Server.getServerOptions().trayEnable() : false;
         if(GraphicsEnvironment.isHeadless()) {
             printMessage(title, text, type);
             return;
@@ -611,7 +614,6 @@ public class LaunchUtil {
             try {
                 if (is != null)
                     is.close();
-                if (outPrint != null)
                     outPrint.close();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -836,7 +838,7 @@ public class LaunchUtil {
      * 
      * @param runBeforeRestart
      *            some custom code to be run before restarting
-     * @throws IOException
+     * @throws IOException if one happens
      */
     public static void restartApplication(Runnable runBeforeRestart) throws IOException {
         try {

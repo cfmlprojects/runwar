@@ -1,12 +1,13 @@
 package runwar.undertow;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -19,8 +20,8 @@ import static runwar.logging.RunwarLogger.MAPPER_LOG;
 
 public class MappedResourceManager extends FileResourceManager {
 
-    private HashMap<String, Path> aliasMap = new HashMap<>();
-    private HashSet<Path> cfmlDirsFiles;
+    private HashMap<String, Path> aliases = new HashMap<>();
+    private HashSet<Path> contentDirs;
     private File WEBINF = null, CFIDE = null;
     private static final Pattern CFIDE_REGEX_PATTERN;
     private static final Pattern WEBINF_REGEX_PATTERN;
@@ -32,19 +33,20 @@ public class MappedResourceManager extends FileResourceManager {
 
     private final boolean allowResourceChangeListeners;
 
-    public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, boolean allowResourceChangeListeners) {
+    public MappedResourceManager(File base, long transferMinSize, Set<Path> contentDirs, Map<String,Path> aliases, File webinfDir) {
         super(base, transferMinSize);
-        this.allowResourceChangeListeners = allowResourceChangeListeners;
-        processMappings(cfmlDirList);
-    }
-
-    public MappedResourceManager(File base, long transferMinSize, String cfmlDirList, File webinfDir) {
-        this(base, transferMinSize, cfmlDirList, false);
-        WEBINF = webinfDir;
-        CFIDE = new File(WEBINF.getParentFile(),"CFIDE");
-        MAPPER_LOG.debugf("Initialized MappedResourceManager - base: %s, web-inf: %s, aliases: %s",base.getAbsolutePath(), webinfDir.getAbsolutePath(), cfmlDirList);
-        if (!WEBINF.exists()) {
-            throw new RuntimeException("The specified WEB-INF does not exist: " + WEBINF.getAbsolutePath());
+        this.allowResourceChangeListeners = false;
+        this.contentDirs = (HashSet<Path>) contentDirs;
+        this.aliases = (HashMap<String, Path>) aliases;
+        if(webinfDir != null){
+            WEBINF = webinfDir;
+            CFIDE = new File(WEBINF.getParentFile(),"CFIDE");
+            MAPPER_LOG.debugf("Initialized MappedResourceManager - base: %s, web-inf: %s, contentDirs: %s, aliases: %s",base.getAbsolutePath(), WEBINF.getAbsolutePath(), contentDirs, aliases);
+            if (!WEBINF.exists()) {
+                throw new RuntimeException("The specified WEB-INF does not exist: " + WEBINF.getAbsolutePath());
+            }
+        } else {
+            MAPPER_LOG.debugf("Initialized MappedResourceManager - base: %s, web-inf: %s, contentDirs: %s, aliases: %s",base.getAbsolutePath(), contentDirs, aliases);
         }
     }
 
@@ -71,7 +73,7 @@ public class MappedResourceManager extends FileResourceManager {
             } else {
                 virtual = virtual.startsWith("/") ? virtual : "/" + virtual;
                 virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length() - 1) : virtual;
-                aliasMap.put(virtual.toLowerCase(), path);
+                aliases.put(virtual.toLowerCase(), path);
             }
             String aliasInfo = virtual.isEmpty() ? "" : " as " + virtual;
             if (!path.toFile().exists()) {
@@ -80,7 +82,7 @@ public class MappedResourceManager extends FileResourceManager {
                 MAPPER_LOG.info("Serving content from " + path + aliasInfo);
             }
         });
-        cfmlDirsFiles = dirs;
+        contentDirs = dirs;
     }
 
     public Resource getResource(String path) {
@@ -110,10 +112,10 @@ public class MappedResourceManager extends FileResourceManager {
             reqFile = Paths.get(getBase().getAbsolutePath(), path);
             MAPPER_LOG.trace("* checking with base path: '" + reqFile.toAbsolutePath().toString() + "'");
             if (!Files.exists(reqFile)) {
-                reqFile = getAliasedFile(aliasMap, path);
+                reqFile = getAliasedFile(aliases, path);
             }
             if (reqFile == null) {
-                for (Path cfmlDirsFile : cfmlDirsFiles) {
+                for (Path cfmlDirsFile : contentDirs) {
                     reqFile = Paths.get(cfmlDirsFile.toString(), path.replace(cfmlDirsFile.toAbsolutePath().toString(), ""));
                     MAPPER_LOG.tracef("checking: '%s' = '%s'", cfmlDirsFile.toAbsolutePath().toString(), reqFile.toAbsolutePath());
                     if (Files.exists(reqFile)) {
@@ -164,8 +166,8 @@ public class MappedResourceManager extends FileResourceManager {
         return null;
     }
 
-    HashMap<String, Path> getAliasMap() {
-        return aliasMap;
+    HashMap<String, Path> getAliases() {
+        return aliases;
     }
 
     @Override

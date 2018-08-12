@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -12,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import runwar.options.ServerOptionsImpl;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,8 +71,16 @@ public class MappedResourceManagerTest {
                 + "rel=.., "
                 + "relative=" + buckleDir.getAbsolutePath() + "/../../,"
                 + "foobar=../" + Paths.get(".") + "";
-        MappedResourceManager man = new MappedResourceManager(baseDir,111,mappings,false);
-        aliasMap = man.getAliasMap();
+
+        ServerOptionsImpl serverOptions = new ServerOptionsImpl();
+        serverOptions.contentDirs(mappings);
+        Set<Path> contentDirs = new HashSet<>();
+        Map<String,Path> aliases = new HashMap<>();
+        serverOptions.contentDirectories().forEach(s -> contentDirs.add(Paths.get(s)));
+        serverOptions.aliases().forEach((s, s2) -> aliases.put(s,Paths.get(s2)));
+
+        MappedResourceManager man = new MappedResourceManager(baseDir,111, contentDirs, aliases,null);
+        aliasMap = man.getAliases();
         try {
             man.close();
         } catch (IOException e) {

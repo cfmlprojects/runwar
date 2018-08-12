@@ -43,7 +43,7 @@ public class RequestDebugHandler implements HttpHandler {
         sb.append(" characterEncoding=" + exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING) + "\n");
         sb.append("     contentLength=" + exchange.getRequestContentLength() + "\n");
         sb.append("       contentType=" + exchange.getRequestHeaders().get(Headers.CONTENT_TYPE) + "\n");
-        // sb.append(" contextPath=" + exchange.getContextPath());
+        // sb.append(" contextPath=" + exchange.contextPath());
         if (sc != null) {
             if (sc.isAuthenticated()) {
                 sb.append("          authType=" + sc.getMechanismName() + "\n");

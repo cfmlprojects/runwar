@@ -8,6 +8,7 @@ import io.undertow.servlet.api.*;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.util.MimeMappings;
 import runwar.options.ServerOptions;
+import runwar.security.SelfSignedCertificate;
 import runwar.undertow.WebXMLParser;
 
 import javax.servlet.DispatcherType;
@@ -16,6 +17,9 @@ import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
 import java.util.*;
 
 import static io.undertow.Handlers.predicate;
@@ -25,21 +29,35 @@ import static runwar.logging.RunwarLogger.LOG;
 class RunwarConfigurer {
 
     private static ServerOptions serverOptions;
-    private static ClassLoader _classLoader;
-    private final String serverMode;
     private final Server server;
+    private final String serverMode;
+    private String[] defaultWelcomeFiles = new String[] { "index.cfm", "index.cfml", "default.cfm", "index.html", "index.htm",
+            "default.html", "default.htm" };
+
+    private static ClassLoader getClassLoader(){
+        return Server.getClassLoader();
+
+    }
 
     RunwarConfigurer(final Server server){
         this.server = server;
-        _classLoader = Server.getClassLoader();
-        serverOptions = Server.getServerOptions();
-        serverMode = serverOptions.getServerMode();
+        serverOptions = server.getServerOptions();
+        if(getCFMLServletClass(serverOptions.cfEngineName()) != null) {
+            serverMode = Server.Mode.SERVLET;
+        } else {
+            serverMode = serverOptions.serverMode();
+        }
+        LOG.debugf("Server Mode: %s",serverMode);
     }
 
 
-    void configureServerResourceHandler(DeploymentInfo servletBuilder, ServletSessionConfig sessionConfig, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
-        String cfusionDir = new File(webinf,"cfusion").getAbsolutePath().replace('\\', '/');
-        String cfformDir = new File(webinf,"cfform").getAbsolutePath().replace('\\', '/');
+    void configureServerResourceHandler(DeploymentInfo servletBuilder) {
+        File warFile = serverOptions.warFile();
+        File webInfDir = serverOptions.webInfDir();
+        String cfengine = serverOptions.cfEngineName();
+        String cfusionDir = new File(webInfDir,"cfusion").getAbsolutePath().replace('\\', '/');
+        String cfformDir = new File(webInfDir,"cfform").getAbsolutePath().replace('\\', '/');
+
         final String cfClasspath = "%s/lib/updates/,%s/lib/,%s/lib/axis2,%s/gateway/lib/,%s/../cfform/jars,%s/../flex/jars,%s/lib/oosdk/lib,%s/lib/oosdk/classes".replaceAll("%s", cfusionDir);
         final HashMap<String,String> cfprops = new HashMap<>();
         cfprops.put("coldfusion.home", cfusionDir);
@@ -59,10 +77,6 @@ class RunwarConfigurer {
             LOG.debug("Setting coldfusion.home: '" + cfusionDir + "'");
             LOG.debug("Setting coldfusion.classpath: '" + cfClasspath + "'");
             LOG.debug("Setting flex.dir (cfform): '" + cfformDir + "'");
-            if(serverOptions.isEnableSSL()) {
-                LOG.debug("disabling com.sun.net.ssl.enableECC");
-                cfprops.put("com.sun.net.ssl.enableECC", "false");
-            }
             if (System.getProperty("coldfusion.home") == null) {
                 cfprops.forEach((k, v) -> {
                     System.setProperty(k, v);
@@ -73,25 +87,25 @@ class RunwarConfigurer {
         }
 
         if(serverMode.equals(Server.Mode.SERVLET)) {
-            configureServerServlet(servletBuilder, warFile, webinf, webXmlFile, cfmlDirs, cfengine, ignoreWelcomePages, ignoreRestMappings);
+            configureServerServlet(servletBuilder);
         }
-        else if(webinf.exists() || serverMode.equals(Server.Mode.SERVLET)) {
-            configureServerWar(servletBuilder, warFile, webinf, webXmlFile, cfmlDirs, cfengine, ignoreWelcomePages, ignoreRestMappings);
+        else if(webInfDir.exists() || serverMode.equals(Server.Mode.SERVLET)) {
+            configureServerWar(servletBuilder);
         }
         else {
-            if (_classLoader == null) {
+            if (getClassLoader() == null) {
                 throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
             }
-            servletBuilder.setClassLoader(_classLoader);
+            servletBuilder.setClassLoader(getClassLoader());
             LOG.debug("Running default web server '" + warFile.getAbsolutePath()+ "'");
         }
         if(cfengine.equals("adobe")) {
             String cfCompilerOutput = (String) servletBuilder.getServletContextAttributes().get("coldfusion.compiler.outputDir");
             if(cfCompilerOutput == null || cfCompilerOutput.matches("^.?WEB-INF.*?")){
                 // TODO: figure out why adobe needs the absolute path, vs. /WEB-INF/cfclasses
-                File cfCompilerOutputDir = new File(webinf, "/cfclasses").getAbsoluteFile();
+                File cfCompilerOutputDir = new File(webInfDir, "/cfclasses").getAbsoluteFile();
                 try {
-                    cfCompilerOutputDir = new File(webinf, "/cfclasses").getAbsoluteFile().getCanonicalFile();
+                    cfCompilerOutputDir = new File(webInfDir, "/cfclasses").getAbsoluteFile().getCanonicalFile();
                 } catch (IOException e) {
                     LOG.error(e);
                 }
@@ -107,29 +121,37 @@ class RunwarConfigurer {
         }
     }
 
-    void configureServerWar(DeploymentInfo servletBuilder, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
-        Long transferMinSize= serverOptions.getTransferMinSize();
-        LOG.debug("found WEB-INF: '" + webinf.getAbsolutePath() + "'");
-        if (_classLoader == null) {
+    private void configureServerWar(DeploymentInfo servletBuilder) {
+        File warFile = serverOptions.warFile();
+        File webInfDir = serverOptions.webInfDir();
+        Long transferMinSize= serverOptions.transferMinSize();
+        LOG.debug("found WEB-INF: '" + webInfDir.getAbsolutePath() + "'");
+        if (getClassLoader() == null) {
             throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
         }
-        servletBuilder.setClassLoader(_classLoader);
-        servletBuilder.setResourceManager(server.getResourceManager(warFile, transferMinSize, cfmlDirs, webinf));
-//        LogSubverter.subvertJDKLoggers(loglevel);
-        WebXMLParser.parseWebXml(webXmlFile, webinf, servletBuilder, ignoreWelcomePages, ignoreRestMappings);
+        servletBuilder.setClassLoader(getClassLoader());
+        Set<Path> contentDirs = new HashSet<>();
+        Map<String,Path> aliases = new HashMap<>();
+        serverOptions.contentDirectories().forEach(s -> contentDirs.add(Paths.get(s)));
+        serverOptions.aliases().forEach((s, s2) -> aliases.put(s,Paths.get(s2)));
+        servletBuilder.setResourceManager(server.getResourceManager(warFile, transferMinSize, contentDirs, aliases, webInfDir));
+        WebXMLParser.parseWebXml(serverOptions.webXmlFile(), webInfDir, servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), serverOptions.ignoreWebXmlRestMappings());
     }
 
-    void configureServerServlet(DeploymentInfo servletBuilder, File warFile, File webinf, File webXmlFile, String cfmlDirs, String cfengine, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) {
-        String cfmlServletConfigWebDir = serverOptions.getCFMLServletConfigWebDir();
-        String cfmlServletConfigServerDir = serverOptions.getCFMLServletConfigServerDir();
-        Long transferMinSize = serverOptions.getTransferMinSize();
+    private void configureServerServlet(DeploymentInfo servletBuilder) {
+        File warFile = serverOptions.warFile();
+        String cfengine = serverOptions.cfEngineName();
+        String cfmlServletConfigWebDir = serverOptions.cfmlServletConfigWebDir();
+        String cfmlServletConfigServerDir = serverOptions.cfmlServletConfigServerDir();
+        Long transferMinSize = serverOptions.transferMinSize();
+        File webXmlFile = serverOptions.webXmlFile();
 
-        if (_classLoader == null) {
+        if (getClassLoader() == null) {
             throw new RuntimeException("FATAL: Could not load any libs for war: " + warFile.getAbsolutePath());
         }
         if (cfmlServletConfigWebDir == null) {
             File webConfigDirFile = new File(Server.getThisJarLocation().getParentFile(), "engine/cfml/server/cfml-web/");
-            cfmlServletConfigWebDir = webConfigDirFile.getPath() + "/" + serverOptions.getServerName();
+            cfmlServletConfigWebDir = webConfigDirFile.getPath() + "/" + serverOptions.serverName();
         }
         LOG.debug("cfml.web.config.dir: " + cfmlServletConfigWebDir);
         if (cfmlServletConfigServerDir == null || cfmlServletConfigServerDir.length() == 0) {
@@ -137,26 +159,32 @@ class RunwarConfigurer {
             cfmlServletConfigServerDir = serverConfigDirFile.getAbsolutePath();
         }
         LOG.debug("cfml.server.config.dir: " + cfmlServletConfigServerDir);
-        String webinfDir = System.getProperty("cfml.webinf");
-        if (webinfDir == null) {
-            webinf = new File(cfmlServletConfigWebDir, "WEB-INF/");
+        File webInfDir;
+        if (System.getProperty("cfml.webinf") == null) {
+            webInfDir = new File(cfmlServletConfigWebDir, "WEB-INF/");
         } else {
-            webinf = new File(webinfDir);
+            webInfDir = new File(System.getProperty("cfml.webinf"));
+            LOG.debug("Found cfml.webinf system property: " + webInfDir.getPath());
         }
-        LOG.debug("cfml.webinf: " + webinf.getPath());
+        LOG.debug("cfml.webinf: " + webInfDir.getPath());
+        serverOptions.webInfDir(webInfDir);
 
         // servletBuilder.setResourceManager(new CFMLResourceManager(new
-        // File(homeDir,"server/"), transferMinSize, cfmlDirs));
-        File internalCFMLServerRoot = webinf;
+        // File(homeDir,"server/"), transferMinSize, contentDirs));
+        File internalCFMLServerRoot = webInfDir;
         if(!internalCFMLServerRoot.mkdirs()){
             LOG.errorf("Unable to create cfml resource server root: %s", internalCFMLServerRoot.getAbsolutePath());
         }
-        servletBuilder.setResourceManager(server.getResourceManager(warFile, transferMinSize, cfmlDirs, internalCFMLServerRoot));
+        Set<Path> contentDirs = new HashSet<>();
+        Map<String,Path> aliases = new HashMap<>();
+        serverOptions.contentDirectories().forEach(s -> contentDirs.add(Paths.get(s)));
+        serverOptions.aliases().forEach((s, s2) -> aliases.put(s,Paths.get(s2)));
+        servletBuilder.setResourceManager(server.getResourceManager(warFile, transferMinSize, contentDirs, aliases, internalCFMLServerRoot));
 
-        servletBuilder.setClassLoader(_classLoader);
+        servletBuilder.setClassLoader(getClassLoader());
         if (webXmlFile != null) {
             LOG.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
-            WebXMLParser.parseWebXml(webXmlFile, webinf, servletBuilder, ignoreWelcomePages, ignoreRestMappings);
+            WebXMLParser.parseWebXml(webXmlFile, webInfDir, servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), serverOptions.ignoreWebXmlRestMappings());
         } else {
             Class<Servlet> cfmlServlet = getCFMLServletClass(cfengine);
             Class<Servlet> restServletClass = getRestServletClass(cfengine);
@@ -173,13 +201,13 @@ class RunwarConfigurer {
                             .addMapping("/index.cfml/*")
                             .setLoadOnStartup(1)
             );
-            if(serverOptions.getServletRestEnabled()) {
+            if(serverOptions.servletRestEnable()) {
                 LOG.debug("Adding REST servlet");
                 ServletInfo restServlet = servlet("RESTServlet", restServletClass)
                         .setRequireWelcomeFileMapping(true)
                         .addInitParam(cfengine+"-web-directory",cfmlServletConfigWebDir)
                         .setLoadOnStartup(2);
-                for(String path : serverOptions.getServletRestMappings()) {
+                for(String path : serverOptions.servletRestMappings()) {
                     restServlet.addMapping(path);
                 }
                 servletBuilder.addServlet(restServlet);
@@ -189,41 +217,46 @@ class RunwarConfigurer {
 
 
     @SuppressWarnings("unchecked")
-    void configureURLRewrite(DeploymentInfo servletBuilder, File webInfDir) throws ClassNotFoundException {
-        if(serverOptions.isEnableURLRewrite()) {
+    private void configureURLRewrite(DeploymentInfo servletBuilder, File webInfDir) throws ClassNotFoundException {
+        if(serverOptions.urlRewriteEnable()) {
             LOG.debug("enabling URL rewriting");
             Class<Filter> rewriteFilter;
             String urlRewriteFile = "runwar/urlrewrite.xml";
+            if(new File(webInfDir,"urlrewrite.xml").exists() && serverOptions.urlRewriteFile() == null){
+                serverOptions.urlRewriteFile(new File(webInfDir,"urlrewrite.xml"));
+            }
             try{
-                rewriteFilter = (Class<Filter>) _classLoader.loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+                rewriteFilter = (Class<Filter>) getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
             } catch (java.lang.ClassNotFoundException e) {
                 rewriteFilter = (Class<Filter>) Server.class.getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
             }
-            if(serverOptions.getURLRewriteFile() != null) {
-                if(!serverOptions.getURLRewriteFile().isFile()) {
+            if(serverOptions.urlRewriteFile() != null) {
+                if(!serverOptions.urlRewriteFile().isFile()) {
                     String message = "The URL rewrite file " + urlRewriteFile + " does not exist!";
                     LOG.error(message);
                     throw new RuntimeException(message);
                 } else {
                     String rewriteFileName = "urlrewrite";
-                    rewriteFileName += serverOptions.isURLRewriteApacheFormat() ? ".htaccess" : ".xml";
-                    LaunchUtil.copyFile(serverOptions.getURLRewriteFile(), new File(webInfDir, rewriteFileName));
-                    LOG.debug("Copying URL rewrite file " + serverOptions.getURLRewriteFile().getPath() + " to WEB-INF: " + webInfDir.getPath() + "/"+rewriteFileName);
+                    rewriteFileName += serverOptions.urlRewriteApacheFormat() ? ".htaccess" : ".xml";
+                    if(!serverOptions.urlRewriteFile().getAbsolutePath().equals(new File(webInfDir, rewriteFileName).getAbsolutePath())){
+                        LaunchUtil.copyFile(serverOptions.urlRewriteFile(), new File(webInfDir, rewriteFileName));
+                        LOG.debug("Copying URL rewrite file " + serverOptions.urlRewriteFile().getPath() + " to WEB-INF: " + webInfDir.getPath() + "/"+rewriteFileName);
+                    }
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
             }
 
-            String rewriteFormat = serverOptions.isURLRewriteApacheFormat() ? "modRewrite-style" : "XML";
+            String rewriteFormat = serverOptions.urlRewriteApacheFormat() ? "modRewrite-style" : "XML";
             LOG.debug(rewriteFormat + " rewrite config file: " + urlRewriteFile);
             FilterInfo rewriteFilterInfo = new FilterInfo("UrlRewriteFilter", rewriteFilter)
                     .addInitParam("confPath", urlRewriteFile)
-                    .addInitParam("statusEnabled", Boolean.toString(serverOptions.isDebug()))
-                    .addInitParam("modRewriteConf", Boolean.toString(serverOptions.isURLRewriteApacheFormat()));
-            if(serverOptions.getURLRewriteCheckInterval() != null) {
-                rewriteFilterInfo.addInitParam("confReloadCheckInterval", serverOptions.getURLRewriteCheckInterval());
+                    .addInitParam("statusEnabled", Boolean.toString(serverOptions.debug()))
+                    .addInitParam("modRewriteConf", Boolean.toString(serverOptions.urlRewriteApacheFormat()));
+            if(serverOptions.urlRewriteCheckInterval() != null) {
+                rewriteFilterInfo.addInitParam("confReloadCheckInterval", serverOptions.urlRewriteCheckInterval());
             }
-            if(serverOptions.getURLRewriteStatusPath() != null && serverOptions.getURLRewriteStatusPath().length() != 0) {
-                rewriteFilterInfo.addInitParam("statusPath", serverOptions.getURLRewriteStatusPath());
+            if(serverOptions.urlRewriteStatusPath() != null && serverOptions.urlRewriteStatusPath().length() != 0) {
+                rewriteFilterInfo.addInitParam("statusPath", serverOptions.urlRewriteStatusPath());
             }
             rewriteFilterInfo.addInitParam("logLevel", "SLF4J");
             servletBuilder.addFilter(rewriteFilterInfo);
@@ -234,12 +267,12 @@ class RunwarConfigurer {
     }
 
     @SuppressWarnings({ "unchecked" })
-    void configurePathInfoFilter(DeploymentInfo servletBuilder) throws ClassNotFoundException {
-        if(serverOptions.isFilterPathInfoEnabled()) {
+    private void configurePathInfoFilter(DeploymentInfo servletBuilder) throws ClassNotFoundException {
+        if(serverOptions.filterPathInfoEnable()) {
             LOG.debug("enabling path_info filter");
             Class<Filter> regexPathInfoFilter;
             try{
-                regexPathInfoFilter = (Class<Filter>) _classLoader.loadClass("org.cfmlprojects.regexpathinfofilter.RegexPathInfoFilter");
+                regexPathInfoFilter = (Class<Filter>) getClassLoader().loadClass("org.cfmlprojects.regexpathinfofilter.RegexPathInfoFilter");
             } catch (java.lang.ClassNotFoundException e) {
                 regexPathInfoFilter = (Class<Filter>) Server.class.getClassLoader().loadClass("org.cfmlprojects.regexpathinfofilter.RegexPathInfoFilter");
             }
@@ -253,10 +286,10 @@ class RunwarConfigurer {
 
 
     @SuppressWarnings("unchecked")
-    static Class<Servlet> getCFMLServletClass(String cfengine) {
+    private static Class<Servlet> getCFMLServletClass(String cfengine) {
         Class<Servlet> cfmlServlet = null;
         try {
-            cfmlServlet = (Class<Servlet>) _classLoader.loadClass(cfengine + ".loader.servlet.CFMLServlet");
+            cfmlServlet = (Class<Servlet>) getClassLoader().loadClass(cfengine + ".loader.servlet.CFMLServlet");
             LOG.debug("dynamically loaded CFML servlet from runwar child classloader");
         } catch (java.lang.ClassNotFoundException devnul) {
             try {
@@ -265,15 +298,17 @@ class RunwarConfigurer {
             } catch(java.lang.ClassNotFoundException e) {
                 LOG.trace("No CFML servlet found in class loader hierarchy");
             }
+        } catch (NullPointerException ne){
+            LOG.trace("No CFML servlet found");
         }
         return cfmlServlet;
     }
 
     @SuppressWarnings("unchecked")
-    static Class<Servlet> getRestServletClass(String cfengine) {
+    private static Class<Servlet> getRestServletClass(String cfengine) {
         Class<Servlet> restServletClass = null;
         try {
-            restServletClass = (Class<Servlet>) _classLoader.loadClass(cfengine + ".loader.servlet.RestServlet");
+            restServletClass = (Class<Servlet>) getClassLoader().loadClass(cfengine + ".loader.servlet.RestServlet");
         } catch (java.lang.ClassNotFoundException e) {
             try {
                 restServletClass = (Class<Servlet>) Server.class.getClassLoader().loadClass(cfengine + ".loader.servlet.RestServlet");
@@ -285,7 +320,7 @@ class RunwarConfigurer {
     }
 
 
-    public static List<URL> getJarList(String libDirs) throws IOException {
+    static List<URL> getJarList(String libDirs) throws IOException {
         List<URL> classpath = new ArrayList<>();
         String[] list = libDirs.split(",");
         for (String path : list) {
@@ -316,7 +351,7 @@ class RunwarConfigurer {
         return classpath;
     }
 
-    void addCacheHandler(final DeploymentInfo servletBuilder) {
+    private void addCacheHandler(final DeploymentInfo servletBuilder) {
         // this handles mime types and adds a simple cache for static files
         servletBuilder.addInitialHandlerChainWrapper(handler -> {
             final ResourceHandler resourceHandler = new ResourceHandler(servletBuilder.getResourceManager());
@@ -342,34 +377,34 @@ class RunwarConfigurer {
         });
     }
 
-    void configureServlet(final DeploymentInfo servletBuilder, final String[] defaultWelcomeFiles, Boolean ignoreWelcomePages, Boolean ignoreRestMappings) throws ClassNotFoundException {
-        File webinf = serverOptions.getWebInfDir();
+    void configureServlet(final DeploymentInfo servletBuilder) throws ClassNotFoundException {
+        File webInfDir = serverOptions.webInfDir();
         /*
         servletBuilder.addInitialHandlerChainWrapper(new HandlerWrapper() {
             @Override
             public HttpHandler wrap(final HttpHandler handler) {
                 return resource(new FileResourceManager(new File(libDir,"server/WEB-INF"), transferMinSize))
-                        .setDirectoryListingEnabled(true);
+                        .directoryListingEnable(true);
             }
         });
         */
 
-        configureURLRewrite(servletBuilder, webinf);
+        configureURLRewrite(servletBuilder, webInfDir);
         configurePathInfoFilter(servletBuilder);
 
-        if (serverOptions.isCacheEnabled()) {
+        if (serverOptions.cacheEnable()) {
             addCacheHandler(servletBuilder);
         } else {
             LOG.debug("File cache is disabled");
         }
 
-        if (serverOptions.isCustomHTTPStatusEnabled()) {
+        if (serverOptions.customHTTPStatusEnable()) {
             servletBuilder.setSendCustomReasonPhraseOnError(true);
         }
 
-        if(serverOptions.getErrorPages() != null){
-            for(Integer errorCode : serverOptions.getErrorPages().keySet()) {
-                String location = serverOptions.getErrorPages().get(errorCode);
+        if(serverOptions.errorPages() != null){
+            for(Integer errorCode : serverOptions.errorPages().keySet()) {
+                String location = serverOptions.errorPages().get(errorCode);
                 if(errorCode == 1) {
                     servletBuilder.addErrorPage( new ErrorPage(location));
                     LOG.debug("Adding default error location: " + location);
@@ -397,37 +432,63 @@ class RunwarConfigurer {
 
         // this prevents us from having to use our own ResourceHandler (directory listing, welcome files, see below) and error handler for now
         servletBuilder.addServlet(new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
-                .addInitParam("directory-listing", Boolean.toString(serverOptions.isDirectoryListingEnabled())));
+                .addInitParam("directory-listing", Boolean.toString(serverOptions.directoryListingEnable())));
 
 //        servletBuilder.setExceptionHandler(LoggingExceptionHandler.DEFAULT);
 
 
         List<?> welcomePages =  servletBuilder.getWelcomePages();
-        if(ignoreWelcomePages) {
+        if(serverOptions.ignoreWebXmlWelcomePages()) {
             LOG.debug("Ignoring web.xml welcome file, so adding server options welcome files to deployment manager.");
-            servletBuilder.addWelcomePages(serverOptions.getWelcomeFiles());
+            servletBuilder.addWelcomePages(serverOptions.welcomeFiles());
         } else if(welcomePages.size() == 0){
             LOG.debug("No welcome pages set yet, so adding defaults to deployment manager.");
             servletBuilder.addWelcomePages(defaultWelcomeFiles);
         }
         LOG.info("welcome pages in deployment manager: " + servletBuilder.getWelcomePages());
 
-        if(ignoreRestMappings && serverOptions.getServletRestEnabled()) {
-            LOG.info("Overriding web.xml rest mappings with " + Arrays.toString( serverOptions.getServletRestMappings() ) );
+        if(serverOptions.ignoreWebXmlRestMappings() && serverOptions.servletRestEnable()) {
+            LOG.info("Overriding web.xml rest mappings with " + Arrays.toString( serverOptions.servletRestMappings() ) );
             for (Map.Entry<String, ServletInfo> stringServletInfoEntry : servletBuilder.getServlets().entrySet()) {
                 ServletInfo restServlet = stringServletInfoEntry.getValue();
 //                LOG.trace("Checking servlet named: " + restServlet.getName() + " to see if it's a REST servlet.");
                 if (restServlet.getName().toLowerCase().equals("restservlet") || restServlet.getName().toLowerCase().equals("cfrestservlet")) {
-                    for (String path : serverOptions.getServletRestMappings()) {
+                    for (String path : serverOptions.servletRestMappings()) {
                         restServlet.addMapping(path);
                         LOG.info("Added rest mapping: " + path + " to " + restServlet.getName());
                     }
                 }
             }
-        } else if (!serverOptions.getServletRestEnabled()) {
+        } else if (!serverOptions.servletRestEnable()) {
             LOG.trace("REST servlets disabled");
         }
 
+    }
+
+    void generateSelfSignedCertificate() throws GeneralSecurityException, IOException {
+        Path defaultCertPath, defaultKeyPath;
+        if(serverOptions.sslSelfSign()){
+            if(serverOptions.webInfDir() != null && serverOptions.webInfDir().exists()) {
+                defaultCertPath = new File(serverOptions.webInfDir(),"selfsign.crt").toPath();
+                defaultKeyPath = new File(serverOptions.webInfDir(),"selfsign.key").toPath();
+            } else {
+                defaultCertPath = Paths.get("./selfsign.crt");
+                defaultKeyPath = Paths.get("./selfsign.key");
+            }
+            Path certPath = serverOptions.sslCertificate() == null ? defaultCertPath : Paths.get(serverOptions.sslCertificate().getAbsolutePath());
+            Path keyPath = serverOptions.sslKey() == null ? defaultKeyPath : Paths.get(serverOptions.sslKey().getAbsolutePath());
+            SelfSignedCertificate.generateCertificate(certPath, keyPath);
+            serverOptions.sslKey(keyPath.toFile());
+            serverOptions.sslCertificate(certPath.toFile());
+            serverOptions.sslEnable(true);
+            if(serverOptions.warFile() == null)
+                System.exit(0);
+        }
+    }
+
+    void generateService() {
+        if(serverOptions.sslSelfSign()){
+        }
     }
 
 }

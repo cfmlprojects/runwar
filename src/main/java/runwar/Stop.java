@@ -18,14 +18,14 @@ public class Stop {
     }
     
     public static void stopServer(ServerOptions serverOptions, boolean andExit) throws Exception {
-        int socketNumber = serverOptions.getSocketNumber();
-        String host = serverOptions.getHost();
-        char[] stoppassword = serverOptions.getStopPassword();
+        int socketNumber = serverOptions.stopPort();
+        String host = serverOptions.host();
+        char[] stoppassword = serverOptions.stopPassword();
         try {
             InetAddress addr = InetAddress.getByName(host);
             Socket s = new Socket(addr, socketNumber);
             OutputStream out = s.getOutputStream();
-            System.out.println("*** sending stop request to socket : " + socketNumber);
+            System.out.println("*** sending stop request to socket " + addr.getHostAddress() + ":" + socketNumber);
             for (int i = 0; i < stoppassword.length; i++) {
                 out.write(stoppassword[i]);
             }

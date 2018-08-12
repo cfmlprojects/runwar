@@ -1,5 +1,8 @@
 package runwar.util;
 
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
@@ -7,12 +10,15 @@ import java.util.Map;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.ServerConnection;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.protocol.http2.Http2ServerConnection;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.LocaleUtils;
 import net.minidev.json.JSONObject;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 
 public class RequestDumper implements HttpHandler {
 
@@ -25,7 +31,33 @@ public class RequestDumper implements HttpHandler {
         jsonObject.put("characterEncoding",exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING));
         jsonObject.put("contentLength",exchange.getRequestContentLength());
         jsonObject.put("contentType",exchange.getRequestHeaders().get(Headers.CONTENT_TYPE));
-        jsonObject.put("isHTTP2",(exchange.getConnection() instanceof Http2ServerConnection) );
+        ServerConnection connection = exchange.getConnection();
+        jsonObject.put("isHTTP2",(connection instanceof Http2ServerConnection));
+        jsonObject.put("isHTTPS",(connection.getSslSessionInfo() != null) );
+        if(connection.getSslSessionInfo() != null){
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Ciphers: " + connection.getSslSessionInfo().getCipherSuite());
+            JSONObject localCerts = new JSONObject();
+            Arrays.stream(connection.getSslSession().getLocalCertificates()).forEach(
+                    certificate -> {
+                        try {
+                            X500Name x500name = new JcaX509CertificateHolder((X509Certificate) certificate ).getSubject();
+                            localCerts.put("subject",x500name.toString());
+                            Arrays.stream(x500name.toString().split(",")).forEach(part->{
+                                localCerts.put(part.split("=")[0],part.split("=")[1]);
+                            });
+                            localCerts.put("cipher",((X509Certificate) certificate).getSigAlgName());
+                            sb.append(x500name.toString());
+                        } catch (CertificateEncodingException e) {
+                            e.printStackTrace();
+                        }
+                    }
+            );
+            jsonObject.put("localCertificates",localCerts);
+            jsonObject.put("sslSessionInfo",sb.toString());
+        } else {
+            jsonObject.put("sslSessionInfo","");
+        }
         if (sc != null) {
             if (sc.isAuthenticated()) {
                 jsonObject.put("authType",sc.getMechanismName());

@@ -13,7 +13,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 /*
   A simple request logger 
-  <rule enabled="true">
+  <rule enable="true">
     <name>railoLocalOnly</name>
     <note>Only allow access to railo admin from localhost</note>
     <condition operator="notequal" type="remote-addr">127\.0\.0\.1|0:0:0:0:0:0:0:1%0</condition>

@@ -16,7 +16,7 @@ public class ErrorHandler implements HttpHandler {
     public void handleRequest(final HttpServerExchange inExchange) {
         inExchange.addDefaultResponseListener(exchange -> {
             if (!exchange.isResponseChannelAvailable()) {
-                RunwarLogger.CONTEXT_LOG.warn("The response channel was closed prematurely.  Request path: " + exchange.getRequestPath() + " status-code: " + exchange.getStatusCode() );
+//                RunwarLogger.CONTEXT_LOG.warn("The response channel was closed prematurely.  Request path: " + exchange.getRequestPath() + " status-code: " + exchange.getStatusCode() );
                 return false;
             }
             if(exchange.getStatusCode() != 200)

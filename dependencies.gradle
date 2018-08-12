@@ -11,12 +11,15 @@ configurations {
 
 ext {
 //    undertowVersion = '1.4.24.Final'
-    undertowVersion = '2.0.4.Final'
-    tuckeyRewriteVersion = '5.0.2'
+    undertowVersion = '2.0.12.Final'
+    urlRewriteVersion = '5.0.2'
     proguardVersion = '6.0.2'
     goomphVersion = '3.13.0'
     bndVersion = '1.5.0'
     spotlessVersion = '3.5.1'
+//    systemTrayVersion = '3.14'
+    systemTrayVersion = '3.1'
+    jbossJspApiVersion = '1.0.3'
     mavenRepo = "${System.getProperty("user.home")}/cfdistro/artifacts/"
 }
 
@@ -25,6 +28,24 @@ repositories {
     mavenLocal()
     maven { url "http://repo.maven.apache.org/maven2" }
     maven { url "http://repository.jboss.org/nexus/content/repositories/releases" }
+}
+
+task dorkboxUberJar(type: ShadowJar) {
+    description = 'java 9+ has problems with the same packages in different jars'
+    classifier = null
+    baseName = 'dorkbox'
+    mergeServiceFiles()
+    version = systemTrayVersion
+    configurations = [project.configurations.dorkboxDependency]
+}
+
+task jbossJspJar(type: ShadowJar) {
+    description = 'java 9+ error about version numbers or something'
+    classifier = null
+    baseName = "jboss-jsp-api"
+    version = jbossJspApiVersion
+    mergeServiceFiles()
+    configurations = [project.configurations.jbossJspDependency]
 }
 
 dependencies {
@@ -41,28 +62,30 @@ dependencies {
     }
 */
 //    compile('javax.servlet:jsp-api:2.0')
-//    compile('org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.3_spec:1.0.2.Final') {
-//        exclude group: 'org.jboss.spec.javax.servlet'
-//    }
+    // squish the jsp stuff together for java 9+
     jbossJspDependency('org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.3_spec:1.0.2.Final') { transitive = false }
-    compile("org.cfmlprojects:jboss-jsp-api:1.0.2")
+    compile("org.cfmlprojects:jboss-jsp-api:${jbossJspApiVersion}")
+    compile(files(jbossJspJar.archivePath){ builtBy jbossJspJar })
+
     compile("org.jboss.spec.javax.el:jboss-el-api_3.0_spec:1.0.2.Final")
 
     compile("io.undertow:undertow-servlet:${project.undertowVersion}") {
         exclude group: 'org.jboss.spec.javax.annotation', module: 'jboss-annotations-api_1.2_spec'
     }
 
+    // squish the dorkbox stuff together for java 9+
     dorkboxDependency("com.dorkbox:Notify:3.7")
-    dorkboxDependency("com.dorkbox:SystemTray:3.13-SNAPSHOT") {
-        //    compile("com.dorkbox:SystemTray:3.12"){
+    dorkboxDependency("com.dorkbox:SystemTray:${systemTrayVersion}") {
         exclude group: 'ch.qos.logback', module: 'logback-core'
         exclude group: 'ch.qos.logback', module: 'logback-classic'
     }
-    compile("org.cfmlprojects:dorkbox:3.13")
+    compile(files(dorkboxUberJar.archivePath){ builtBy dorkboxUberJar })
 
     // java 9+ compat
     compile 'com.sun.activation:javax.activation:1.2.0'
-    compile 'org.cfmlprojects:javashim:1.0.0'
+    compile 'org.cfmlprojects:javashim:1.0.1'
+    // daemon scripts
+    compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
 
     // configuration
     compile group: 'net.minidev', name: 'json-smart-mini', version: '1.0.8'
@@ -81,7 +104,7 @@ dependencies {
     //    compile("org.apache.logging.log4j:log4j-slf4j-impl:2.10.0")
 
     // forked version of tuckey for now
-    compile("org.cfmlprojects:urlrewritefilter:${project.tuckeyRewriteVersion}")
+    compile("org.cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}")
     // regexpathinfofilter lets us handle *.cfm/* paths
     compile("org.cfmlprojects:regexpathinfofilter:1.0.1")
 
@@ -98,9 +121,10 @@ dependencies {
     // tests
     testCompile("org.apache.httpcomponents:httpclient:4.2.6")
     testCompile("org.apache.httpcomponents:httpmime:4.2.6")
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
-    testCompile('org.junit.jupiter:junit-jupiter-params:5.1.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.2.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
+    testCompile group: 'org.junit.platform', name: 'junit-platform-launcher', version: "1.2.0"
+    testCompile('org.junit.jupiter:junit-jupiter-params:5.2.0')
 }
 
 configurations.compile.withDependencies {deps ->
@@ -111,28 +135,17 @@ configurations.compile.withDependencies {deps ->
 }
 
 
-task dorkboxUberJar(type: ShadowJar) {
-    classifier = null
-    mergeServiceFiles()
-    configurations = [project.configurations.dorkboxDependency]
-}
-task jbossJspJar(type: ShadowJar) {
-    classifier = null
-    baseName = "jboss-jsp-api"
-    version = '1.0.3'
-    mergeServiceFiles()
-    configurations = [project.configurations.jbossJspDependency]
-}
+
 processResources.dependsOn(dorkboxUberJar)
 processResources.dependsOn(jbossJspJar)
 
 gradle.buildFinished {
     if(project.gradle.startParameter.taskNames.findAll{it.contains("ublish")}){
-        def repoDir = "${mavenRepo}${project.group.replace('.','/')}/dorkbox/3.13"
+        def repoDir = "${mavenRepo}${project.group.replace('.','/')}/dorkbox/${systemTrayVersion}"
         file(repoDir).listFiles().each{
             println it
         }
-        repoDir = "${mavenRepo}${project.group.replace('.','/')}/jboss-jsp-api/1.0.2"
+        repoDir = "${mavenRepo}${project.group.replace('.','/')}/jboss-jsp-api/${jbossJspApiVersion}"
         file(repoDir).listFiles().each{
             println it
         }
@@ -152,13 +165,13 @@ publishing {
         dorkbox(MavenPublication) {
             groupId project.group
             artifactId 'dorkbox'
-            version = '3.13'
+            version = systemTrayVersion
             artifact dorkboxUberJar
         }
         jbossJsp(MavenPublication) {
             groupId project.group
             artifactId 'jboss-jsp-api'
-            version = '1.0.3'
+            version = jbossJspApiVersion
             artifact jbossJspJar
         }
     }

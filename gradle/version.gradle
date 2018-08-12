@@ -2,23 +2,29 @@
 
 buildscript {
     repositories { maven { url "https://plugins.gradle.org/m2/" } }
-    dependencies { classpath "org.ajoberstar:grgit:2.1.1" }
+    dependencies { classpath "org.ajoberstar:grgit:2.2.1" }
 }
 
 import org.ajoberstar.grgit.Grgit
 
 ext {
-    git = Grgit.open(dir: file('.'))
-    describedCommit = git.describe().toString().trim()
-    revision = git.head().id
-    masterRevision = git.resolve.toCommit(git.resolve.toBranch('origin/master')).id
-    isSnapshot = masterRevision != revision
+    version = "0.0.0.0"
+    isSnapshot = true
+    try{
+        git = Grgit.open(dir: file('.'))
+        describedCommit = git.describe().toString().trim()
+        revision = git.head().id
+        masterRevision = git.resolve.toCommit(git.resolve.toBranch('origin/master')).id
+        isSnapshot = masterRevision != revision
 //    isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
 //    version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
-    version = "4.0.0" +  (isSnapshot ? "-SNAPSHOT" : "")
-    // + (git.status().isClean() ? "" : "+dirty")
-    println "Building Version ${version} - Branch ${git.branch.current().name}"
-    println "Commit message:" + git.head().fullMessage
+        version = "4.0.0" +  (isSnapshot ? "-SNAPSHOT" : "")
+        // + (git.status().isClean() ? "" : "+dirty")
+        println "Building Version ${version} - Branch ${git.branch.current().name}"
+        println "Commit message:" + git.head().fullMessage
+    } catch (Exception e) {
+        e.printStackTrace()
+    }
 }
 version = ext.version
 

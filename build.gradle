@@ -4,9 +4,9 @@ import static se.bjurr.gitchangelog.api.GitChangelogApi.gitChangelogApiBuilder
 
 plugins {
     id 'com.github.johnrengelman.shadow' version '2.0.4'
-    id "com.diffplug.gradle.oomph.ide" version "3.13.0"
+    id "com.diffplug.gradle.oomph.ide" version "3.14.0"
     id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "1.55"
-    id "org.ajoberstar.grgit" version "2.1.1"
+    id "com.fizzed.rocker" version "0.24.0"
 //    id 'com.zyxist.chainsaw' version '0.3.1'
 }
 
@@ -25,12 +25,26 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
 
-task wrapper(type: Wrapper) { gradleVersion = '4.7' }
+task wrapper(type: Wrapper) { gradleVersion = '4.8' }
 
+javadoc {
+    if(VersionNumber.parse( System.getProperty('java.version') ) > VersionNumber.parse('1.8')){
+       options.addStringOption('-add-modules', 'java.xml.bind')
+    }
+}
+
+tasks.withType(Test) {
+    if(VersionNumber.parse( System.getProperty('java.version') ) > VersionNumber.parse('1.8')){
+       jvmArgs += ["--add-modules", "java.xml.bind"]
+    }
+}
 
 sourceSets {
     main {
         output.dir(generatedResources, builtBy: 'generateVersionFile')
+        rocker {
+            srcDir('src/main/rocker')
+        }
     }
 }
 
@@ -40,7 +54,7 @@ sourceSets {
  filter ReplaceTokens, tokens: [
  'build.version': project.property("version"),
  'build.timestamp': project.buildTimestamp
- ]
+ ]F
  }
  }
  */
@@ -59,10 +73,22 @@ test {
     testLogging.showStandardStreams = true
 }
 
-//////////
-// OSGI //
-//////////
-// create the manifest
+rocker {
+    failOnError true
+    skipTouch true
+    // must not be empty when skipTouch is equal to false
+    touchFile ""
+    javaVersion '1.8'
+    extendsClass null
+    extendsModelClass null
+    optimize null
+    discardLogicWhitespace true
+    targetCharset null
+    suffixRegex null
+    postProcessing null
+}
+
+// create an OSGI manifest
 apply plugin: 'com.diffplug.gradle.osgi.bndmanifest'
 osgiBndManifest { copyTo 'META-INF/MANIFEST.MF' }
 

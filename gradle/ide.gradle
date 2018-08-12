@@ -1,6 +1,6 @@
 buildscript {
-    repositories { jcenter() }
-    dependencies { classpath "com.diffplug.gradle:goomph:3.13.0" }
+    repositories.jcenter()
+    dependencies.classpath "com.diffplug.gradle:goomph:3.14.0"
 }
 
 apply plugin: 'eclipse'
@@ -35,7 +35,6 @@ oomphIde {
     repo 'http://download.eclipse.org/mylyn/releases/latest'
     feature 'org.eclipse.mylyn.github.feature'
 
-    repoEclipseLatest()
     jdt {}
     eclipseIni {
         vmargs('-Xmx2g')    // IDE can have up to 2 gigs of RAM

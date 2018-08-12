@@ -28,14 +28,14 @@ public class PortRequisitioner {
         return this;
     }
 
-    public PortRequisitioner add(String name, int socket, boolean enabled) {
+    public PortRequisitioner add(String name, int socket, boolean enable) {
         Port port = get(name);
         if (port == null) {
-            port = new Port(name, socket, defaultHost, enabled);
+            port = new Port(name, socket, defaultHost, enable);
             ports.add(port);
         } else {
             port.socket = socket;
-            port.enabled = enabled;
+            port.enable = enable;
         }
         return this;
     }
@@ -52,14 +52,14 @@ public class PortRequisitioner {
         return this;
     }
 
-    public PortRequisitioner add(String name, int socket, String host, boolean enabled) {
+    public PortRequisitioner add(String name, int socket, String host, boolean enable) {
         Port port = get(name);
         if (port == null) {
-            port = new Port(name, socket, host, enabled);
+            port = new Port(name, socket, host, enable);
             ports.add(port);
         } else {
             port.socket = socket;
-            port.enabled = enabled;
+            port.enable = enable;
             port.host = host;
         }
         return this;
@@ -76,13 +76,13 @@ public class PortRequisitioner {
     public void requisition() {
         final StringBuilder logLine = new StringBuilder("Requisitioning ports ");
         ports.forEach(port -> {
-            if (port.enabled) {
+            if (port.enable) {
                 logLine.append(port.host).append(":").append(port.socket).append(" (").append(port.name).append(") ");
             }
         });
         LOG.debug(logLine.toString());
         ports.forEach(port -> {
-            if (port.enabled) {
+            if (port.enable) {
                 LOG.tracef("Requisitioning port %s:%s (%s)", port.host, port.socket, port.name);
                 port.socket(LaunchUtil.getPortOrErrorOut(port.socket, port.host));
                 LOG.tracef("Requisitioned port %s:%s (%s)", port.host, port.socket, port.name);
@@ -92,14 +92,14 @@ public class PortRequisitioner {
 
     public class Port {
         public int socket;
-        public boolean enabled = true;
+        public boolean enable = true;
         public String name, host;
 
-        public Port(String name, int socket, String host, boolean enabled) {
+        public Port(String name, int socket, String host, boolean enable) {
             this.socket = socket;
             this.host = host;
             this.name = name;
-            this.enabled = enabled;
+            this.enable = enable;
         }
 
         public Port(String name, int socket, String host) {
@@ -123,8 +123,8 @@ public class PortRequisitioner {
             return this;
         }
 
-        public Port enabled(boolean enable) {
-            enabled = enable;
+        public Port enable(boolean enable) {
+            enable = enable;
             return this;
         }
 

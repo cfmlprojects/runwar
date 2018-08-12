@@ -43,7 +43,7 @@ public interface RunwarLogger extends BasicLogger {
      * LoggerFactory.init(Server.getServerOptions());
      * System.out.println("default method");
      * System.setProperty("runwar.logfile", "/tmp/fart");
-     * System.setProperty("runwar.loglevel", "DEBUG" );
+     * System.setProperty("runwar.logLevel", "DEBUG" );
      * System.setProperty("runwar.logpattern", "%m%n" ); }
      */
     Logger LOG = Logger.getLogger("runwar.server");
@@ -52,6 +52,7 @@ public interface RunwarLogger extends BasicLogger {
     Logger MAPPER_LOG = Logger.getLogger("runwar.request");
     Logger SECURITY_LOGGER = Logger.getLogger("runwar.security");
     Logger BACKGROUNDED_LOG = Logger.getLogger("runwar.background");
+    Logger MONITOR_LOG = Logger.getLogger("runwar.monitor");
 
     //  RunwarLogger ROOT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName());
 //    RunwarLogger CLIENT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, ClientConnection.class.getPackage().getName());
@@ -66,6 +67,7 @@ public interface RunwarLogger extends BasicLogger {
      * Logger used for IO exceptions. Generally these should be suppressed,
      * because they are of little interest, and it is easy for an attacker to
      * fill up the logs by intentionally causing IO exceptions.
+     * @param cause the cause
      */
     // RunwarLogger REQUEST_IO_LOGGER =
     // Logger.getMessageLogger(RunwarLogger.class,
@@ -206,9 +208,6 @@ public interface RunwarLogger extends BasicLogger {
     @Message(id = 5036, value = "ALPN negotiation failed for %s and no fallback defined, closing connection")
     void noALPNFallback(SocketAddress address);
 
-    /**
-     * Undertow mod_cluster proxy messages
-     */
     @LogMessage(level = WARN)
     @Message(id = 5037, value = "Name of the cookie containing the session id, %s, had been too long and was truncated to: %s")
     void stickySessionCookieLengthTruncated(String original, String current);

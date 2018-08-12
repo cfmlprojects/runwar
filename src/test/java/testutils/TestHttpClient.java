@@ -81,7 +81,7 @@ public class TestHttpClient extends DefaultHttpClient {
     }
 
     public void setSSLContext(final SSLContext sslContext) {
-        if(!DefaultServer.getServerOptions().isEnableSSL()){
+        if(!DefaultServer.getServerOptions().sslEnable()){
             return;
         }
         SchemeRegistry registry = getConnectionManager().getSchemeRegistry();

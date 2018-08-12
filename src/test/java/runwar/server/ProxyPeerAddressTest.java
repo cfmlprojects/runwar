@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
 import testutils.TestHttpClient;
@@ -28,8 +27,8 @@ public class ProxyPeerAddressTest {
         @Override
         public void beforeAll(ExtensionContext context) {
             DefaultServer.resetServerOptions()
-                    .setServerName("proxyPeerAddress")
-                    .setProxyPeerAddressEnabled(true);
+                    .serverName("proxyPeerAddress")
+                    .proxyPeerAddressEnable(true);
         }
 
     }
@@ -39,7 +38,7 @@ public class ProxyPeerAddressTest {
 
         String port = "" + DefaultServer.getHostPort("default");
         String forwardFor = "some.domain.forwarded";
-        assertTrue(DefaultServer.getServerOptions().isProxyPeerAddressEnabled());
+        assertTrue(DefaultServer.getServerOptions().proxyPeerAddressEnable());
         TestHttpClient client = DefaultServer.getClient();
         HttpGet get = new HttpGet(DefaultServer.getDefaultServerURL() + "/dumprunwarrequest");
         get.addHeader(Headers.X_FORWARDED_FOR_STRING, forwardFor);
@@ -58,7 +57,7 @@ public class ProxyPeerAddressTest {
 
         String forwardFor = "localhost";
         String forwardPort = "8765";
-        assertTrue(DefaultServer.getServerOptions().isProxyPeerAddressEnabled());
+        assertTrue(DefaultServer.getServerOptions().proxyPeerAddressEnable());
         TestHttpClient client = DefaultServer.getClient();
         HttpGet get = new HttpGet(DefaultServer.getDefaultServerURL() + "/dumprunwarrequest");
         get.addHeader(Headers.X_FORWARDED_FOR_STRING, forwardFor);

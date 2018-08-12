@@ -40,14 +40,10 @@ public class Start {
         int port = Integer.parseInt(schemeHostAndPort[2]);
         int stopPort = port+1;
         RunwarLogger.LOG.info("Starting instance: " + host + " on port "+ schemeHostAndPort[2]);
-        LaunchUtil.relaunchAsBackgroundProcess(serverOptions.setHost(host).setStartedFromCommandLine(true)
-                .setPortNumber(port).setSocketNumber(stopPort).setLoadBalance(""), false);
+        LaunchUtil.relaunchAsBackgroundProcess(serverOptions.host(host).startedFromCommandLine(true)
+                .httpPort(port).stopPort(stopPort).loadBalance(""), false);
 	    
 	}
-
-	public static boolean containsCaseInsensitive(List<String> l, String s){
-        return l.stream().anyMatch(x -> x.equalsIgnoreCase(s) || x.equalsIgnoreCase('-' + s));
-    }
 
 	public static void main(String[] args) throws Exception {
         ServerOptions serverOptions = CommandLineHandler.parseLogArguments(args);
@@ -61,14 +57,14 @@ public class Start {
         } else {
             serverOptions = CommandLineHandler.parseArguments(args);
         }
-        serverOptions.setStartedFromCommandLine(true);
-        if(serverOptions.getLoadBalance() != null && serverOptions.getLoadBalance().length > 0) {
+        serverOptions.startedFromCommandLine(true);
+        if(serverOptions.loadBalance() != null && serverOptions.loadBalance().length > 0) {
             final List<String> balanceHosts = new ArrayList<String>();
             RunwarLogger.LOG.info("Initializing...");
             final LoadBalancingProxyClient loadBalancer = new LoadBalancingProxyClient();
-            for(String balanceHost : serverOptions.getLoadBalance()) {
-                if(serverOptions.getWarFile() != null) {
-                    RunwarLogger.LOG.info("Starting instance of " + serverOptions.getWarFile().getParent() +"...");
+            for(String balanceHost : serverOptions.loadBalance()) {
+                if(serverOptions.warFile() != null) {
+                    RunwarLogger.LOG.info("Starting instance of " + serverOptions.warFile().getParent() +"...");
                     launchServer(balanceHost,serverOptions);
                 }
                 loadBalancer.addHost(new URI(balanceHost));
@@ -76,7 +72,7 @@ public class Start {
                 RunwarLogger.LOG.info("Added balanced host: " + balanceHost);
                 Thread.sleep(3000);
             }
-            int port = serverOptions.getPortNumber();
+            int port = serverOptions.httpPort();
             loadBalancer.setConnectionsPerThread(20);
             RunwarLogger.LOG.info("Hosts loaded");
 
@@ -122,7 +118,7 @@ public class Start {
             RunwarLogger.LOG.info("Started load balancer.");
             
         } else {
-            
+
             Server server = new Server();
             try {
                 server.startServer(serverOptions);

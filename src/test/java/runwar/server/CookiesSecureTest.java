@@ -3,16 +3,13 @@ package runwar.server;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
 
-import static io.undertow.util.Headers.SET_COOKIE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,16 +22,16 @@ public class CookiesSecureTest {
         @Override
         public void beforeAll(ExtensionContext context) throws Exception {
             DefaultServer.resetServerOptions()
-                    .setServerName("secureCookies")
-                    .setSecureCookies(true)
-                    .setEnableSSL(true);
+                    .serverName("secureCookies")
+                    .secureCookies(true)
+                    .sslEnable(true);
         }
     }
 
     @Test
     public void testHasSecureCookies() throws Exception {
-        assertTrue(DefaultServer.getServerOptions().isCookieHttpOnly());
-        assertTrue(DefaultServer.getServerOptions().isCookieSecure());
+        assertTrue(DefaultServer.getServerOptions().cookieHttpOnly());
+        assertTrue(DefaultServer.getServerOptions().cookieSecure());
         String url = DefaultServer.getDefaultServerHTTP2Address() + "/dumprunwarrequest";
         HttpGet get = new HttpGet(url);
         HttpResponse result = DefaultServer.getClient().execute(get);
