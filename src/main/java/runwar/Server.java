@@ -18,6 +18,9 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.api.*;
+import io.undertow.servlet.core.DeploymentImpl;
+import io.undertow.servlet.handlers.ServletRequestContext;
+import io.undertow.servlet.spec.ServletContextImpl;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
@@ -37,12 +40,14 @@ import runwar.security.SecurityManager;
 import runwar.tray.Tray;
 import runwar.undertow.MappedResourceManager;
 import runwar.undertow.RequestDebugHandler;
+import runwar.undertow.WebInfHandlingServletContext;
 import runwar.util.ClassLoaderUtils;
 import runwar.util.FusionReactor;
 import runwar.util.RequestDumper;
 import runwar.util.PortRequisitioner;
 
 import javax.net.ssl.SSLContext;
+import javax.servlet.ServletContext;
 import java.awt.*;
 import java.io.*;
 import java.lang.management.ManagementFactory;
@@ -208,7 +213,7 @@ public class Server {
             configurer.generateSelfSignedCertificate();
         }
         if(serverOptions.service()){
-            Service.generateServiceScripts(serverOptions,Paths.get("./"));
+            new Service(serverOptions).generateServiceScripts();
             System.exit(0);
         }
 
@@ -508,7 +513,6 @@ public class Server {
 
             @Override
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
-
 /*
                 final SessionManager sessionManager = exchange.getAttachment(SessionManager.ATTACHMENT_KEY);
                 final SessionConfig sessionconfig = exchange.getAttachment(SessionConfig.ATTACHMENT_KEY);
@@ -549,6 +553,7 @@ public class Server {
                         nextListener.proceed();
                     });
                 }
+
                 if(serverOptions.debug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
                     new RequestDumper().handleRequest(exchange);
                 } else {
@@ -1028,6 +1033,10 @@ public class Server {
 
     public String getServerState() {
         return serverState;
+    }
+
+    public DeploymentManager getManager() {
+        return manager;
     }
 
     public static class ServerState {
