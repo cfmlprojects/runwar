@@ -8,7 +8,9 @@ import io.undertow.predicate.Predicates;
 import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.*;
+import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.ProxyPeerAddressHandler;
+import io.undertow.server.handlers.SSLHeaderHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
 import io.undertow.server.handlers.cache.DirectBufferCache;
@@ -17,10 +19,9 @@ import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
-import io.undertow.servlet.api.*;
-import io.undertow.servlet.core.DeploymentImpl;
-import io.undertow.servlet.handlers.ServletRequestContext;
-import io.undertow.servlet.spec.ServletContextImpl;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.ServletSessionConfig;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
@@ -40,25 +41,23 @@ import runwar.security.SecurityManager;
 import runwar.tray.Tray;
 import runwar.undertow.MappedResourceManager;
 import runwar.undertow.RequestDebugHandler;
-import runwar.undertow.WebInfHandlingServletContext;
 import runwar.util.ClassLoaderUtils;
 import runwar.util.FusionReactor;
-import runwar.util.RequestDumper;
 import runwar.util.PortRequisitioner;
+import runwar.util.RequestDumper;
 
 import javax.net.ssl.SSLContext;
-import javax.servlet.ServletContext;
 import java.awt.*;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.*;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
-import static io.undertow.servlet.Servlets.*;
+import static io.undertow.servlet.Servlets.defaultContainer;
+import static io.undertow.servlet.Servlets.deployment;
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
 
@@ -222,6 +221,7 @@ public class Server {
         requisitionPorts();
 
         Builder serverBuilder = Undertow.builder();
+        setUndertowOptions(serverBuilder);
 
         if(serverOptions.http2Enable()) {
             LOG.info("Enabling HTTP2 protocol");
@@ -249,7 +249,7 @@ public class Server {
                     File keyFile = serverOptions.sslKey();
                     char[] keypass = serverOptions.sslKeyPass();
                     String[] sslAddCerts = serverOptions.sslAddCerts();
-                    sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts);
+                    sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{serverName});
                     if(keypass != null)
                         Arrays.fill(keypass, '*');
                 } else {
@@ -396,16 +396,10 @@ public class Server {
         LOG.debug("Transfer Min Size: " + serverOptions.transferMinSize());
 
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
-        worker = xnio.createWorker(OptionMap.builder()
-                .set(Options.WORKER_IO_THREADS, 8)
-                .set(Options.CONNECTION_HIGH_WATER, 1000000)
-                .set(Options.CONNECTION_LOW_WATER, 1000000)
-                .set(Options.WORKER_TASK_CORE_THREADS, 30)
-                .set(Options.WORKER_TASK_MAX_THREADS, 30)
-                .set(Options.TCP_NODELAY, true)
-                .set(Options.CORK, true)
-                .getMap());
 
+        worker = xnio.createWorker(serverOptions.xnioOptions().getMap());
+
+        // separate log worker to prevent logging-caused bottleneck
         logWorker = xnio.createWorker(OptionMap.builder()
                 .set(Options.WORKER_IO_THREADS, 2)
                 .set(Options.CONNECTION_HIGH_WATER, 1000000)
@@ -724,6 +718,15 @@ public class Server {
             }
             LOG.error(any);
             System.exit(1);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setUndertowOptions(Builder serverBuilder) {
+        OptionMap undertowOptionsMap = serverOptions.undertowOptions().getMap();
+        for (Option option : undertowOptionsMap) {
+            LOG.info("UndertowOption " + option.getName() + ':' + undertowOptionsMap.get(option));
+            serverBuilder.setServerOption(option, undertowOptionsMap.get(option));
         }
     }
 

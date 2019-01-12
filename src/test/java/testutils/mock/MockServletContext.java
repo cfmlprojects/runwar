@@ -71,14 +71,17 @@ public class MockServletContext implements ServletContext {
         return null;
     }
 
+    @Deprecated
     public Servlet getServlet(String s) throws ServletException {
         return null;
     }
 
+    @Deprecated
     public Enumeration<Servlet> getServlets() {
         return null;
     }
 
+    @Deprecated
     public Enumeration<String> getServletNames() {
         return null;
     }
@@ -86,6 +89,7 @@ public class MockServletContext implements ServletContext {
     public void log(String s) {
     }
 
+    @Deprecated
     public void log(Exception e, String s) {
     }
 

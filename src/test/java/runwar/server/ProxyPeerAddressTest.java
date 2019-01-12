@@ -7,9 +7,7 @@ import net.minidev.json.JSONValue;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
 import testutils.TestHttpClient;
@@ -19,18 +17,12 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith({ProxyPeerAddressTest.ServerConfig.class, DefaultServer.class})
-public class ProxyPeerAddressTest {
+public class ProxyPeerAddressTest extends AbstractServerTest {
 
-    @ExtendWith({DefaultServer.class})
-    public static class ServerConfig implements BeforeAllCallback {
-        @Override
-        public void beforeAll(ExtensionContext context) {
-            DefaultServer.resetServerOptions()
-                    .serverName("proxyPeerAddress")
-                    .proxyPeerAddressEnable(true);
-        }
-
+    public ServerOptions getServerOptions() {
+        return getDefaultServerOptions()
+                .serverName("proxyPeerAddress")
+                .proxyPeerAddressEnable(true);
     }
 
     @Test

@@ -2,13 +2,13 @@ package testutils.mock;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionContext;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+@SuppressWarnings("depricated")
 public class MockSession implements HttpSession {
 
-	MockServletContext servletContext = new MockServletContext();
+    MockServletContext servletContext = new MockServletContext();
     Hashtable<String, Object> attrs = new Hashtable<String, Object>();
     private boolean sessionNew;
 
@@ -24,24 +24,24 @@ public class MockSession implements HttpSession {
         return 0;
     }
 
-    public void setServletContext(ServletContext sc) {    
-    	servletContext = (MockServletContext) sc;
-    }
-    
-    public ServletContext getServletContext() {    	
-    	return servletContext;
+    public ServletContext getServletContext() {
+        return servletContext;
     }
 
-    public void setMaxInactiveInterval(int i) {
-
+    public void setServletContext(ServletContext sc) {
+        servletContext = (MockServletContext) sc;
     }
 
     public int getMaxInactiveInterval() {
         return 0;
     }
 
+    public void setMaxInactiveInterval(int i) {
+
+    }
+
     @Deprecated
-    public HttpSessionContext getSessionContext() {
+    public javax.servlet.http.HttpSessionContext getSessionContext() {
         return null;
     }
 

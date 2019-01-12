@@ -2,13 +2,14 @@ package runwar.util;
 
 import org.xnio.Option;
 import org.xnio.OptionMap;
-import runwar.logging.RunwarLogger;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+
+import static runwar.logging.RunwarLogger.LOG;
 
 public class Reflection {
 
@@ -29,8 +30,7 @@ public class Reflection {
         Class<?> searchType = clazz;
         while (!Object.class.equals(searchType) && searchType != null) {
             Method[] methods = (searchType.isInterface() ? searchType.getMethods() : searchType.getDeclaredMethods());
-            for (int i = 0; i < methods.length; i++) {
-                Method method = methods[i];
+            for (Method method : methods) {
                 if (name.equals(method.getName()) && Arrays.equals(paramTypes, method.getParameterTypes())) {
                     return method;
                 }
@@ -49,7 +49,7 @@ public class Reflection {
         throw new IllegalStateException("Should never get here");
     }
 
-    public static void handleReflectionException(Exception ex) {
+    private static void handleReflectionException(Exception ex) {
         if (ex instanceof NoSuchMethodException) {
             throw new IllegalStateException("Method not found: " + ex.getMessage());
         }
@@ -65,7 +65,7 @@ public class Reflection {
         handleUnexpectedException(ex);
     }
 
-    public static void rethrowRuntimeException(Throwable ex) {
+    private static void rethrowRuntimeException(Throwable ex) {
         if (ex instanceof RuntimeException) {
             throw (RuntimeException) ex;
         }
@@ -75,44 +75,42 @@ public class Reflection {
         handleUnexpectedException(ex);
     }
 
-    public static void handleInvocationTargetException(InvocationTargetException ex) {
+    private static void handleInvocationTargetException(InvocationTargetException ex) {
         rethrowRuntimeException(ex.getTargetException());
     }
 
     private static void handleUnexpectedException(Throwable ex) {
-        IllegalStateException isex = new IllegalStateException("Unexpected exception thrown");
-        isex.initCause(ex);
-        throw isex;
+        throw new IllegalStateException("Unexpected exception thrown", ex);
     }
 
-    public static void setOptionMapValue(OptionMap.Builder builder, Class optionsClass, String name, String value){
+    @SuppressWarnings("unchecked")
+    public static void setOptionMapValue(OptionMap.Builder builder, Class optionsClass, String name, String value) {
         Field[] fields = optionsClass.getDeclaredFields();
         Option option;
         boolean foundOption = false;
-        for (Field f : fields) {
+        for (Field f : fields)
             if (Modifier.isStatic(f.getModifiers()) && name.equals(f.getName())) {
                 foundOption = true;
                 try {
                     option = (Option) f.get(null);
                     String typename = f.getGenericType().getTypeName();
                     if (typename.contains("String>")) {
-                        builder.set(option,value);
+                        builder.set(option, value);
                     } else if (typename.contains("Integer>")) {
-                        builder.set(option,Integer.valueOf(value));
+                        builder.set(option, Integer.valueOf(value));
                     } else if (typename.contains("Boolean>")) {
-                        builder.set(option,Boolean.valueOf(value));
+                        builder.set(option, Boolean.valueOf(value));
                     } else if (typename.contains("Double>")) {
-                        builder.set(option,Double.valueOf(value));
+                        builder.set(option, Double.valueOf(value));
                     } else {
                         throw new IllegalArgumentException("Bad type.");
                     }
                 } catch (IllegalAccessException e) {
-                    RunwarLogger.LOG.error(e);
+                    LOG.error(e);
                 }
             }
-        }
-        if(!foundOption){
-            RunwarLogger.LOG.error("No matching " + optionsClass.getName() + " option for:" + name + ':' + value);
+        if (!foundOption) {
+            LOG.error("No matching " + optionsClass.getName() + " option for:" + name + ':' + value);
         }
     }
 

@@ -19,6 +19,7 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
 
@@ -27,8 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith({BasicAuthTest.ServerConfig.class, DefaultServer.class})
-public class BasicAuthTest {
+public class BasicAuthTest extends AbstractServerTest {
 
     private static final HashMap<String, String> users;
     static
@@ -40,16 +40,11 @@ public class BasicAuthTest {
         users.put("charsetUser", "password-ü");
     }
 
-    @ExtendWith({DefaultServer.class})
-    public static class ServerConfig implements BeforeAllCallback {
-        @Override
-        public void beforeAll(ExtensionContext context) throws Exception {
-            DefaultServer.resetServerOptions()
-                    .serverName("basicAuth")
-                    .basicAuth(users)
-                    .basicAuthEnable(true);
-        }
-
+    public ServerOptions getServerOptions() {
+        return getDefaultServerOptions()
+                .serverName("basicAuth")
+                .basicAuth(users)
+                .basicAuthEnable(true);
     }
 
     @Test

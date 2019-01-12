@@ -4,28 +4,19 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith({CookiesSecureTest.ServerConfig.class, DefaultServer.class})
-public class CookiesSecureTest {
+public class CookiesSecureTest extends AbstractServerTest {
 
-    @ExtendWith({DefaultServer.class})
-    public static class ServerConfig implements BeforeAllCallback {
-        @Override
-        public void beforeAll(ExtensionContext context) throws Exception {
-            DefaultServer.resetServerOptions()
-                    .serverName("secureCookies")
-                    .secureCookies(true)
-                    .sslEnable(true);
-        }
+    public ServerOptions getServerOptions() {
+        return getDefaultServerOptions()
+                .serverName("secureCookies")
+                .secureCookies(true)
+                .sslEnable(true);
     }
 
     @Test

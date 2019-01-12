@@ -6,9 +6,7 @@ import net.minidev.json.JSONValue;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
 
@@ -18,20 +16,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static runwar.logging.RunwarLogger.LOG;
 
-@ExtendWith({SSLTest.ServerConfig.class, DefaultServer.class})
-public class SSLTest {
+public class SSLTest extends AbstractServerTest {
 
-    @ExtendWith({DefaultServer.class})
-    public static class ServerConfig implements BeforeAllCallback {
-        @Override
-        public void beforeAll(ExtensionContext context) throws Exception {
-
-            DefaultServer.resetServerOptions()
-                    .serverName("ssltest")
-                    .sslEnable(true)
-                    .sslPort(1553);
-        }
-
+    public ServerOptions getServerOptions() {
+        return getDefaultServerOptions()
+                .serverName("ssltest")
+                .sslEnable(true)
+                .sslPort(1553);
     }
 
     @Test

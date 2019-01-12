@@ -7,9 +7,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
 import testutils.TestHttpClient;
@@ -20,18 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static runwar.logging.RunwarLogger.LOG;
 
-@ExtendWith({HTTP2Test.ServerConfig.class, DefaultServer.class})
-public class HTTP2Test {
+public class HTTP2Test extends AbstractServerTest {
 
-    @ExtendWith({DefaultServer.class})
-    public static class ServerConfig implements BeforeAllCallback {
-        @Override
-        public void beforeAll(ExtensionContext context) throws Exception {
-            DefaultServer.resetServerOptions()
-                    .serverName("http2test")
-                    .http2Enable(true);
-        }
-
+    public ServerOptions getServerOptions() {
+        return getDefaultServerOptions()
+                .serverName("http2test")
+                .http2Enable(true);
     }
 
     @Test

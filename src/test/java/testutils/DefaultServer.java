@@ -1,22 +1,21 @@
 package testutils;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.Headers;
+import io.undertow.util.NetworkUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.*;
-
-import io.undertow.util.NetworkUtils;
 import runwar.Server;
 import runwar.logging.LoggerFactory;
 import runwar.options.ServerOptions;
 import runwar.options.ServerOptionsImpl;
 import runwar.security.SSLUtil;
+import runwar.server.AbstractServerTest;
 
 import javax.net.ssl.SSLContext;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * A class that starts a server before the test suite.
@@ -37,10 +36,25 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
-        serverOptions = getServerOptions();
+        System.out.println("SETTTING SERVER OPTIONS");
+        Object testInstance = context.getTestInstance().get();
+        serverOptions = (ServerOptions) context.getTestInstance().get().getClass().getMethod("getServerOptions")
+                .invoke(context.getTestInstance().get());
+        System.out.println("SET SERVER OPTIONS");
+
+//        serverOptions = getServerOptions();
         LoggerFactory.configure(serverOptions);
         System.out.println("DefaultServer: Running before all:" + serverOptions.serverName());
         server = new Server();
+        try{
+            System.out.println("SETTTING SERVER");
+            testInstance.getClass().getMethod("setServer", Server.class)
+                    .invoke(testInstance, server);
+            System.out.println("SET SERVER");
+        } catch (Exception e){
+            // expected
+        }
+
         System.out.println("DefaultServer: Starting...");
         try {
             server.startServer(serverOptions);
@@ -51,6 +65,7 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
         if(server.getServerState() != Server.ServerState.STARTING && server.getServerState() != Server.ServerState.STARTED){
             Assertions.fail("Did not start server");
         }
+
         System.out.println("DefaultServer: started.");
     }
 
@@ -80,16 +95,7 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
 
     public static synchronized ServerOptionsImpl getServerOptions() {
         if(serverOptions == null){
-            serverOptions = new ServerOptionsImpl();
-            serverOptions.warFile(new File(WARPATH))
-                    .debug(true)
-//                    .logLevel("TRACE")
-                    .background(false)
-                    .httpPort(0)
-                    .stopPort(0)
-                    .sslPort(0)
-                    .http2ProxySSLPort(0)
-                    .trayEnable(false);
+            serverOptions = AbstractServerTest.getDefaultServerOptions();
         }
         return (ServerOptionsImpl) serverOptions.debug(true).background(false);
     }
@@ -172,6 +178,7 @@ public class DefaultServer implements BeforeEachCallback, AfterEachCallback, Bef
         }
     }
 
+    @Deprecated
     public static void setupProxyHandlerForSSL(ProxyHandler proxyHandler) {
         proxyHandler.addRequestHeader(Headers.SSL_CLIENT_CERT, "%{SSL_CLIENT_CERT}", DefaultServer.class.getClassLoader());
         proxyHandler.addRequestHeader(Headers.SSL_CIPHER, "%{SSL_CIPHER}", DefaultServer.class.getClassLoader());

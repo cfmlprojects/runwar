@@ -6,10 +6,7 @@ import org.tuckey.web.filters.urlrewrite.Conf;
 import org.tuckey.web.filters.urlrewrite.NormalRewrittenUrl;
 import org.tuckey.web.filters.urlrewrite.UrlRewriter;
 import org.tuckey.web.filters.urlrewrite.utils.Log;
-import testutils.mock.MockFilterChain;
-import testutils.mock.MockRequest;
-import testutils.mock.MockResponse;
-import testutils.mock.MockServletContext;
+import testutils.mock.*;
 
 import javax.servlet.ServletException;
 
@@ -24,14 +21,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class UrlRewriteFilterTest {
 
-    MockResponse response;
+    MockHTTP.MockHttpResponse response;
     MockRequest request;
     testutils.mock.MockServletContext servletContext;
     MockFilterChain chain;
 
     UrlRewriteFilterTest() {
         Log.setLevel("DEBUG");
-        response = new MockResponse();
+        response = new MockHTTP.MockHttpResponse();
         request = new MockRequest("/");
         servletContext = new MockServletContext();
         chain = new MockFilterChain();

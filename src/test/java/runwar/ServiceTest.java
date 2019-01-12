@@ -30,6 +30,14 @@ class ServiceTest {
     void generateServiceScripts() throws IOException {
         ServerOptionsImpl serverOptions = DefaultServer.getServerOptions();
         serverOptions.contentDirs("../pub,../src");
-        Service.generateServiceScripts(serverOptions,workDir);
+        new Service(serverOptions).generateServiceScripts(workDir);
+    }
+
+    @Test
+    void getServiceScriptCommands() throws IOException {
+        ServerOptionsImpl serverOptions = DefaultServer.getServerOptions();
+        serverOptions.contentDirs("../pub,../src");
+        Service service =  new Service(serverOptions);
+        service.serviceScriptCommands(service.serviceControlScriptPath());
     }
 }
