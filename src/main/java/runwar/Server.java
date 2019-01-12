@@ -395,9 +395,21 @@ public class Server {
 
         LOG.debug("Transfer Min Size: " + serverOptions.transferMinSize());
 
+        // configure NIO options and worker
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
-
-        worker = xnio.createWorker(serverOptions.xnioOptions().getMap());
+        OptionMap.Builder serverXnioOptions = serverOptions.xnioOptions();
+        if (serverOptions.ioThreads() != 0) {
+            LOG.info("IO Threads: " + serverOptions.ioThreads());
+            serverBuilder.setIoThreads(serverOptions.ioThreads()); // posterity: ignored when managing worker
+            serverXnioOptions.set(Options.WORKER_IO_THREADS, serverOptions.ioThreads());
+        }
+        if (serverOptions.workerThreads() != 0) {
+            LOG.info("Worker threads: " + serverOptions.workerThreads());
+            serverBuilder.setWorkerThreads(serverOptions.workerThreads()); // posterity: ignored when managing worker
+            serverXnioOptions.set(Options.WORKER_TASK_CORE_THREADS, serverOptions.workerThreads())
+                    .set(Options.WORKER_TASK_MAX_THREADS, serverOptions.workerThreads());
+        }
+        worker = xnio.createWorker(serverXnioOptions.getMap());
 
         // separate log worker to prevent logging-caused bottleneck
         logWorker = xnio.createWorker(OptionMap.builder()
@@ -487,14 +499,6 @@ public class Server {
         if(serverOptions.bufferSize() != 0) {
             LOG.info("Buffer Size: " + serverOptions.bufferSize());
             serverBuilder.setBufferSize(serverOptions.bufferSize());
-        }
-        if(serverOptions.ioThreads() != 0) {
-            LOG.info("IO Threads: " + serverOptions.ioThreads());
-            serverBuilder.setIoThreads(serverOptions.ioThreads());
-        }
-        if(serverOptions.workerThreads() != 0) {
-            LOG.info("Worker threads: " + serverOptions.workerThreads());
-            serverBuilder.setWorkerThreads(serverOptions.workerThreads());
         }
         LOG.info("Direct Buffers: " + serverOptions.directBuffers());
         serverBuilder.setDirectBuffers(serverOptions.directBuffers());
