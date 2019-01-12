@@ -13,6 +13,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.protocol.http2.Http2ServerConnection;
+import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.LocaleUtils;
@@ -26,6 +27,8 @@ public class RequestDumper implements HttpHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         final SecurityContext sc = exchange.getSecurityContext();
         final JSONObject jsonObject = new JSONObject();
+        final ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+        final String realPath = servletRequestContext == null ? "" : servletRequestContext.getCurrentServletContext().getRealPath(exchange.getRequestURI());
 
         jsonObject.put("URI",exchange.getRequestURI());
         jsonObject.put("characterEncoding",exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING));
@@ -34,6 +37,7 @@ public class RequestDumper implements HttpHandler {
         ServerConnection connection = exchange.getConnection();
         jsonObject.put("isHTTP2",(connection instanceof Http2ServerConnection));
         jsonObject.put("isHTTPS",(connection.getSslSessionInfo() != null) );
+        jsonObject.put("realPath",realPath);
         if(connection.getSslSessionInfo() != null){
             final StringBuilder sb = new StringBuilder();
             sb.append("Ciphers: " + connection.getSslSessionInfo().getCipherSuite());
