@@ -1,46 +1,8 @@
 package runwar.security;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.AlgorithmParameters;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.Security;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
-
-import javax.crypto.Cipher;
-import javax.crypto.EncryptedPrivateKeyInfo;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-
+import io.undertow.protocols.ssl.SNIContextMatcher;
+import io.undertow.protocols.ssl.SNISSLContext;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
@@ -53,8 +15,25 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.xnio.IoUtils;
-
 import runwar.logging.RunwarLogger;
+
+import javax.crypto.Cipher;
+import javax.crypto.EncryptedPrivateKeyInfo;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import javax.net.ssl.*;
+import java.io.*;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
 
 public class SSLUtil
 {
@@ -63,22 +42,24 @@ public class SSLUtil
     private static final String CLIENT_KEY_STORE = "runwar/client.keystore";
     private static final String CLIENT_TRUST_STORE = "runwar/client.truststore";
     public static final char[] DEFAULT_STORE_PASSWORD;
-    
+    public static final String[] DEFAULT_HOST_NAMES;
+
     static {
         DEFAULT_STORE_PASSWORD = "password".toCharArray();
+        DEFAULT_HOST_NAMES = new String[]{"localhost"};
     }
     
     public static SSLContext createSSLContext() throws IOException {
         RunwarLogger.SECURITY_LOGGER.debug("Creating SSL context from: runwar/runwar.keystore trust store: runwar/runwar.truststore");
-        return createSSLContext(getServerKeyStore(), getTrustStore(), DEFAULT_STORE_PASSWORD.clone(), null);
+        return createSSLContext(getServerKeyStore(), getTrustStore(), DEFAULT_STORE_PASSWORD.clone(), null, false, DEFAULT_HOST_NAMES);
     }
 
     public static SSLContext createClientSSLContext() throws IOException {
         RunwarLogger.SECURITY_LOGGER.debug("Creating Client SSL context from: runwar/client.keystore trust store: runwar/client.truststore");
-        return createSSLContext(loadKeyStore(CLIENT_KEY_STORE), loadKeyStore(CLIENT_TRUST_STORE), DEFAULT_STORE_PASSWORD.clone(), null);
+        return createSSLContext(loadKeyStore(CLIENT_KEY_STORE), loadKeyStore(CLIENT_TRUST_STORE), DEFAULT_STORE_PASSWORD.clone(), null, false, null);
     }
 
-    public static SSLContext createSSLContext(final File certfile, final File keyFile, char[] passphrase, final String[] addCertificatePaths) throws IOException {
+    public static SSLContext createSSLContext(final File certfile, final File keyFile, char[] passphrase, final String[] addCertificatePaths, final String[] hostNames) throws IOException {
         RunwarLogger.SECURITY_LOGGER.debug("Creating SSL context from cert: [" + certfile + "]  key: [" + keyFile + "]");
         if (passphrase == null || passphrase.length == 0) {
             RunwarLogger.SECURITY_LOGGER.debug("Using default store passphrase of '" + String.copyValueOf(DEFAULT_STORE_PASSWORD) + "'");
@@ -86,16 +67,12 @@ public class SSLUtil
         }
         SSLContext sslContext;
         try {
-            final KeyStore keystoreFromDERCertificate = keystoreFromDERCertificate(certfile, keyFile, passphrase);
-            if (addCertificatePaths != null && addCertificatePaths.length > 0) {
-                for (int length = addCertificatePaths.length, i = 0; i < length; ++i) {
-                    addCertificate(keystoreFromDERCertificate, new File(addCertificatePaths[i]), "addedKey"+i);
-                }
-            }
+            final KeyStore derKeystore = keystoreFromDERCertificate(certfile, keyFile, passphrase);
+            addCertificates(addCertificatePaths, derKeystore);
             final KeyStore keyStore = KeyStore.getInstance("JKS", "SUN");
             keyStore.load(null, passphrase);
-            keyStore.setEntry("someAlias", new KeyStore.TrustedCertificateEntry(keystoreFromDERCertificate.getCertificate("serverkey")), null);
-            sslContext = createSSLContext(keystoreFromDERCertificate, keyStore, passphrase, addCertificatePaths);
+            keyStore.setEntry("someAlias", new KeyStore.TrustedCertificateEntry(derKeystore.getCertificate("serverkey")), null);
+            sslContext = createSSLContext(derKeystore, keyStore, passphrase, addCertificatePaths, false, hostNames);
         }
         catch (Exception ex) {
             throw new IOException("Could not load certificate", ex);
@@ -104,7 +81,7 @@ public class SSLUtil
     }
     
     
-    private static SSLContext createSSLContext(final KeyStore keyStore, final KeyStore trustStore, final char[] passphrase, final String[] addCertificatePaths) throws IOException {
+    private static SSLContext createSSLContext(final KeyStore keyStore, final KeyStore trustStore, final char[] passphrase, final String[] addCertificatePaths, boolean openssl, String[] hostNames) throws IOException {
         KeyManager[] keyManagers;
         try {
             final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -120,11 +97,7 @@ public class SSLUtil
         catch (KeyStoreException ex3) {
             throw new IOException("Unable to initialise KeyManager[]", ex3);
         }
-        if (addCertificatePaths != null && addCertificatePaths.length > 0) {
-            for (int length = addCertificatePaths.length, i = 0; i < length; ++i) {
-                addCertificate(keyStore, new File(addCertificatePaths[i]),"addedKey" + i);
-            }
-        }
+        addCertificates(addCertificatePaths, keyStore);
         TrustManager[] trustManagers;
         try {
             final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -139,7 +112,12 @@ public class SSLUtil
         }
         SSLContext sslContext;
         try {
-            sslContext = SSLContext.getInstance("TLS");
+            if (openssl && hostNames == null) {
+                sslContext = SSLContext.getInstance("openssl.TLS");
+            } else {
+                sslContext = SSLContext.getInstance("TLS");
+//                sslContext = SSLContext.getInstance("TLSv1.2");
+            }
             sslContext.init(keyManagers, trustManagers, null);
         }
         catch (NoSuchAlgorithmException ex6) {
@@ -148,8 +126,20 @@ public class SSLUtil
         catch (KeyManagementException ex7) {
             throw new IOException("Unable to create and initialise the SSLContext", ex7);
         }
-        Arrays.fill(passphrase, '*');
-        return sslContext;
+        finally {
+            Arrays.fill(passphrase, '*');
+        }
+        if (hostNames != null) {
+            SNIContextMatcher.Builder sniMatchBuilder = new SNIContextMatcher.Builder().setDefaultContext(sslContext);
+            for(String hostName : hostNames){
+                sniMatchBuilder.addMatch(hostName,sslContext);
+            }
+            RunwarLogger.SECURITY_LOGGER.debug("Creating SNI SSL context for hosts: " + Arrays.toString(hostNames));
+            return new SNISSLContext(sniMatchBuilder.build());
+        } else {
+            RunwarLogger.SECURITY_LOGGER.debug("Creating NON-SNI SSL context");
+            return sslContext;
+        }
     }
 
     public static KeyStore getTrustStore() throws IOException {
@@ -288,7 +278,14 @@ public class SSLUtil
         }
     }
 
-    
+    private static void addCertificates(String[] addCertificatePaths, KeyStore keyStore) {
+        if (addCertificatePaths != null && addCertificatePaths.length > 0) {
+            for (int length = addCertificatePaths.length, i = 0; i < length; ++i) {
+                addCertificate(keyStore, new File(addCertificatePaths[i]),"addedKey" + i);
+            }
+        }
+    }
+
     private static void addCertificate(final KeyStore keyStore, final File file, String alias) {
         try {
             final Certificate certificate = CertificateFactory.getInstance("X.509").generateCertificate(fullStream(file));
