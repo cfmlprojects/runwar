@@ -319,14 +319,21 @@ public class LaunchUtil {
         displayMessage("RunWWAR",type, text);
     }
     
+    public static void displayMessage(String type, String text, int hideAfter) {
+        displayMessage("RunWWAR",type, text, hideAfter);
+    }
+
     public static void displayMessage(String processName, String type, String text) {
+        displayMessage(processName, type, text, 5000);
+    }
+    public static void displayMessage(String processName, String type, String text, int hideAfter) {
         try{
             if(type.toLowerCase().startsWith("warn")) {
-                displayMessage(processName, text, MessageType.WARNING);
+                displayMessage(processName, text, MessageType.WARNING, hideAfter);
             } else if (type.toLowerCase().startsWith("error")) {
-                displayMessage(processName, text, MessageType.ERROR);
+                displayMessage(processName, text, MessageType.ERROR, hideAfter);
             } else {
-                displayMessage(processName, text, MessageType.INFO);
+                displayMessage(processName, text, MessageType.INFO, hideAfter);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -342,12 +349,15 @@ public class LaunchUtil {
     }
     
     public static void displayMessage(String title, String text, MessageType type) {
+        displayMessage(title,text,type,5000);
+    }
+
+    public static void displayMessage(String title, String text, MessageType type, int hideAfter) {
 //        boolean trayEnable = Server.getServerOptions() != null ? Server.getServerOptions().trayEnable() : false;
         if(GraphicsEnvironment.isHeadless()) {
             printMessage(title, text, type);
             return;
         }
-        int hideAfter = 5000;
         try {
             Pos position = OS.isMacOsX() ? Pos.TOP_RIGHT : Pos.BOTTOM_RIGHT;
             final Notify notify = Notify.create()
