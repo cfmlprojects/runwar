@@ -1,7 +1,13 @@
 package runwar.util;
 
+import org.xnio.Option;
+import org.xnio.OptionMap;
+import runwar.logging.RunwarLogger;
+
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 public class Reflection {
@@ -78,5 +84,37 @@ public class Reflection {
         isex.initCause(ex);
         throw isex;
     }
+
+    public static void setOptionMapValue(OptionMap.Builder builder, Class optionsClass, String name, String value){
+        Field[] fields = optionsClass.getDeclaredFields();
+        Option option;
+        boolean foundOption = false;
+        for (Field f : fields) {
+            if (Modifier.isStatic(f.getModifiers()) && name.equals(f.getName())) {
+                foundOption = true;
+                try {
+                    option = (Option) f.get(null);
+                    String typename = f.getGenericType().getTypeName();
+                    if (typename.contains("String>")) {
+                        builder.set(option,value);
+                    } else if (typename.contains("Integer>")) {
+                        builder.set(option,Integer.valueOf(value));
+                    } else if (typename.contains("Boolean>")) {
+                        builder.set(option,Boolean.valueOf(value));
+                    } else if (typename.contains("Double>")) {
+                        builder.set(option,Double.valueOf(value));
+                    } else {
+                        throw new IllegalArgumentException("Bad type.");
+                    }
+                } catch (IllegalAccessException e) {
+                    RunwarLogger.LOG.error(e);
+                }
+            }
+        }
+        if(!foundOption){
+            RunwarLogger.LOG.error("No matching " + optionsClass.getName() + " option for:" + name + ':' + value);
+        }
+    }
+
 
 }

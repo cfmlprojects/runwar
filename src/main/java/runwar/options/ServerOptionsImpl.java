@@ -1,7 +1,19 @@
 package runwar.options;
 
+import io.undertow.UndertowOptions;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import org.xnio.Option;
+import org.xnio.OptionMap;
+import org.xnio.Options;
+import runwar.Server;
+import runwar.Server.Mode;
+import runwar.logging.RunwarLogger;
+
 import java.io.File;
 import java.io.FileWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -9,10 +21,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
-import runwar.Server;
-import runwar.Server.Mode;
+import static runwar.util.Reflection.setOptionMapValue;
 
 public class ServerOptionsImpl implements ServerOptions {
     private String serverName = null, processName = "RunWAR", logLevel = "INFO";
@@ -23,7 +32,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server", logRequestBaseFileName="requests", logAccessBaseFileName="access", logSuffix="txt", libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
-    private File warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null;
+    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null;
     private String iconImage = null;
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
@@ -66,6 +75,16 @@ public class ServerOptionsImpl implements ServerOptions {
     private static String logPattern = "[%-5p] %c: %m%n";
     private final Map<String, String> aliases = new HashMap<>();
     private Set<String> contentDirectories = new HashSet<>();
+    private OptionMap.Builder serverXnioOptions = OptionMap.builder()
+            .set(Options.WORKER_IO_THREADS, 8)
+            .set(Options.CONNECTION_HIGH_WATER, 1000000)
+            .set(Options.CONNECTION_LOW_WATER, 1000000)
+            .set(Options.WORKER_TASK_CORE_THREADS, 30)
+            .set(Options.WORKER_TASK_MAX_THREADS, 30)
+            .set(Options.TCP_NODELAY, true)
+            .set(Options.CORK, true);
+
+    private OptionMap.Builder undertowOptions = OptionMap.builder();
 
     static {
         userPasswordList = new HashMap<>();
@@ -915,6 +934,23 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
     /** 
+     * @see runwar.options.ServerOptions#workingDir()
+     */
+    @Override
+    public File workingDir() {
+        return workingDir != null ? workingDir: Paths.get(".").toFile().getAbsoluteFile();
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#workingDir(java.io.File)
+     */
+    @Override
+    public ServerOptions workingDir(File workingDir) {
+        this.workingDir = workingDir;
+        return this;
+    }
+
+    /**
      * @see runwar.options.ServerOptions#warFile()
      */
     @Override
@@ -922,7 +958,7 @@ public class ServerOptionsImpl implements ServerOptions {
         return warFile;
     }
 
-    /** 
+    /**
      * @see runwar.options.ServerOptions#warFile(java.io.File)
      */
     @Override
@@ -931,7 +967,7 @@ public class ServerOptionsImpl implements ServerOptions {
         return this;
     }
 
-    /** 
+    /**
      * @see runwar.options.ServerOptions#webInfDir()
      */
     @Override
@@ -1205,7 +1241,7 @@ public class ServerOptionsImpl implements ServerOptions {
      */
     @Override
     public File sslCertificate() {
-        if(sslCertificate != null && !sslCertificate.exists()){
+        if(sslCertificate != null && !sslCertificate.exists() && !sslSelfSign){
             throw new IllegalArgumentException("Certificate file does not exist: " + sslCertificate.getAbsolutePath());
         }
         return this.sslCertificate;
@@ -1960,6 +1996,67 @@ public class ServerOptionsImpl implements ServerOptions {
     public ServerOptions service(boolean enable) {
         service = enable;
         return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions(java.lang.String)
+     */
+    @Override
+    public ServerOptions xnioOptions(String options) {
+        String[] optionList = options.split(",");
+        for (int x = 0; x < optionList.length; x++) {
+            String[] splitted = optionList[x].split("=");
+            setOptionMapValue(serverXnioOptions, Options.class, splitted[0].trim(), splitted[1].trim());
+        }
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions(OptionMap.Builder)
+     */
+    @Override
+    public ServerOptions xnioOptions(OptionMap.Builder options) {
+        this.serverXnioOptions = options;
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions()
+     */
+    @Override
+    public OptionMap.Builder xnioOptions() {
+        return this.serverXnioOptions;
+    }
+
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions(java.lang.String)
+     */
+    @Override
+    public ServerOptions undertowOptions(String options) {
+        String[] optionList = options.split(",");
+        for (int x = 0; x < optionList.length; x++) {
+            String[] splitted = optionList[x].split("=");
+            setOptionMapValue(undertowOptions, UndertowOptions.class, splitted[0].trim(), splitted[1].trim());
+        }
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#undertowOptions(OptionMap.Builder)
+     */
+    @Override
+    public ServerOptions undertowOptions(OptionMap.Builder options) {
+        this.undertowOptions = options;
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions()
+     */
+    @Override
+    public OptionMap.Builder undertowOptions() {
+        return this.undertowOptions;
     }
 
 }

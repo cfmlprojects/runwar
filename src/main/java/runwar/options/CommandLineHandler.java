@@ -551,6 +551,18 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.SERVICE) );
 
+        options.addOption( OptionBuilder
+                .withLongOpt( "xnio-options" )
+                .withDescription( "List of XNIO options" )
+                .hasArg().withArgName("WORKER_IO_THREADS=16,TCP_NODELAY=false")
+                .create(Keys.XNIOOPTIONS) );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "undertow-options" )
+                .withDescription( "List of Undertow options" )
+                .hasArg().withArgName("MAX_PARAMETERS=12,MAX_HEADERS=200")
+                .create(Keys.UNDERTOWOPTIONS) );
+
         options.addOption( new Option( "h", Keys.HELP, false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
         
@@ -774,10 +786,14 @@ public class CommandLineHandler {
                 }
                 serverOptions.sslEnable(true).sslPort(((Number)line.getParsedOptionValue(Keys.SSLPORT)).intValue());
             }
+            if (hasOptionValue(line, Keys.SSLSELFSIGN)) {
+                serverOptions.sslSelfSign(Boolean.valueOf(line.getOptionValue(Keys.SSLSELFSIGN)));
+            }
             if (hasOptionValue(line, Keys.SSLCERT)) {
-                serverOptions.sslCertificate(getFile(line.getOptionValue(Keys.SSLCERT)));
+                File certFile = serverOptions.sslSelfSign() ? new File(line.getOptionValue(Keys.SSLCERT)) : getFile(line.getOptionValue(Keys.SSLCERT)) ;
+                serverOptions.sslCertificate(certFile);
                 if (!hasOptionValue(line, Keys.SSLKEY) || !hasOptionValue(line, Keys.SSLKEY)) {
-                    throw new RuntimeException("Using a SSL certificate requires -sslkey /path/to/file and -sslkeypass pass**** arguments!");  	
+                    throw new RuntimeException("Using a SSL certificate requires -sslkey /path/to/file and -sslkeypass pass**** arguments!");
                 }
                 if(!hasOptionValue(line, Keys.SSLENABLE)) {
                     CONF_LOG.trace("SSL not enable and cert specified; enabling SSL");
@@ -786,7 +802,8 @@ public class CommandLineHandler {
 
             }
             if (hasOptionValue(line, Keys.SSLKEY)) {
-                serverOptions.sslKey(getFile(line.getOptionValue(Keys.SSLKEY)));
+                File keyFile = serverOptions.sslSelfSign() ? new File(line.getOptionValue(Keys.SSLKEY)) : getFile(line.getOptionValue(Keys.SSLKEY)) ;
+                serverOptions.sslKey(keyFile);
                 if(!hasOptionValue(line, Keys.SSLENABLE)) {
                     CONF_LOG.trace("https not enable and key specified; enabling SSL");
                     serverOptions.sslEnable(true);
@@ -1013,10 +1030,6 @@ public class CommandLineHandler {
                 serverOptions.sslEccDisable(Boolean.valueOf(line.getOptionValue(Keys.SSLECCDISABLE)));
             }
 
-            if (hasOptionValue(line, Keys.SSLSELFSIGN)) {
-                serverOptions.sslSelfSign(Boolean.valueOf(line.getOptionValue(Keys.SSLSELFSIGN)));
-            }
-
             if (hasOptionValue(line, Keys.WEBINF)) {
                 String webInfPath = line.getOptionValue(Keys.WEBINF);
                 File webinfDir = new File(webInfPath);
@@ -1029,6 +1042,14 @@ public class CommandLineHandler {
 
             if (hasOptionValue(line, Keys.SERVICE)) {
                 serverOptions.service(Boolean.valueOf(line.getOptionValue(Keys.SERVICE)));
+            }
+
+            if (hasOptionValue(line, Keys.XNIOOPTIONS)) {
+                serverOptions.xnioOptions(line.getOptionValue(Keys.XNIOOPTIONS));
+            }
+
+            if (hasOptionValue(line, Keys.UNDERTOWOPTIONS)) {
+                serverOptions.xnioOptions(line.getOptionValue(Keys.UNDERTOWOPTIONS));
             }
 
             if(serverOptions.logLevel().equals(Keys.TRACE)) {

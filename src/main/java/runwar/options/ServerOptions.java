@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.minidev.json.JSONArray;
+import org.xnio.OptionMap;
 import runwar.Server.Mode;
 
 public interface ServerOptions {
@@ -16,6 +17,7 @@ public interface ServerOptions {
     public static final class Keys {
         final static String CONFIG = "config";
         final static String DIRS = "dirs";
+        final static String WORKINGDIR = "workingdir";
         final static String CONTENTDIRS = "contentdirs";
         final static String WAR = "war";
         final static String WEBINF = "webinf";
@@ -105,6 +107,8 @@ public interface ServerOptions {
         final static String SSLECCDISABLE = "SSLECCDISABLE";
         final static String SSLSELFSIGN = "sslselfsign";
         final static String SERVICE = "service";
+        final static String UNDERTOWOPTIONS = "undertowOptions";
+        final static String XNIOOPTIONS = "xnioOptions";
     }
 
     ServerOptions commandLineArgs(String[] args);
@@ -276,6 +280,10 @@ public interface ServerOptions {
     boolean debug();
 
     ServerOptions debug(boolean debug);
+
+    File workingDir();
+
+    ServerOptions workingDir(File workingDir);
 
     File warFile();
 
@@ -504,6 +512,19 @@ public interface ServerOptions {
     boolean ignoreWebXmlRestMappings();
 
     boolean service();
+
     ServerOptions service(boolean enable);
+
+    OptionMap.Builder xnioOptions();
+
+    ServerOptions xnioOptions(String options);
+
+    ServerOptions xnioOptions(OptionMap.Builder options);
+
+    OptionMap.Builder undertowOptions();
+
+    ServerOptions undertowOptions(String options);
+
+    ServerOptions undertowOptions(OptionMap.Builder options);
 
 }
