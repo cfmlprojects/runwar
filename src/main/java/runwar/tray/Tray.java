@@ -5,36 +5,42 @@ import static runwar.LaunchUtil.getResourceAsString;
 import static runwar.LaunchUtil.openURL;
 import static runwar.LaunchUtil.readFile;
 
-import java.awt.GraphicsEnvironment;
-import java.awt.Image;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
 
+import daevil.OSType;
+import dorkbox.notify.Notify;
+import dorkbox.notify.Pos;
 import dorkbox.systemTray.Checkbox;
 import dorkbox.systemTray.Menu;
 import dorkbox.systemTray.MenuItem;
 import dorkbox.systemTray.Separator;
 import dorkbox.systemTray.SystemTray;
+import dorkbox.util.ActionHandler;
+import dorkbox.util.process.ShellProcessBuilder;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import runwar.LaunchUtil;
 import runwar.Server;
+import runwar.Service;
 import runwar.Start;
+import runwar.gui.JsonForm;
+import runwar.gui.SubmitActionlistioner;
 import runwar.logging.RunwarLogger;
 import runwar.options.ServerOptions;
+import runwar.options.ServerOptionsImpl;
 
 public class Tray {
 
@@ -94,10 +100,17 @@ public class Tray {
         variableMap = new HashMap<String,String>();
         variableMap.put("defaultTitle", statusText);
         variableMap.put("webroot", warpath);
+        variableMap.put("logDir", warpath);
+        variableMap.put("app.logDir", warpath);
+        variableMap.put("web.webroot", warpath);
         variableMap.put("runwar.port", Integer.toString(portNumber));
+        variableMap.put("web.http.port", Integer.toString(portNumber));
+        variableMap.put("web.ajp.port", Integer.toString(portNumber));
         variableMap.put("runwar.processName", processName);
+        variableMap.put("processName", processName);
         variableMap.put("runwar.PID", PID);
         variableMap.put("runwar.host", host);
+        variableMap.put("web.host", host);
         variableMap.put("runwar.stopsocket", Integer.toString(stopSocket));
 
         String trayConfigJSON;
@@ -150,30 +163,45 @@ public class Tray {
                 menu.add(new Separator());
             }
             else if(itemInfo.get("checkbox") != null) {
-                Checkbox checkbox = new Checkbox(label, null);
+                Checkbox checkbox = new Checkbox(label, new ToggleOnBootAction(server.getServerOptions()));
                 checkbox.setShortcut(label.charAt(0));
                 checkbox.setEnabled(!isDisabled);
                 menu.add(checkbox);
             }
             else if(itemInfo.get("action") != null) {
                 String action = getString(itemInfo, "action", "");
-                if (action.toLowerCase().equals("stopserver")) {
+                if (action.equalsIgnoreCase("stopserver")) {
                     menuItem = new MenuItem(label, is, new ExitAction(server));
                     menuItem.setShortcut('s');
-                } else if (action.toLowerCase().equals("restartserver")) {
+                } else if (action.equalsIgnoreCase("restartserver")) {
                     menuItem = new MenuItem(label, is, new RestartAction(server));
                     menuItem.setShortcut('r');
-                } else if (action.toLowerCase().equals("getversion")) {
+                } else if (action.equalsIgnoreCase("getversion")) {
                     menuItem = new MenuItem("Version: " + Server.getVersion(), is, new GetVersionAction());
                     menuItem.setShortcut('v');
-                } else if (action.toLowerCase().equals("openbrowser")) {
+                } else if (action.equalsIgnoreCase("openbrowser")) {
                     String url = itemInfo.get("url").toString();
                     menuItem = new MenuItem(label, is, new OpenBrowserAction(url));
                     menuItem.setShortcut('o');
-                } else if (action.toLowerCase().equals("openfilesystem")) {
+                } else if (action.equalsIgnoreCase("openfilesystem")) {
                     File path = new File(getString(itemInfo, "path", server.getServerOptions().warUriString()));
                     menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
+                } else if (action.equalsIgnoreCase("serverOptionsJson")) {
+                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
+                    menuItem.setShortcut('d');
+                } else if (action.equalsIgnoreCase("openTerminal")) {
+                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
+                    menuItem.setShortcut('d');
+                } else if (action.equalsIgnoreCase("serverOptionsSave")) {
+                    menuItem = new MenuItem(label, is, new ServerOptionsSaveAction(server.getServerOptions()));
+                    menuItem.setShortcut('d');
+                } else if (action.equalsIgnoreCase("run")) {
+                    String command = getString(itemInfo, "command", "");
+                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
+                    String output = getString(itemInfo, "output", "dialog");
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output));
+                    menuItem.setShortcut('c');
                 } else {
                     RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                 }
@@ -410,6 +438,144 @@ public class Tray {
         return null;
     }
 
+    private static void showDialog(String content){
+        final JTextArea jta = new JTextArea(content);
+        jta.setEditable(false);
+        final JScrollPane jsp = new JScrollPane(jta){
+            @Override
+            public Dimension getPreferredSize() {
+                return new Dimension(580, 420);
+            }
+        };
+        JOptionPane.showMessageDialog( null, jsp, "Output", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private static class RunShellCommandAction implements ActionListener {
+        private String command;
+        private String executable;
+        private String workingDirectory;
+        private String output;
+
+        RunShellCommandAction(String command, String workingDirectory, String output) {
+            this.command = command;
+            this.workingDirectory= workingDirectory;
+            this.output= output.toLowerCase();
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            ByteArrayOutputStream bs = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(bs);
+            ShellProcessBuilder shellProcessBuilder = new ShellProcessBuilder(ps);
+            shellProcessBuilder.addArgument(command);
+            if(executable != "")
+                shellProcessBuilder.setExecutable(executable);
+            if(workingDirectory != "")
+                shellProcessBuilder.setWorkingDirectory(workingDirectory);
+
+            shellProcessBuilder.start();
+
+            String content = bs.toString();
+
+            if(!output.equals("none")){
+                Notify.create()
+                        .title("Run Output")
+                        .text("Running " + shellProcessBuilder.getCommand())
+                        .position(Pos.TOP_RIGHT)
+                        // .setScreen(0)
+                        .darkStyle()
+                        //.shake(1300, 10)
+                        // .hideCloseButton()
+                        .onAction(new ActionHandler<Notify>() {
+                            @Override
+                            public void handle(final Notify arg0) {
+                                showDialog(content);
+                            }
+                        }).showConfirm();
+
+                if(!output.equals("dialog")){
+                    showDialog(content);
+                }
+
+            }
+        }
+    }
+
+    private static class ServerOptionsJsonAction implements ActionListener {
+        ServerOptionsImpl serverOptions;
+
+        ServerOptionsJsonAction(ServerOptions serverOptions) {
+            this.serverOptions = (ServerOptionsImpl) serverOptions;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            showDialog(serverOptions.toJson());
+        }
+    }
+
+    private static class ToggleOnBootAction implements ActionListener {
+        ServerOptionsImpl serverOptions;
+
+        ToggleOnBootAction(ServerOptions serverOptions) {
+            this.serverOptions = (ServerOptionsImpl) serverOptions;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Service service = new Service(serverOptions);
+            HashMap<String, String> values = new HashMap<>();
+            service.commands().forEach(command ->
+                values.put(command.name, command.osCommand(OSType.host()))
+            );
+            SubmitActionlistioner onSubmit = new SubmitActionlistioner() {
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println(getForm().getFieldValue("start"));
+                    System.out.println(getForm().getFieldValue("startForeground"));
+                    System.out.println(getForm().getFieldValue("stop"));
+                    try {
+                        service.generateServiceScripts();
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
+                }
+            };
+            JsonForm.renderFormJson("runwar/form/service.form.json", values, variableMap, onSubmit);
+        }
+    }
+
+    private static class ServerOptionsSaveAction implements ActionListener {
+        ServerOptionsImpl serverOptions;
+
+        ServerOptionsSaveAction(ServerOptions serverOptions) {
+            this.serverOptions = (ServerOptionsImpl) serverOptions;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            File path = new File(serverOptions.workingDir(),"server.json");
+            final JFileChooser fc = new JFileChooser(path);
+            JPanel jPanel = new JPanel(new BorderLayout());
+            fc.setDialogTitle("Save current options to server.json");
+            fc.setName("server.json");
+            fc.setSelectedFile(path);
+            fc.setAcceptAllFileFilterUsed(true);
+            fc.setFileFilter(new FileFilter() {
+                @Override
+                public boolean accept(File file) {
+                    return file.getName().toLowerCase().endsWith(".json") || file.getName().toLowerCase().endsWith(".txt");
+                }
+
+                @Override
+                public String getDescription() {
+                    return "JSON file";
+                }
+            });
+            fc.showSaveDialog(jPanel);
+
+            //showDialog(serverOptions.toJson());
+        }
+    }
 
     private static class OpenBrowserAction implements ActionListener {
         private String url;
@@ -440,10 +606,12 @@ public class Tray {
                 server.stopServer();
                 String message = "Server shut down " + (server.serverWentDown() ? "" : "un") + "successfully, shutting down tray";
                 RunwarLogger.LOG.debug( message );
-                try {
-                    systemTray.shutdown();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                if(systemTray != null){
+                    try {
+                        systemTray.shutdown();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
                 System.exit(0);
             } catch (Exception e1) {
@@ -503,7 +671,7 @@ public class Tray {
             }
         }
     }
-    
+
     private static class BrowseFilesystemAction implements ActionListener {
         private String path;
 
