@@ -1,6 +1,6 @@
 buildscript {
     repositories { maven { url "https://plugins.gradle.org/m2/" } }
-    dependencies { classpath "com.github.jengelman.gradle.plugins:shadow:2.0.4" }
+    dependencies { classpath "com.github.jengelman.gradle.plugins:shadow:4.0.2" }
 }
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
@@ -11,10 +11,10 @@ configurations {
 
 ext {
 //    undertowVersion = '1.4.24.Final'
-    undertowVersion = '2.0.12.Final'
+    undertowVersion = '2.0.16.Final'
     urlRewriteVersion = '5.0.2'
     proguardVersion = '6.0.2'
-    goomphVersion = '3.13.0'
+    goomphVersion = '3.17.1'
     bndVersion = '1.5.0'
     spotlessVersion = '3.5.1'
 //    systemTrayVersion = '3.14'
@@ -88,6 +88,7 @@ dependencies {
     compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
 
     // configuration
+//    compile group: 'net.minidev', name: 'json-smart', version: '2.3'
     compile group: 'net.minidev', name: 'json-smart-mini', version: '1.0.8'
     compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '5.0-beta-1'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
@@ -118,6 +119,19 @@ dependencies {
     // ansi colors for logging system output
     compile("com.jcabi:jcabi-log:0.18") { transitive = false }
 
+    if( org.gradle.util.VersionNumber.parse( System.getProperty( 'java.version' ) ) > org.gradle.util.VersionNumber.parse( '1.8' ) ) {
+        // needed for hibernate annotations since not included in later JDKs
+        // the javax packages that are removed in Java 11+
+//        implementation( 'org.jboss.spec.javax.xml.ws:jboss-jaxws-api_2.3_spec:1.0.0.Final')
+//        implementation( 'org.jboss.spec.javax.xml.soap:jboss-saaj-api_1.3_spec:1.0.6.Final')
+        implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
+//        implementation 'javax.jws:jsr181-api:1.0-MR1'
+        runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
+    }
+
+    //
+//    compile 'net.bytebuddy:byte-buddy:1.9.2'
+//    compile 'net.bytebuddy:byte-buddy-agent:1.9.2'
     // tests
     testCompile("org.apache.httpcomponents:httpclient:4.2.6")
     testCompile("org.apache.httpcomponents:httpmime:4.2.6")

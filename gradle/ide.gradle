@@ -1,6 +1,6 @@
 buildscript {
     repositories.jcenter()
-    dependencies.classpath "com.diffplug.gradle:goomph:3.14.0"
+    dependencies.classpath "com.diffplug.gradle:goomph:3.17.1"
 }
 
 apply plugin: 'eclipse'

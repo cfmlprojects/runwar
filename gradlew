@@ -24,11 +24,17 @@ cd "`dirname \"$PRG\"`/" >/dev/null
 APP_HOME="`pwd -P`"
 cd "$SAVED" >/dev/null
 
+export JVM_MAJOR_VERSION=8
+export JVM_DIR="gradle/jvm/8/latest"
+export JVM_RELEASE=latest
+export GRADLE_USER_HOME="${HOME}/.gradle"
+. "${APP_HOME}/gradle/jvm-setup.sh"
+
 APP_NAME="Gradle"
 APP_BASE_NAME=`basename "$0"`
 
 # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS=""
+DEFAULT_JVM_OPTS='"-Xmx64m"'
 
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD="maximum"

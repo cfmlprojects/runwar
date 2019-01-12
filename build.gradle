@@ -3,8 +3,8 @@ import se.bjurr.gitchangelog.api.GitChangelogApi
 import static se.bjurr.gitchangelog.api.GitChangelogApi.gitChangelogApiBuilder
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '2.0.4'
-    id "com.diffplug.gradle.oomph.ide" version "3.14.0"
+    id 'com.github.johnrengelman.shadow' version '4.0.2'
+    id "com.diffplug.gradle.oomph.ide" version "3.17.1"
     id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "1.55"
     id "com.fizzed.rocker" version "0.24.0"
 //    id 'com.zyxist.chainsaw' version '0.3.1'
@@ -25,18 +25,24 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
 
-task wrapper(type: Wrapper) { gradleVersion = '4.8' }
-
-javadoc {
-    if(VersionNumber.parse( System.getProperty('java.version') ) > VersionNumber.parse('1.8')){
-       options.addStringOption('-add-modules', 'java.xml.bind')
+wrapper{
+    distributionType = Wrapper.DistributionType.ALL
+    doLast{
+        // customise gradlew for our JVM auto-download script
+        def javaRelease = System.getenv( 'JVM_RELEASE' ) ?: 'latest'
+        def javaMajorVersion = System.getenv( 'JVM_MAJOR_VERSION' ) ?: 8
+        def javaDir = System.getenv( 'JVM_HOME' ) ?: "gradle/jvm/${javaMajorVersion}/latest"
+        def envVars = "\nexport JVM_MAJOR_VERSION=${ javaMajorVersion }\nexport JVM_DIR=\"${ javaDir }\"\nexport JVM_RELEASE=${ javaRelease }\nexport GRADLE_USER_HOME=\"\${HOME}/.gradle\"\n"
+        envVars += ". \"\${APP_HOME}/gradle/jvm-setup.sh\"\n"
+        scriptFile.text = new StringBuilder( scriptFile.text ).insert( scriptFile.text.indexOf( 'APP_NAME' ) - 1, envVars )
     }
 }
 
+javadoc {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 tasks.withType(Test) {
-    if(VersionNumber.parse( System.getProperty('java.version') ) > VersionNumber.parse('1.8')){
-       jvmArgs += ["--add-modules", "java.xml.bind"]
-    }
 }
 
 sourceSets {
