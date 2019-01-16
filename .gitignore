@@ -1,8 +1,7 @@
 /bin
 /dist
 /lib
-/build/temp
-/build/cfdistro
+/build
 /undertow
 /testlibs
 src/test/resources/war/simple.war/WEB-INF/urlrewrite.xml
@@ -13,9 +12,12 @@ gradle-app.setting
 gradle/jvm
 !gradle-wrapper.jar
 .gradletasknamecache
+
 #ignore the various too-lazy-to-fix-and-lame-anyway bash tests
 gradle/*.sh
+!gradle/jvm-setup.sh
 testwars
+
 #IDE files
 *.project
 .settings

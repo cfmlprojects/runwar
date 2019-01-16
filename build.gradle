@@ -103,7 +103,7 @@ apply plugin: 'com.diffplug.gradle.osgi.bndmanifest'
 osgiBndManifest { copyTo 'META-INF/MANIFEST.MF' }
 
 jar {
-    classifier = 'core'
+    archiveClassifier = 'core'
     manifest.attributes(
             'Main-Class': 'runwar.Start',
             'Can-Redefine-Classes': 'true',
@@ -122,12 +122,12 @@ jar {
 }
 
 task javadocJar(type: Jar) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc
 }
 
 task sourceJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
@@ -143,7 +143,7 @@ tasks.withType(JavaCompile) {
 */
 
 shadowJar {
-    classifier = null
+    archiveClassifier = null
     mergeServiceFiles()
     exclude('**/*.java')
 }
