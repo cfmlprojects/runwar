@@ -1,10 +1,6 @@
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
-ext['signing.keyId'] = project.config.gpg.cfmlprojects.signkeyid
-ext['signing.password'] = project.config.gpg.cfmlprojects.pass
-ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
-
 /*
  task sourceJar(type: Jar) {
  classifier "sources"
@@ -19,10 +15,15 @@ ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
 ext {
     deployToMaven = file("${config.user.home}/.cfdistrorc").exists()
 }
-
 artifacts { archives javadocJar, sourceJar }
 
-signing { sign configurations.archives }
+
+if(deployToMaven){
+    ext['signing.keyId'] = project.config.gpg.cfmlprojects.signkeyid
+    ext['signing.password'] = project.config.gpg.cfmlprojects.pass
+    ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
+    signing { sign configurations.archives }
+}
 
 publishing {
     publications {
@@ -51,16 +52,18 @@ publishing {
             artifact(jar) { classifier = 'core' }
             artifact(file(proguard.outJar)) { classifier = 'min' }
 
-            // create the signed artifacts
-            project.tasks.signArchives.signatureFiles.each {
-                artifact(it) {
-                    def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
-                    if (matcher.find()) {
-                        classifier = matcher.group(1)
-                    } else {
-                        classifier = null
+            if(deployToMaven){
+                // create the signed artifacts
+                project.tasks.signArchives.signatureFiles.each {
+                    artifact(it) {
+                        def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+                        if (matcher.find()) {
+                            classifier = matcher.group(1)
+                        } else {
+                            classifier = null
+                        }
+                        extension = 'jar.asc'
                     }
-                    extension = 'jar.asc'
                 }
             }
         }

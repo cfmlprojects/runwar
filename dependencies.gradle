@@ -11,7 +11,7 @@ configurations {
 
 ext {
 //    undertowVersion = '1.4.24.Final'
-    undertowVersion = '2.0.16.Final'
+    undertowVersion = '2.0.20.Final'
     urlRewriteVersion = '5.0.2'
     proguardVersion = '6.0.2'
     goomphVersion = '3.17.1'
@@ -126,8 +126,9 @@ dependencies {
 //        implementation( 'org.jboss.spec.javax.xml.soap:jboss-saaj-api_1.3_spec:1.0.6.Final')
         implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
 //        implementation 'javax.jws:jsr181-api:1.0-MR1'
-        runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
     }
+    runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
+    implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
 
     //
 //    compile 'net.bytebuddy:byte-buddy:1.9.2'

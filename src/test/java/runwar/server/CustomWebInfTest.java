@@ -1,5 +1,6 @@
 package runwar.server;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +28,8 @@ public class CustomWebInfTest extends AbstractServerTest {
         this.server = server;
     }
 
-    @Test
+    @Disabled
+    @Test()
     public void testRealPath() {
         ServletContext servletContext = server.getManager().getDeployment().getServletContext();
         String realPath = servletContext.getRealPath("/");

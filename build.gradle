@@ -24,6 +24,7 @@ apply from: 'gradle/config.gradle'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 tasks.withType(JavaCompile) {
+    options.bootstrapClasspath = fileTree(include: ['**/jce.jar','**/rt.jar'], dir: "${System.properties['java.home']}/")
     options.encoding = 'UTF-8'
     options.compilerArgs += '-Xlint:unchecked'
     options.compilerArgs += '-Xlint:deprecation'
@@ -44,6 +45,7 @@ wrapper{
 
 javadoc {
     options.addStringOption('Xdoclint:none', '-quiet')
+    options.addBooleanOption('html5', true)
 }
 
 tasks.withType(Test) {
