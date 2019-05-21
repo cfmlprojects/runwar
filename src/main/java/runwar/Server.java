@@ -266,6 +266,10 @@ public class Server {
         if (serverOptions.ajpEnable()) {
             LOG.info("Enabling AJP protocol on port " + serverOptions.ajpPort());
             serverBuilder.addAjpListener(serverOptions.ajpPort(), host);
+            if(serverOptions.undertowOptions().getMap().size() == 0){
+                // if no options is set, default to the large packet size
+                serverBuilder.setServerOption(UndertowOptions.MAX_AJP_PACKET_SIZE,65536);
+            }
         }
 
         securityManager = new SecurityManager();
