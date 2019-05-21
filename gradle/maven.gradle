@@ -13,16 +13,24 @@ apply plugin: 'signing'
  */
 
 ext {
-    deployToMaven = file("${config.user.home}/.cfdistrorc").exists()
+    cfdistrorcFile = file("${config.user.home}/.cfdistrorc")
+    deployToMaven = cfdistrorcFile.exists()
 }
 artifacts { archives javadocJar, sourceJar }
 
 
-if(deployToMaven){
+if (deployToMaven) {
     ext['signing.keyId'] = project.config.gpg.cfmlprojects.signkeyid
     ext['signing.password'] = project.config.gpg.cfmlprojects.pass
     ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
     signing { sign configurations.archives }
+} else {
+    task signArchives() {
+        description = "Add a ${cfdistrorcFile} with signing info to enbable jar signing"
+        doFirst {
+            println "Signing is disabled without keys"
+        }
+    }
 }
 
 publishing {
@@ -52,7 +60,7 @@ publishing {
             artifact(jar) { classifier = 'core' }
             artifact(file(proguard.outJar)) { classifier = 'min' }
 
-            if(deployToMaven){
+            if (deployToMaven) {
                 // create the signed artifacts
                 project.tasks.signArchives.signatureFiles.each {
                     artifact(it) {

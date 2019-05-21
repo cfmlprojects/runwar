@@ -45,7 +45,7 @@ wrapper{
 
 javadoc {
     options.addStringOption('Xdoclint:none', '-quiet')
-    options.addBooleanOption('html5', true)
+//    options.addBooleanOption('html5', true)
 }
 
 tasks.withType(Test) {
