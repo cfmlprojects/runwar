@@ -2037,7 +2037,9 @@ public class ServerOptionsImpl implements ServerOptions {
         String[] optionList = options.split(",");
         for (int x = 0; x < optionList.length; x++) {
             String[] splitted = optionList[x].split("=");
-            setOptionMapValue(undertowOptions, UndertowOptions.class, splitted[0].trim(), splitted[1].trim());
+            String optionName = splitted[0].trim().toUpperCase();
+            String optionValue = splitted[1].trim();
+            setOptionMapValue(undertowOptions, UndertowOptions.class, optionName, optionValue);
         }
         return this;
     }

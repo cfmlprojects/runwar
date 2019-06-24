@@ -20,7 +20,7 @@ import static runwar.logging.RunwarLogger.MAPPER_LOG;
 
 public class MappedResourceManager extends FileResourceManager {
 
-    private HashMap<String, Path> aliases = new HashMap<>();
+    private HashMap<String, Path> aliases;
     private HashSet<Path> contentDirs;
     private File WEBINF = null, CFIDE = null;
     private static final Pattern CFIDE_REGEX_PATTERN;
@@ -48,41 +48,6 @@ public class MappedResourceManager extends FileResourceManager {
         } else {
             MAPPER_LOG.debugf("Initialized MappedResourceManager - base: %s, web-inf: %s, contentDirs: %s, aliases: %s",base.getAbsolutePath(), contentDirs, aliases);
         }
-    }
-
-    private void processMappings(String cfmlDirList) {
-        HashSet<Path> dirs = new HashSet<>();
-        //        Stream.of(cfmlDirList.split(","))
-        //                .map (elem -> new String(elem))
-        //                .collect(Collectors.toList());
-        Stream.of(cfmlDirList.split(",")).forEach( aDirList -> {
-            Path path;
-            String dir = "";
-            String virtual = "";
-            String[] directoryAndAliasList = aDirList.trim().split("=");
-            if(directoryAndAliasList.length == 1){
-                dir = directoryAndAliasList[0].trim();
-            } else {
-                dir = directoryAndAliasList[1].trim();
-                virtual = directoryAndAliasList[0].trim();
-            }
-            dir = dir.endsWith("/") ? dir : dir + '/';
-            path = Paths.get(dir).normalize().toAbsolutePath();
-            if(virtual.length() == 0){
-                dirs.add(path);
-            } else {
-                virtual = virtual.startsWith("/") ? virtual : "/" + virtual;
-                virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length() - 1) : virtual;
-                aliases.put(virtual.toLowerCase(), path);
-            }
-            String aliasInfo = virtual.isEmpty() ? "" : " as " + virtual;
-            if (!path.toFile().exists()) {
-                MAPPER_LOG.errorf("Does not exist, cannot serve content from: " + path + aliasInfo);
-            } else {
-                MAPPER_LOG.info("Serving content from " + path + aliasInfo);
-            }
-        });
-        contentDirs = dirs;
     }
 
     public Resource getResource(String path) {
@@ -137,7 +102,7 @@ public class MappedResourceManager extends FileResourceManager {
         }
     }
 
-    public static Path getAliasedFile(HashMap<String, Path> aliasMap, String path) {
+    static Path getAliasedFile(HashMap<String, Path> aliasMap, String path) {
         if(path.startsWith("/file:")){
             // groovy servlet asks for /file:... for some reason, when scripts are in an aliased dir
             path = path.replace("/file:", "");
@@ -166,6 +131,41 @@ public class MappedResourceManager extends FileResourceManager {
         return null;
     }
 
+    private void processMappings(String cfmlDirList) {
+        HashSet<Path> dirs = new HashSet<>();
+        //        Stream.of(cfmlDirList.split(","))
+        //                .map (elem -> new String(elem))
+        //                .collect(Collectors.toList());
+        Stream.of(cfmlDirList.split(",")).forEach( aDirList -> {
+            Path path;
+            String dir;
+            String virtual = "";
+            String[] directoryAndAliasList = aDirList.trim().split("=");
+            if(directoryAndAliasList.length == 1){
+                dir = directoryAndAliasList[0].trim();
+            } else {
+                dir = directoryAndAliasList[1].trim();
+                virtual = directoryAndAliasList[0].trim();
+            }
+            dir = dir.endsWith("/") ? dir : dir + '/';
+            path = Paths.get(dir).normalize().toAbsolutePath();
+            if(virtual.length() == 0){
+                dirs.add(path);
+            } else {
+                virtual = virtual.startsWith("/") ? virtual : "/" + virtual;
+                virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length() - 1) : virtual;
+                aliases.put(virtual.toLowerCase(), path);
+            }
+            String aliasInfo = virtual.isEmpty() ? "" : " as " + virtual;
+            if (!path.toFile().exists()) {
+                MAPPER_LOG.errorf("Does not exist, cannot serve content from: " + path + aliasInfo);
+            } else {
+                MAPPER_LOG.info("Serving content from " + path + aliasInfo);
+            }
+        });
+        contentDirs = dirs;
+    }
+
     HashMap<String, Path> getAliases() {
         return aliases;
     }
@@ -174,4 +174,23 @@ public class MappedResourceManager extends FileResourceManager {
     public boolean isResourceChangeListenerSupported() {
         return allowResourceChangeListeners;
     }
+
+    /**
+     * Super nasty thing to display caller chain, just for debugging/experiments
+     * @return list of steps
+     */
+    private static String getRecentSteps() {
+        StringBuilder recentSteps = new StringBuilder();
+        StackTraceElement[] traceElements = Thread.currentThread().getStackTrace();
+        final int maxStepCount = 3;
+        final int skipCount = 2;
+
+        for (int i = Math.min(maxStepCount + skipCount, traceElements.length) - 1; i >= skipCount; i--) {
+            String className = traceElements[i].getClassName().substring(traceElements[i].getClassName().lastIndexOf(".") + 1);
+            recentSteps.append(" >> ").append(className).append(".").append(traceElements[i].getMethodName()).append("()");
+        }
+
+        return recentSteps.toString();
+    }
+
 }

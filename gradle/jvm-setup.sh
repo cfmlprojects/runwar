@@ -5,21 +5,24 @@
 #
 # If $JVM_JAVA_HOME is specified it will override JAVA_HOME and Java will not automatically be installed
 #
-
+JVM_MAJOR_VERSION_DEFAULT=8
+JVM_RELEASE_DEFAULT=latest
+JVM_IMPL_DEFAULT=hotspot
+JVM_TYPE_DEFAULT=jdk
 #set -x
 set -e
 # Check for environment JVM version and release variables, otherwise specify the default.
 if [ -z "$JVM_MAJOR_VERSION" ]; then
-	JVM_MAJOR_VERSION=8
+	JVM_MAJOR_VERSION=${JVM_MAJOR_VERSION_DEFAULT}
 fi
 if [ -z "$JVM_RELEASE" ]; then
-	JVM_RELEASE=latest # latest, jdk8u192-b12, ...
+	JVM_RELEASE=${JVM_RELEASE_DEFAULT} # latest, jdk8u192-b12, ...
 fi
 if [ -z "$JVM_TYPE" ]; then
-	JVM_TYPE=jdk # jdk, jre
+	JVM_TYPE=${JVM_TYPE_DEFAULT} # jdk, jre
 fi
 if [ -z "$JVM_IMPL" ]; then
-	JVM_IMPL=hotspot # hotspot, openj9
+	JVM_IMPL=${JVM_IMPL_DEFAULT} # hotspot, openj9
 fi
 if [ -z "$JVM_OS" ]; then
 	JVM_OS=linux # windows, linux, mac
@@ -126,7 +129,8 @@ shaurl_unarchive() {
 	shaurl_file "${archiveURL}" "${shaURL}" "${archiveFile}"
 	mkdir -p "${destDir}"
 	echo "Expanding ${archiveURL} to ${destDir}"
-	if tar -xf "${archiveFile}" --strip-components=2 -C "${destDir}"; then
+	stripCount=$(tar -tzf "${archiveFile}" | grep '/lib/ext/$' | awk -F"/" '{print NF-4}')
+	if tar -xf "${archiveFile}" --strip-components=$stripCount -C "${destDir}"; then
 		if ! rm "${archiveFile}" || ! rm "${archiveFile}.sha256.txt"; then
 			echo "Could not delete either ${archiveFile} or ${archiveFile}.sha256.txt"
 		fi

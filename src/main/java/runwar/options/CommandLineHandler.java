@@ -1049,7 +1049,7 @@ public class CommandLineHandler {
             }
 
             if (hasOptionValue(line, Keys.UNDERTOWOPTIONS)) {
-                serverOptions.xnioOptions(line.getOptionValue(Keys.UNDERTOWOPTIONS));
+                serverOptions.undertowOptions(line.getOptionValue(Keys.UNDERTOWOPTIONS));
             }
 
             if(serverOptions.logLevel().equals(Keys.TRACE)) {
