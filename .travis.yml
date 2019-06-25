@@ -1,4 +1,1 @@
 language: java
-branches:
-  only:
-	- develop
