@@ -18,11 +18,12 @@ class ServiceTest {
 
     @BeforeAll
     static void beforeAll() throws IOException {
-        if (Files.exists(workDir))
+        if (Files.exists(workDir)) {
             Files.walk(workDir)
                     .sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(File::delete);
+        }
         workDir.toFile().mkdir();
     }
 
@@ -33,11 +34,12 @@ class ServiceTest {
         new Service(serverOptions).generateServiceScripts(workDir);
     }
 
-    @Test
-    void getServiceScriptCommands() throws IOException {
-        ServerOptionsImpl serverOptions = DefaultServer.getServerOptions();
-        serverOptions.contentDirs("../pub,../src");
-        Service service =  new Service(serverOptions);
-        service.serviceScriptCommands(service.serviceControlScriptPath());
-    }
+//    @Ignore
+//    @Test
+//    void getServiceScriptCommands() throws IOException {
+//        ServerOptionsImpl serverOptions = DefaultServer.getServerOptions();
+//        serverOptions.contentDirs("../pub,../src");
+//        Service service =  new Service(serverOptions);
+//        service.serviceScriptCommands(service.serviceControlScriptPath());
+//    }
 }
