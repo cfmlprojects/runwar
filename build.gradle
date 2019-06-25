@@ -160,7 +160,7 @@ task copyToLib(type: Copy) {
 
 /*
  task generateGitChangelogTemplateWithGitHubIssues(type: se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask) {
- gitHubApi = "https://api.github.com/repos/cfmlprojects/runwar"
+ gitHubApi = "https://api.github.com/repos/Ortus-Solutions/runwar"
  gitHubToken = System.properties['GITHUB_OAUTH2TOKEN']
  gitHubIssuePattern = "#([0-9]*)"
  file = new File("${buildDir}/CHANGELOG.md")
@@ -173,7 +173,7 @@ task gitChangelogTask() {
         GitChangelogApi builder;
         builder = gitChangelogApiBuilder()
         /*
-         println builder.withGitHubApi("https://api.github.com/repos/cfmlprojects/runwar")
+         println builder.withGitHubApi("https://api.github.com/repos/Ortus-Solutions/runwar")
          .withGitHubToken(System.properties['GITHUB_OAUTH2TOKEN'])
          .withGitHubIssuePattern("#([0-9]*)")
          .withTemplatePath('gradle/changelog/changelog.mustache')
@@ -181,7 +181,7 @@ task gitChangelogTask() {
          */
         println builder.withFromRef("master")
                 .withToRef("HEAD")
-                .withGitHubApi("https://api.github.com/repos/cfmlprojects/runwar")
+                .withGitHubApi("https://api.github.com/repos/Ortus-Solutions/runwar")
                 .withRemoveIssueFromMessageArgument(false)
                 .withUntaggedName("Untagged version")
                 .withNoIssueName("These commits have no issue in their commit comment")

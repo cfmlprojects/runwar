@@ -32,7 +32,7 @@ public class CommandLineHandler {
     private static PosixParser parser;
     private static final String SYNTAX = " java -jar runwar.jar [-war] path/to/war [options]";
     private static final String HEADER = " The runwar lib wraps undertow with more awwsome. Defaults (parenthetical)";
-    private static final String FOOTER = " source: https://github.com/cfmlprojects/runwar.git";
+    private static final String FOOTER = " source: https://github.com/Ortus-Solutions/runwar.git";
     
     public CommandLineHandler(){
     }
