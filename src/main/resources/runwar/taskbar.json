@@ -13,7 +13,7 @@
 			,{"label":"Run Silent", "action":"run", "image":"resources/dialog-information.png","command":"ls -altr", "output":"none"}
 			,{"label":"Start on boot", "checkbox":"true", "image":"dialog-information.png", "disabled":"false","toggle":"onboot"}
 			,{"label":"Browse File System", "hotkey":"B", "action":"openfilesystem", "path":"", "image":"resources/dialog-information.png"}
-			],
+			]
 	}
 	,{"label":"Server Options","items": [
 			{"label":"View JSON", "action":"serverOptionsJson", "image":"resources/dialog-information.png"}
