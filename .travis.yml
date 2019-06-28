@@ -13,6 +13,6 @@ deploy:
     access_key_id: $AWS_ACCESS_KEY
     secret_access_key: $AWS_ACCESS_SECRET
     bucket: "downloads.ortussolutions.com"
-    local-dir: artifacts
+    local-dir: dist/libs
     upload-dir: cfmlprojects
     acl: public_read
