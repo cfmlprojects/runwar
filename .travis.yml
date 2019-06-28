@@ -1,6 +1,18 @@
 language: java
 
 script:
-- ./gradlew
+- ./gradlew --refresh-dependencies
 
-
+deploy:
+  # Upload binaries
+  - provider: s3
+    on:
+      branch:
+        - development
+    skip_cleanup: true
+    access_key_id: $AWS_ACCESS_KEY
+    secret_access_key: $AWS_ACCESS_SECRET
+    bucket: "downloads.ortussolutions.com"
+    local-dir: artifacts
+    upload-dir: cfmlprojects
+    acl: public_read
