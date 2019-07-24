@@ -105,16 +105,16 @@ public class Server {
     private void initClassLoader(List<URL> _classpath) {
         if (_classLoader == null) {
             int paths = _classpath.size();
-            LOG.debug("Initializing classloader with "+ _classpath.size() + " libraries");
-   //         Thread.currentThread().setContextClassLoader(new JavaShimClassLoader(Thread.currentThread().getContextClassLoader()));
+            LOG.debug("Initializing classloader with " + _classpath.size() + " libraries");
+            //         Thread.currentThread().setContextClassLoader(new JavaShimClassLoader(Thread.currentThread().getContextClassLoader()));
 //            LOG.debug("Booted:" + VM.isBooted());
-            if( paths > 0) {
-                LOG.tracef("classpath: %s",_classpath);
+            if (paths > 0) {
+                LOG.tracef("classpath: %s", _classpath);
                 _classLoader = new URLClassLoader(_classpath.toArray(new URL[paths]));
-    //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
-    //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-    //          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
-              //Thread.currentThread().setContextClassLoader(_classLoader);
+                //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
+                //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
+                //          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
+                //Thread.currentThread().setContextClassLoader(_classLoader);
 //                try {
 //                    Class<?> yourMainClass = Class.forName("sun.misc.VM", true, _classLoader);
 //                } catch (ClassNotFoundException e) {
@@ -127,11 +127,11 @@ public class Server {
         }
     }
 
-    public void setClassLoader(URLClassLoader classLoader){
+    public void setClassLoader(URLClassLoader classLoader) {
         _classLoader = classLoader;
     }
 
-    public static ClassLoader getClassLoader(){
+    public static ClassLoader getClassLoader() {
         return _classLoader;
     }
 
@@ -147,6 +147,7 @@ public class Server {
     public synchronized void restartServer() throws Exception {
         restartServer(getServerOptions());
     }
+
     public synchronized void restartServer(final ServerOptions options) throws Exception {
         LaunchUtil.displayMessage(options.processName(), "Info", "Restarting server...");
         LOG.info(bar);
@@ -154,20 +155,20 @@ public class Server {
         LOG.info(bar);
         LaunchUtil.restartApplication(() -> {
             LOG.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
-                stopServer();
-                serverWentDown();
+            stopServer();
+            serverWentDown();
         });
     }
 
-    private synchronized void requisitionPorts(){
+    private synchronized void requisitionPorts() {
         ports = new PortRequisitioner(serverOptions.host());
         ports.add("http", serverOptions.httpPort());
         ports.add("stop", serverOptions.stopPort());
         ports.add("ajp", serverOptions.ajpPort(), serverOptions.ajpEnable());
         ports.add("https", serverOptions.sslPort(), serverOptions.sslEnable());
         ports.add("http2", serverOptions.http2ProxySSLPort(), serverOptions.http2Enable());
-        if(serverOptions.http2Enable()) {
-            ports.add("https", serverOptions.http2ProxySSLPort(),true);
+        if (serverOptions.http2Enable()) {
+            ports.add("https", serverOptions.http2ProxySSLPort(), true);
             ports.add("http2", serverOptions.sslPort());
         }
 
@@ -179,15 +180,15 @@ public class Server {
         serverOptions.http2ProxySSLPort(ports.get("http2").socket);
 
     }
-    
+
     public synchronized void startServer(final ServerOptions options) throws Exception {
         serverOptions = (ServerOptionsImpl) options;
         LoggerFactory.configure(serverOptions);
         // redirect out and err to context logger
         hookSystemStreams();
         serverState = ServerState.STARTING;
-        if(serverOptions.action().equals("stop")){
-            Stop.stopServer(serverOptions,true);
+        if (serverOptions.action().equals("stop")) {
+            Stop.stopServer(serverOptions, true);
         }
         serverName = serverOptions.serverName();
         String host = serverOptions.host(), cfengine = serverOptions.cfEngineName(), processName = serverOptions.processName();
@@ -207,7 +208,7 @@ public class Server {
 
         // general configuration methods
         RunwarConfigurer configurer = new RunwarConfigurer(this);
-        if(serverOptions.sslSelfSign()){
+        if (serverOptions.sslSelfSign()) {
             configurer.generateSelfSignedCertificate();
         }
         /*if(serverOptions.service()){
@@ -222,9 +223,9 @@ public class Server {
         Builder serverBuilder = Undertow.builder();
         setUndertowOptions(serverBuilder);
 
-        if(serverOptions.http2Enable()) {
+        if (serverOptions.http2Enable()) {
             LOG.info("Enabling HTTP2 protocol");
-            if(!serverOptions.sslEnable()) {
+            if (!serverOptions.sslEnable()) {
                 LOG.warn("SSL is required for HTTP2.  Enabling default SSL server.");
                 serverOptions.sslEnable(true);
             }
@@ -236,7 +237,7 @@ public class Server {
             int sslPort = ports.get("https").socket;
             serverOptions.directBuffers(true);
             LOG.info("Enabling SSL protocol on port " + sslPort);
-            if(serverOptions.sslEccDisable()) {
+            if (serverOptions.sslEccDisable()) {
                 LOG.debug("disabling com.sun.net.ssl.enableECC");
                 System.setProperty("com.sun.net.ssl.enableECC", "false");
             } else {
@@ -249,8 +250,9 @@ public class Server {
                     char[] keypass = serverOptions.sslKeyPass();
                     String[] sslAddCerts = serverOptions.sslAddCerts();
                     sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{serverName});
-                    if(keypass != null)
+                    if (keypass != null) {
                         Arrays.fill(keypass, '*');
+                    }
                 } else {
                     sslContext = SSLUtil.createSSLContext();
                 }
@@ -265,21 +267,21 @@ public class Server {
         if (serverOptions.ajpEnable()) {
             LOG.info("Enabling AJP protocol on port " + serverOptions.ajpPort());
             serverBuilder.addAjpListener(serverOptions.ajpPort(), host);
-            if(serverOptions.undertowOptions().getMap().size() == 0){
+            if (serverOptions.undertowOptions().getMap().size() == 0) {
                 // if no options is set, default to the large packet size
-                serverBuilder.setServerOption(UndertowOptions.MAX_AJP_PACKET_SIZE,65536);
+                serverBuilder.setServerOption(UndertowOptions.MAX_AJP_PACKET_SIZE, 65536);
             }
         }
 
         securityManager = new SecurityManager();
 
         // if the war is archived, unpack it to system temp
-        if(warFile.exists() && !warFile.isDirectory()) {
+        if (warFile.exists() && !warFile.isDirectory()) {
             URL zipResource = warFile.toURI().toURL();
             String warDir = warFile.getName().toLowerCase().replace(".war", "");
             warFile = new File(warFile.getParentFile(), warDir);
-            if(!warFile.exists()) {
-                if(!warFile.mkdir()){
+            if (!warFile.exists()) {
+                if (!warFile.mkdir()) {
                     LOG.error("Unable to explode WAR to " + warFile.getAbsolutePath());
                 } else {
                     LOG.debug("Exploding compressed WAR to " + warFile.getAbsolutePath());
@@ -289,7 +291,7 @@ public class Server {
                 LOG.debug("Using already exploded WAR in " + warFile.getAbsolutePath());
             }
             warPath = warFile.getAbsolutePath();
-            if(serverOptions.warFile().getAbsolutePath().equals(serverOptions.contentDirs())) {
+            if (serverOptions.warFile().getAbsolutePath().equals(serverOptions.contentDirs())) {
                 serverOptions.contentDirs(warFile.getAbsolutePath());
             }
             serverOptions.warFile(warFile);
@@ -301,7 +303,7 @@ public class Server {
         if (serverOptions.background()) {
             setServerState(ServerState.STARTING_BACKGROUND);
             // this will eventually system.exit();
-            LaunchUtil.relaunchAsBackgroundProcess(serverOptions.background(false),true);
+            LaunchUtil.relaunchAsBackgroundProcess(serverOptions.background(false), true);
             setServerState(ServerState.STARTED_BACKGROUND);
             // just in case
             Thread.sleep(200);
@@ -317,14 +319,14 @@ public class Server {
         if (warFile.isDirectory() && webXmlFile != null && webXmlFile.exists()) {
             if (libDirs == null) {
                 libDirs = "";
-            } else if( libDirs.length() > 0 ) {
-                libDirs = libDirs + ","; 
+            } else if (libDirs.length() > 0) {
+                libDirs = libDirs + ",";
             }
             libDirs = libDirs + webinf.getAbsolutePath() + "/lib";
             LOG.info("Adding additional lib dir of: " + webinf.getAbsolutePath() + "/lib");
-            if(LaunchUtil.versionGreaterThanOrEqualTo(System.getProperty("java.version"),"1.9")){
-                File cfusiondir = new File(webinf,"cfusion");
-                if(cfusiondir.exists()){
+            if (LaunchUtil.versionGreaterThanOrEqualTo(System.getProperty("java.version"), "1.9")) {
+                File cfusiondir = new File(webinf, "cfusion");
+                if (cfusiondir.exists()) {
                     LOG.debug("Adding cfusion/lib dir by hand becuase java9+" + cfusiondir.getAbsolutePath());
                     libDirs += "," + cfusiondir.getAbsolutePath() + "/lib";
                 }
@@ -334,13 +336,15 @@ public class Server {
 
         List<URL> cp = new ArrayList<>();
 //        cp.add(Server.class.getProtectionDomain().getCodeSource().getLocation());
-        if (libDirs != null)
+        if (libDirs != null) {
             cp.addAll(getJarList(libDirs));
-        if (jarURL != null)
+        }
+        if (jarURL != null) {
             cp.add(jarURL);
-        
-        if(serverOptions.mariaDB4jImportSQLFile() != null){
-            LOG.info("Importing sql file: "+serverOptions.mariaDB4jImportSQLFile().toURI().toURL());
+        }
+
+        if (serverOptions.mariaDB4jImportSQLFile() != null) {
+            LOG.info("Importing sql file: " + serverOptions.mariaDB4jImportSQLFile().toURI().toURL());
             cp.add(serverOptions.mariaDB4jImportSQLFile().toURI().toURL());
         }
         cp.addAll(getClassesList(new File(webinf, "/classes")));
@@ -351,14 +355,13 @@ public class Server {
 
         // redirect out and err to context logger
         //hookSystemStreams();
-
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
-        if( iconPNG != null && iconPNG.length() > 0) {
+        if (iconPNG != null && iconPNG.length() > 0) {
             serverOptions.iconImage(iconPNG);
         }
         String dockIconPath = System.getProperty("cfml.server.dockicon");
-        if( dockIconPath == null || dockIconPath.length() == 0) {
+        if (dockIconPath == null || dockIconPath.length() == 0) {
             dockIconPath = serverOptions.iconImage();
         }
 
@@ -375,7 +378,7 @@ public class Server {
                 Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
                 dockMethod.invoke(appInstance, dockIcon);
             } catch (Exception e) {
-                LOG.warn("error setting dock icon image",e);
+                LOG.warn("error setting dock icon image", e);
             }
         }
         LOG.info(bar);
@@ -389,7 +392,7 @@ public class Server {
             LOG.debug("no content directories configured");
         }
         if (serverOptions.aliases().size() > 0) {
-            LOG.info("aliases: " + new JSONObject(serverOptions.aliases()).toJSONString() );
+            LOG.info("aliases: " + new JSONObject(serverOptions.aliases()).toJSONString());
         } else {
             LOG.debug("no aliases configured");
         }
@@ -435,16 +438,16 @@ public class Server {
                 .setDeploymentName(warPath)
                 .setServletSessionConfig(servletSessionConfig)
                 .setDisplayName(serverName)
-                .setServerName( "WildFly / Undertow" );
+                .setServerName("WildFly / Undertow");
 
         // hack to prevent . being picked up as the system path (jacob.x.dll)
         final String jarPath = getThisJarLocation().getPath();
         String javaLibraryPath = System.getProperty("java.library.path");
         if (javaLibraryPath == null) {
             if (webXmlFile != null) {
-                javaLibraryPath =  jarPath + ':' + new File(webXmlFile.getParentFile(), "lib").getPath();
+                javaLibraryPath = jarPath + ':' + new File(webXmlFile.getParentFile(), "lib").getPath();
             } else {
-                javaLibraryPath = jarPath  + ':' + new File(warFile, "/WEB-INF/lib/").getPath();
+                javaLibraryPath = jarPath + ':' + new File(warFile, "/WEB-INF/lib/").getPath();
             }
         } else {
             javaLibraryPath = jarPath + filePathSeparator + javaLibraryPath;
@@ -453,7 +456,7 @@ public class Server {
         LOG.trace("java.library.path:" + System.getProperty("java.library.path"));
 
         configurer.configureServerResourceHandler(servletBuilder);
-        if(serverOptions.basicAuthEnable()) {
+        if (serverOptions.basicAuthEnable()) {
             securityManager.configureAuth(servletBuilder, serverOptions);
         }
 
@@ -469,11 +472,11 @@ public class Server {
         manager = defaultContainer().addDeployment(servletBuilder);
 
         // stupid hack for older adobe versions
-        String originalJavaVersion = System.getProperty("java.version","");
-        if(serverOptions.cfEngineName().equalsIgnoreCase("adobe") && !servletBuilder.getDisplayName().contains("2018")) {
-            if(LaunchUtil.versionGreaterThanOrEqualTo(originalJavaVersion,"1.9")){
+        String originalJavaVersion = System.getProperty("java.version", "");
+        if (serverOptions.cfEngineName().equalsIgnoreCase("adobe") && !servletBuilder.getDisplayName().contains("2018")) {
+            if (LaunchUtil.versionGreaterThanOrEqualTo(originalJavaVersion, "1.9")) {
                 LOG.debug("Setting java version from " + originalJavaVersion + " to 1.8 temporarily because we're running " + servletBuilder.getDisplayName());
-                System.setProperty("java.version","1.8");
+                System.setProperty("java.version", "1.8");
             }
         }
 
@@ -493,13 +496,12 @@ public class Server {
                 .addPrefixPath(contextPath, resourceHandler);
         HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
         Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, host).setHandler(errPageHandler);
-*/
-
-        if(serverOptions.httpEnable()) {
+         */
+        if (serverOptions.httpEnable()) {
             serverBuilder.addHttpListener(ports.get("http").socket, host);
         }
 
-        if(serverOptions.bufferSize() != 0) {
+        if (serverOptions.bufferSize() != 0) {
             LOG.info("Buffer Size: " + serverOptions.bufferSize());
             serverBuilder.setBufferSize(serverOptions.bufferSize());
         }
@@ -514,7 +516,7 @@ public class Server {
 
             @Override
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
-/*
+                /*
                 final SessionManager sessionManager = exchange.getAttachment(SessionManager.ATTACHMENT_KEY);
                 final SessionConfig sessionconfig = exchange.getAttachment(SessionConfig.ATTACHMENT_KEY);
                 Session session = sessionManager.getSession(exchange, sessionconfig);
@@ -522,20 +524,19 @@ public class Server {
                     LOG.error("SESSION WAS NULL");
                     session = sessionManager.createSession(exchange, sessionconfig);
                 }
-*/
-                if(!exchange.getResponseHeaders().contains(HTTPONLY) && addHttpOnlyHeader){
+                 */
+                if (!exchange.getResponseHeaders().contains(HTTPONLY) && addHttpOnlyHeader) {
                     exchange.getResponseHeaders().add(HTTPONLY, "true");
                 }
-                if(!exchange.getResponseHeaders().contains("Secure") && addSecureHeader){
+                if (!exchange.getResponseHeaders().contains("Secure") && addSecureHeader) {
                     exchange.getResponseHeaders().add(SECURE, "true");
                 }
 
-                if(fusionReactor.hasFusionReactor()){
-                    fusionReactor.setFusionReactorInfo("myTransaction","myTransacitonApplication");
+                if (fusionReactor.hasFusionReactor()) {
+                    fusionReactor.setFusionReactorInfo("myTransaction", "myTransacitonApplication");
                 }
 
-
-                CONTEXT_LOG.debug("requested: '" + fullExchangePath(exchange) + "'" );
+                CONTEXT_LOG.debug("requested: '" + fullExchangePath(exchange) + "'");
                 // sessionConfig.setSessionId(exchange, ""); // TODO: see if this suppresses jsessionid
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
@@ -545,17 +546,17 @@ public class Server {
                     CONTEXT_LOG.trace("*** Resetting servlet path info");
                     manager.getDeployment().getServletPaths().invalidate();
                 }
-                if(serverOptions.debug()){
+                if (serverOptions.debug()) {
                     // output something if in debug mode and response is other than OK
                     exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                        if(httpServerExchange.getStatusCode() > 399) {
+                        if (httpServerExchange.getStatusCode() > 399) {
                             CONTEXT_LOG.warnf("responded: Status Code %s (%s)", httpServerExchange.getStatusCode(), fullExchangePath(httpServerExchange));
                         }
                         nextListener.proceed();
                     });
                 }
 
-                if(serverOptions.debug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
+                if (serverOptions.debug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
                     new RequestDumper().handleRequest(exchange);
                 } else {
                     super.handleRequest(exchange);
@@ -575,30 +576,27 @@ public class Server {
             httpHandler = new ErrorHandler(pathHandler);
         }
 
-/*
+        /*
         // if we do some kind of nifty single-sign-on deal we need this but just overhead otherwise
         SessionCookieConfig sessionConfig = new SessionCookieConfig();
         sessionConfig.setHttpOnly(serverOptions.cookieHttpOnly());
         sessionConfig.setSecure(serverOptions.cookieSecure());
         httpHandler = new SessionAttachmentHandler(httpHandler, new InMemorySessionManager("", 1, true), sessionConfig);
-*/
-
-
+         */
         if (serverOptions.logAccessEnable()) {
 //            final String PATTERN = "cs-uri cs(test-header) x-O(aa) x-H(secure)";
             RunwarAccessLogReceiver accessLogReceiver = RunwarAccessLogReceiver.builder().setLogWriteExecutor(logWorker)
-                .setRotate(true)
-                .setOutputDirectory(serverOptions.logAccessDir().toPath())
-                .setLogBaseName(serverOptions.logAccessBaseFileName())
-                .setLogNameSuffix(serverOptions.logSuffix())
-//                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
-                .build();
+                    .setRotate(true)
+                    .setOutputDirectory(serverOptions.logAccessDir().toPath())
+                    .setLogBaseName(serverOptions.logAccessBaseFileName())
+                    .setLogNameSuffix(serverOptions.logSuffix())
+                    //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
+                    .build();
             LOG.info("Logging combined access to " + serverOptions.logAccessDir() + " base name of '" + serverOptions.logAccessBaseFileName() + "." + serverOptions.logSuffix() + ", rotated daily'");
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
-            httpHandler = new AccessLogHandler(httpHandler, accessLogReceiver,"combined", Server.class.getClassLoader());
+            httpHandler = new AccessLogHandler(httpHandler, accessLogReceiver, "combined", Server.class.getClassLoader());
         }
-
 
         if (serverOptions.logRequestsEnable()) {
             LOG.debug("Enabling request dumper");
@@ -621,7 +619,7 @@ public class Server {
             httpHandler = http2proxy.proxyHandler(httpHandler);
         }
 
-        if(serverOptions.basicAuthEnable()) {
+        if (serverOptions.basicAuthEnable()) {
             securityManager.configureAuth(httpHandler, serverBuilder, options);
         } else {
             serverBuilder.setHandler(httpHandler);
@@ -633,7 +631,7 @@ public class Server {
             if (pidFile != null && pidFile.length() > 0) {
                 File file = new File(pidFile);
                 file.deleteOnExit();
-                try(PrintWriter writer = new PrintWriter(file)){
+                try (PrintWriter writer = new PrintWriter(file)) {
                     writer.print(PID);
                 }
             }
@@ -651,12 +649,12 @@ public class Server {
         LOG.debug("started stop monitor");
         tray = new Tray();
 
-        if(serverOptions.trayEnable()) {
+        if (serverOptions.trayEnable()) {
             try {
                 tray.hookTray(this);
-                LOG.debug("hooked system tray");	
-            } catch( Throwable e ) {
-                LOG.error( "system tray hook failed", e );
+                LOG.debug("hooked system tray");
+            } catch (Throwable e) {
+                LOG.error("system tray hook failed", e);
             }
         } else {
             LOG.debug("System tray integration disabled");
@@ -666,16 +664,16 @@ public class Server {
             LOG.debug("Starting open browser action");
             new Server(3);
         }
-        
+
         // if this println changes be sure to update the LaunchUtil so it will know success
         String sslInfo = serverOptions.sslEnable() ? " https-port:" + ports.get("https") : "";
-        String msg = "Server is up - http-port:" + ports.get("http") + sslInfo + " stop-port:" + ports.get("stop") +" PID:" + PID + " version " + getVersion();
+        String msg = "Server is up - http-port:" + ports.get("http") + sslInfo + " stop-port:" + ports.get("stop") + " PID:" + PID + " version " + getVersion();
         LOG.info(msg);
         // if the status line output would be suppressed due to logging levels, send it to sysout
-        if(serverOptions.logLevel().equalsIgnoreCase("WARN") || serverOptions.logLevel().equalsIgnoreCase("ERROR")) {
+        if (serverOptions.logLevel().equalsIgnoreCase("WARN") || serverOptions.logLevel().equalsIgnoreCase("ERROR")) {
             System.out.println(msg);
         }
-        if(serverOptions.trayEnable()) {
+        if (serverOptions.trayEnable()) {
             LaunchUtil.displayMessage(serverOptions.processName(), "info", msg);
         }
         setServerState(ServerState.STARTED);
@@ -690,7 +688,6 @@ public class Server {
 //        Object ef = webs.getClass().getMethod("getInstance").invoke(webs, null);
 //
 //        System.out.println(appInstance.toString());
-
         if (serverOptions.mariaDB4jEnable()) {
             LOG.info("MariaDB support enable");
             mariadb4jManager = new MariaDB4jManager(_classLoader);
@@ -703,7 +700,7 @@ public class Server {
         } else {
             LOG.trace("MariaDB support is disabled");
         }
-        try{
+        try {
 
             undertow.start();
 
@@ -716,10 +713,9 @@ public class Server {
             System.gc();
             System.gc();
 
-        }
-        catch (Exception any) {
-            if(any.getCause() instanceof java.net.SocketException && any.getCause().getMessage().equals("Permission denied") ) {
-            	System.err.println("You need to be root or Administrator to bind to a port below 1024!");                
+        } catch (Exception any) {
+            if (any.getCause() instanceof java.net.SocketException && any.getCause().getMessage().equals("Permission denied")) {
+                System.err.println("You need to be root or Administrator to bind to a port below 1024!");
             } else {
                 any.printStackTrace();
             }
@@ -760,7 +756,7 @@ public class Server {
 
     private synchronized void unhookSystemStreams() {
         LOG.trace("Unhooking system streams logger");
-        if(originalSystemOut != null) {
+        if (originalSystemOut != null) {
             System.setOut(originalSystemOut);
             System.setErr(originalSystemErr);
         } else {
@@ -770,7 +766,7 @@ public class Server {
 
     public synchronized void stopServer() {
         int exitCode = 0;
-        if(monitor != null) {
+        if (monitor != null) {
             monitor.removeShutDownHook();
         }
         switch (getServerState()) {
@@ -791,7 +787,7 @@ public class Server {
                     if (serverOptions.mariaDB4jEnable()) {
                         mariadb4jManager.stop();
                     }
-                    if(manager != null){
+                    if (manager != null) {
                         try {
                             switch (manager.getState()) {
                                 case UNDEPLOYED:
@@ -800,15 +796,15 @@ public class Server {
                                     manager.stop();
                                     manager.undeploy();
                             }
-                            if(http2proxy != null){
+                            if (http2proxy != null) {
                                 http2proxy.stop();
                             }
                             undertow.stop();
-                            if(worker != null) {
+                            if (worker != null) {
                                 worker.shutdown();
                                 logWorker.shutdown();
                             }
-    //                Thread.sleep(1000);
+                            //                Thread.sleep(1000);
                         } catch (Exception notRunning) {
                             LOG.error("*** server did not appear to be running", notRunning);
                             LOG.info(bar);
@@ -839,7 +835,7 @@ public class Server {
                     MonitorThread monitorThread = monitor;
                     monitorThread.stopListening();
                     monitor = null;
-                } else{
+                } else {
                     LOG.error("server monitor was null!");
                 }
 
@@ -853,15 +849,15 @@ public class Server {
 
     }
 
-    ResourceManager getResourceManager(File warFile, Long transferMinSize, Set<Path> contentDirs, Map<String,Path> aliases, File internalCFMLServerRoot) {
+    ResourceManager getResourceManager(File warFile, Long transferMinSize, Set<Path> contentDirs, Map<String, Path> aliases, File internalCFMLServerRoot) {
         MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, contentDirs, aliases, internalCFMLServerRoot);
-        if(serverOptions.directoryListingRefreshEnable() || !serverOptions.bufferEnable()) {
+        if (serverOptions.directoryListingRefreshEnable() || !serverOptions.bufferEnable()) {
             return mappedResourceManager;
         }
         final DirectBufferCache dataCache = new DirectBufferCache(1000, 10, 1000 * 10 * 1000, BufferAllocator.DIRECT_BYTE_BUFFER_ALLOCATOR, METADATA_MAX_AGE);
         final int metadataCacheSize = 100;
         final long maxFileSize = 10000;
-        return new CachingResourceManager(metadataCacheSize,maxFileSize, dataCache, mappedResourceManager, METADATA_MAX_AGE);
+        return new CachingResourceManager(metadataCacheSize, maxFileSize, dataCache, mappedResourceManager, METADATA_MAX_AGE);
     }
 
     public static File getThisJarLocation() {
@@ -878,8 +874,9 @@ public class Server {
 
     private List<URL> getClassesList(File classesDir) throws IOException {
         List<URL> classpath = new ArrayList<>();
-        if (classesDir == null)
+        if (classesDir == null) {
             return classpath;
+        }
         if (classesDir.exists() && classesDir.isDirectory()) {
             URL url = classesDir.toURI().toURL();
             classpath.add(url);
@@ -901,8 +898,9 @@ public class Server {
 
     public static String getVersion() {
         String versionProp = LaunchUtil.getResourceAsString("runwar/version.properties");
-        if(versionProp == null)
+        if (versionProp == null) {
             return "unknown";
+        }
         String[] version = versionProp.split("=");
         return version[version.length - 1].trim();
     }
@@ -928,7 +926,7 @@ public class Server {
         }
         return false;
     }
-    
+
     public static boolean serverWentDown(int timeout, long sleepTime, InetAddress server, int port) {
         long start = System.currentTimeMillis();
         long elapsed = (System.currentTimeMillis() - start);
@@ -973,7 +971,7 @@ public class Server {
     }
 
     public static boolean checkServerIsUp(InetAddress server, int port) throws ConnectException {
-        try(Socket sock = new Socket()) {
+        try (Socket sock = new Socket()) {
             InetSocketAddress sa = new InetSocketAddress(server, port);
             sock.connect(sa, 500);
             return true;
@@ -990,6 +988,7 @@ public class Server {
     }
 
     class OpenBrowserTask extends TimerTask {
+
         public void run() {
             int portNumber = ports.get("http").socket;
             String protocol = "http";
@@ -999,7 +998,7 @@ public class Server {
             if (openbrowserURL == null || openbrowserURL.length() == 0) {
                 openbrowserURL = "http://" + host + ":" + portNumber;
             }
-            if(serverOptions.sslEnable()) {
+            if (serverOptions.sslEnable()) {
                 portNumber = serverOptions.sslPort();
                 protocol = "https";
                 openbrowserURL = openbrowserURL.replace("http:", "https:");
@@ -1008,7 +1007,11 @@ public class Server {
                 openbrowserURL = (!openbrowserURL.startsWith("/")) ? "/" + openbrowserURL : openbrowserURL;
                 openbrowserURL = protocol + "://" + host + ":" + portNumber + openbrowserURL;
             }
-            LOG.info("Waiting up to " + (timeout/1000) + " seconds for " + host + ":" + portNumber + "...");
+            // if binding to all IPs, swap out with localhost.
+            if (openbrowserURL.contains("0.0.0.0")) {
+                openbrowserURL.replace("0.0.0.0", "127.0.0.1");
+            }
+            LOG.info("Waiting up to " + (timeout / 1000) + " seconds for " + host + ":" + portNumber + "...");
             try {
                 if (serverCameUp(timeout, 3000, InetAddress.getByName(host), portNumber)) {
                     LOG.infof("Opening browser to url: %s", openbrowserURL);
@@ -1029,7 +1032,7 @@ public class Server {
     private synchronized void setServerState(String state) {
         serverState = state;
         if (statusFile != null) {
-            try(PrintWriter writer = new PrintWriter(statusFile)) {
+            try (PrintWriter writer = new PrintWriter(statusFile)) {
                 writer.print(state);
             } catch (FileNotFoundException e) {
                 LOG.error(e.getMessage());
@@ -1050,6 +1053,7 @@ public class Server {
     }
 
     public static class ServerState {
+
         public static final String STARTING = "STARTING";
         public static final String STARTED = "STARTED";
         public static final String STARTING_BACKGROUND = "STARTING_BACKGROUND";
@@ -1060,6 +1064,7 @@ public class Server {
     }
 
     public static class Mode {
+
         public static final String WAR = "war";
         public static final String SERVLET = "servlet";
         public static final String DEFAULT = "default";
