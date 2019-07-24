@@ -1,7 +1,7 @@
 package runwar;
 
-import daevil.Daevil;
-import daevil.OSType;
+//import daevil.Daevil;
+//import daevil.OSType;
 import runwar.options.ServerOptions;
 import runwar.options.ServerOptionsImpl;
 
@@ -22,42 +22,42 @@ public class Service {
 
     private ServerOptionsImpl serverOptions;
     private Path serverJsonFile;
-    private List<Command> commands;
-    private Daevil daevil;
+    //private List<Command> commands;
+    //private Daevil daevil;
 
     public Service(ServerOptionsImpl serverOptions) {
-        this(serverOptions, defaultServerJsonFile());
+       // this(serverOptions, defaultServerJsonFile());
     }
 
-    public List<Command> commands(){
+    /*public List<Command> commands(){
         return commands;
-    }
+    }*/
 
-    public Service(ServerOptionsImpl serverOptions, Path serverJsonFile) {
+   /* public Service(ServerOptionsImpl serverOptions, Path serverJsonFile) {
         this.serverOptions = serverOptions;
         this.serverJsonFile = serverJsonFile;
         String name = serverOptions.serverName();
-        daevil = new Daevil(name);
+        //daevil = new Daevil(name);
         if (serverJsonFile.toFile().exists()) {
             displayMessage("info", serverJsonFile.toAbsolutePath() + " exists",0);
         }
 
         commands = new ArrayList<>();
         Command startCommand = new Command("start", "Starts the server");
-        startCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -b true -c \"" + serverJsonFile().toString() + "\"");
-        startCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -b true -c \"" + serverJsonFile().toString() + "\"");
+        //startCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -b true -c \"" + serverJsonFile().toString() + "\"");
+        //startCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -b true -c \"" + serverJsonFile().toString() + "\"");
         commands.add(startCommand);
 
         Command startForegroundCommand = new Command("startForeground", "Starts the server in the foreground");
-        startForegroundCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -c \"" + serverJsonFile.toString() + "\" -b false");
-        startForegroundCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -c \"" + serverJsonFile.toString() + "\" -b false");
+        //startForegroundCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -c \"" + serverJsonFile.toString() + "\" -b false");
+        //startForegroundCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -c \"" + serverJsonFile.toString() + "\" -b false");
         commands.add(startForegroundCommand);
 
         Command stopCommand = new Command("stop", "Stops the server");
-        stopCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
-        stopCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
+//        stopCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
+//        stopCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
         commands.add(stopCommand);
-    }
+    }*/
 
     public static String jarPath() {
         URL url;
@@ -83,16 +83,16 @@ public class Service {
         return Paths.get(path.toString() + "/server.json").toFile().toPath();
     }
 
-    public Path serviceControlScriptPath() {
+    /*public Path serviceControlScriptPath() {
         return Paths.get("./" + daevil.controlScript(OSType.host()).fileName);
-    }
+    }*/
 
-    public List<Command> serviceScriptCommands(Path serviceControlScriptPath) {
+    /*public List<Command> serviceScriptCommands(Path serviceControlScriptPath) {
         String controlScript = LaunchUtil.readFile(serviceControlScriptPath().toFile());
         List<Command> commands = new ArrayList<>();
         Pattern commandPattern = Pattern.compile("^.*function.*");
         return commands;
-    }
+    }*/
 
     public Path serverJsonFile() {
         if (serverJsonFile == null) {
@@ -111,11 +111,11 @@ public class Service {
         return this;
     }
 
-    public Path generateServiceScripts() throws IOException {
+    /*public Path generateServiceScripts() throws IOException {
         return generateServiceScripts(serverJsonFile.getParent());
-    }
+    }*/
 
-    public Path generateServiceScripts(Path path) throws IOException {
+    /*public Path generateServiceScripts(Path path) throws IOException {
         String jarPath = jarPath();
 //        String war = Paths.get(".").relativize(serverOptions.warFile().toPath()).toFile().getCanonicalPath();
 
@@ -127,8 +127,8 @@ public class Service {
         }
 
         String war = serverOptions.warFile().getCanonicalPath();
-        Daevil.log.info("Jar: " + jarPath);
-        Daevil.log.info("war: " + war);
+        //Daevil.log.info("Jar: " + jarPath);
+        //Daevil.log.info("war: " + war);
         String name = serverOptions.serverName();
 
         daevil.javaResolver();
@@ -150,11 +150,11 @@ public class Service {
         daevil.generateScripts(OSType.host(), path);
         Daevil.log.info("Generated service control script: " + path.toAbsolutePath().toString() + '/' + daevil.ctlScript.get());
         Daevil.log.info(daevil.controlScript(OSType.host()).displayCommands(OSType.host()));
-
+        
         return path;
-    }
+    }*/
 
-    public class Command {
+   /* public class Command {
         public String name;
         public String description;
         public Map<OSType, String> osCommand;
@@ -173,5 +173,5 @@ public class Service {
         public String osCommand(OSType osType) {
             return osCommand.get(osType.typeOf(OSType.NIX)? OSType.NIX : OSType.WINDOWS);
         }
-    }
+    }*/
 }

@@ -83,9 +83,9 @@ dependencies {
 
     // java 9+ compat
     compile 'com.sun.activation:javax.activation:1.2.0'
-    compile 'org.cfmlprojects:javashim:1.0.1'
+    //compile 'org.cfmlprojects:javashim:1.0.1'
     // daemon scripts
-    compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
+    //compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
 
     // configuration
 //    compile group: 'net.minidev', name: 'json-smart', version: '2.3'

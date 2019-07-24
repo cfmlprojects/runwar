@@ -25,7 +25,7 @@ import io.undertow.servlet.api.ServletSessionConfig;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
-import javashim.JavaShimClassLoader;
+//import javashim.JavaShimClassLoader;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import org.xnio.*;
@@ -106,12 +106,11 @@ public class Server {
         if (_classLoader == null) {
             int paths = _classpath.size();
             LOG.debug("Initializing classloader with "+ _classpath.size() + " libraries");
-            Thread.currentThread().setContextClassLoader(new JavaShimClassLoader(Thread.currentThread().getContextClassLoader()));
+   //         Thread.currentThread().setContextClassLoader(new JavaShimClassLoader(Thread.currentThread().getContextClassLoader()));
 //            LOG.debug("Booted:" + VM.isBooted());
             if( paths > 0) {
                 LOG.tracef("classpath: %s",_classpath);
-                _classLoader = new JavaShimClassLoader(new URLClassLoader(_classpath.toArray(new URL[paths]), Thread.currentThread().getContextClassLoader()));
-//                _classLoader = new CustomClassLoader(new URLClassLoader(_classpath.toArray(new URL[paths])));
+                _classLoader = new URLClassLoader(_classpath.toArray(new URL[paths]));
     //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),Thread.currentThread().getContextClassLoader());
     //          _classLoader = new URLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
     //          _classLoader = new XercesFriendlyURLClassLoader(_classpath.toArray(new URL[_classpath.size()]),ClassLoader.getSystemClassLoader());
@@ -211,10 +210,10 @@ public class Server {
         if(serverOptions.sslSelfSign()){
             configurer.generateSelfSignedCertificate();
         }
-        if(serverOptions.service()){
+        /*if(serverOptions.service()){
             new Service(serverOptions).generateServiceScripts();
             System.exit(0);
-        }
+        }*/
 
         LOG.info("Starting RunWAR " + getVersion());
         LaunchUtil.assertMinimumJavaVersion("1.8");

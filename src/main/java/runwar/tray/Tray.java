@@ -10,37 +10,24 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.filechooser.FileFilter;
-
-import daevil.OSType;
-import dorkbox.notify.Notify;
-import dorkbox.notify.Pos;
 import dorkbox.systemTray.Checkbox;
 import dorkbox.systemTray.Menu;
 import dorkbox.systemTray.MenuItem;
 import dorkbox.systemTray.Separator;
 import dorkbox.systemTray.SystemTray;
-import dorkbox.util.ActionHandler;
-import dorkbox.util.process.ShellProcessBuilder;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import runwar.LaunchUtil;
 import runwar.Server;
-import runwar.Service;
 import runwar.Start;
-import runwar.gui.JsonForm;
-import runwar.gui.SubmitActionlistioner;
 import runwar.logging.RunwarLogger;
 import runwar.options.ServerOptions;
-import runwar.options.ServerOptionsImpl;
 
 public class Tray {
 
@@ -163,7 +150,7 @@ public class Tray {
                 menu.add(new Separator());
             }
             else if(itemInfo.get("checkbox") != null) {
-                Checkbox checkbox = new Checkbox(label, new ToggleOnBootAction(server.getServerOptions()));
+                Checkbox checkbox = new Checkbox(label, null);
                 checkbox.setShortcut(label.charAt(0));
                 checkbox.setEnabled(!isDisabled);
                 menu.add(checkbox);
@@ -187,7 +174,7 @@ public class Tray {
                     File path = new File(getString(itemInfo, "path", server.getServerOptions().warUriString()));
                     menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
-                } else if (action.equalsIgnoreCase("serverOptionsJson")) {
+                /*} else if (action.equalsIgnoreCase("serverOptionsJson")) {
                     menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
                     menuItem.setShortcut('d');
                 } else if (action.equalsIgnoreCase("openTerminal")) {
@@ -201,7 +188,7 @@ public class Tray {
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
                     String output = getString(itemInfo, "output", "dialog");
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output));
-                    menuItem.setShortcut('c');
+                    menuItem.setShortcut('c');*/
                 } else {
                     RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                 }
@@ -224,7 +211,7 @@ public class Tray {
         }
     }
 
-    public static JSONArray loadItems(JSONArray loadItems) {
+  /*  public static JSONArray loadItems(JSONArray loadItems) {
         JSONArray items = new JSONArray();
         if (loadItems == null) {
             loadItems = (JSONArray) JSONValue.parse("[]");
@@ -251,11 +238,12 @@ public class Tray {
             items.add(itemInfo);
         }
         return items;
-    }
+    }*/
 
     public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {
         JSONObject config;
         JSONArray loadItems;
+        JSONArray items = new JSONArray();
         setVariableMap(variableMap);
         if(jsonText == null) {
             return null;
@@ -278,8 +266,31 @@ public class Tray {
             tooltip = tooltip.substring(0, Math.min(tooltip.length(), tooltip.lastIndexOf(" "))) + "...";
         }
         config.put("tooltip", tooltip );
+        if (loadItems == null) {
+            loadItems = (JSONArray) JSONValue.parse("[]");
+        }
 
-        JSONArray items = loadItems(loadItems);
+        for (Object ob : loadItems) {
+            JSONObject itemInfo = (JSONObject) ob;
+            if(itemInfo.get("label") == null) {
+                RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
+                continue;
+            }
+            String label = getString(itemInfo, "label", "");
+            itemInfo.put("label",label);
+            if(itemInfo.get("action") != null) {
+                String action = itemInfo.get("action").toString();
+                if (action.toLowerCase().equals("stopserver") && action.toLowerCase().equals("openbrowser")) {
+                    RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
+                    itemInfo.put("action",null);
+                }
+            }
+            if(itemInfo.get("url") != null) {
+                itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
+                itemInfo.put("url", getString(itemInfo, "url", ""));
+            }
+            items.add(itemInfo);
+        }
         config.put("items",items);
 
         return config;
@@ -437,7 +448,7 @@ public class Tray {
         }
         return null;
     }
-
+/*
     private static void showDialog(String content){
         final JTextArea jta = new JTextArea(content);
         jta.setEditable(false);
@@ -576,7 +587,7 @@ public class Tray {
             //showDialog(serverOptions.toJson());
         }
     }
-
+*/
     private static class OpenBrowserAction implements ActionListener {
         private String url;
 

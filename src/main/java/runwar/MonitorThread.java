@@ -1,6 +1,6 @@
 package runwar;
 
-import daevil.Daevil;
+//import daevil.Daevil;
 import runwar.options.ServerOptions;
 import runwar.util.PortRequisitioner;
 
@@ -63,7 +63,7 @@ class MonitorThread extends Thread {
                             }
                         }
                         if (i == stopPassword.length) {
-                            Daevil.log.debug("Password matched, stopping");
+                            //Daevil.log.debug("Password matched, stopping");
                             listening = false;
                         } else {
                             if (listening) {
@@ -163,3 +163,4 @@ class MonitorThread extends Thread {
 
 
 }
+

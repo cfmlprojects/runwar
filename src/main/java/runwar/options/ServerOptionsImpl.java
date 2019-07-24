@@ -93,9 +93,9 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
 
-    public String toJson(){
+    /*public String toJson(){
         return runwar.rock.json.ServerOptionsJSON.template(this).render().toString();
-    }
+    }*/
 
     public String toJson(Set<String> set){
         JSONArray jsonArray = new JSONArray();
@@ -103,13 +103,13 @@ public class ServerOptionsImpl implements ServerOptions {
         return jsonArray.toJSONString();
     }
 
-    public void toJson(Path path){
+    /*public void toJson(Path path){
         try(FileWriter fw = new FileWriter(path.toFile())){
             fw.write(toJson());
         } catch (Exception e){
             e.printStackTrace();
         }
-    }
+    }*/
 
     public String toJson(Map<?,?> map){
         final Map<String,String> finalMap = new HashMap<>();

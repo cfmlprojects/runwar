@@ -27,12 +27,12 @@ class ServiceTest {
         workDir.toFile().mkdir();
     }
 
-    @Test
-    void generateServiceScripts() throws IOException {
-        ServerOptionsImpl serverOptions = DefaultServer.getServerOptions();
-        serverOptions.contentDirs("../pub,../src");
-        new Service(serverOptions).generateServiceScripts(workDir);
-    }
+//    @Test
+//    void generateServiceScripts() throws IOException {
+//        ServerOptionsImpl serverOptions = DefaultServer.getServerOptions();
+//        serverOptions.contentDirs("../pub,../src");
+//        new Service(serverOptions).generateServiceScripts(workDir);
+//    }
 
 //    @Ignore
 //    @Test

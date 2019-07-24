@@ -6,7 +6,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '4.0.2'
     id "com.diffplug.gradle.oomph.ide" version "3.17.1"
     id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "1.55"
-    id "com.fizzed.rocker" version "0.24.0"
+ //   id "com.fizzed.rocker" version "0.24.0"
 //    id 'com.zyxist.chainsaw' version '0.3.1'
 }
 
@@ -54,9 +54,9 @@ tasks.withType(Test) {
 sourceSets {
     main {
         output.dir(generatedResources, builtBy: 'generateVersionFile')
-        rocker {
-            srcDir('src/main/rocker')
-        }
+   //     rocker {
+   //         srcDir('src/main/rocker')
+    //    }
     }
 }
 
@@ -66,7 +66,7 @@ sourceSets {
  filter ReplaceTokens, tokens: [
  'build.version': project.property("version"),
  'build.timestamp': project.buildTimestamp
- ]F
+ ]
  }
  }
  */
@@ -85,7 +85,7 @@ test {
     testLogging.showStandardStreams = true
 }
 
-rocker {
+/*rocker {
     failOnError true
     skipTouch true
     // must not be empty when skipTouch is equal to false
@@ -98,7 +98,7 @@ rocker {
     targetCharset null
     suffixRegex null
     postProcessing null
-}
+}*/
 
 // create an OSGI manifest
 apply plugin: 'com.diffplug.gradle.osgi.bndmanifest'
