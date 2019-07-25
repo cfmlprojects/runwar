@@ -58,6 +58,8 @@ import java.util.*;
 
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
 
@@ -1001,16 +1003,17 @@ public class Server {
             if (serverOptions.sslEnable()) {
                 portNumber = serverOptions.sslPort();
                 protocol = "https";
-                openbrowserURL = openbrowserURL.replace("http:", "https:");
+                if (openbrowserURL.startsWith("http:")) {
+                    openbrowserURL = openbrowserURL.replaceFirst("http:", "https:");
+                }
             }
             if (!openbrowserURL.startsWith("http")) {
                 openbrowserURL = (!openbrowserURL.startsWith("/")) ? "/" + openbrowserURL : openbrowserURL;
                 openbrowserURL = protocol + "://" + host + ":" + portNumber + openbrowserURL;
             }
             // if binding to all IPs, swap out with localhost.
-            if (openbrowserURL.contains("0.0.0.0")) {
-                openbrowserURL.replace("0.0.0.0", "127.0.0.1");
-            }
+            openbrowserURL = replaceHost(openbrowserURL, "0.0.0.0", "127.0.0.1");
+
             LOG.info("Waiting up to " + (timeout / 1000) + " seconds for " + host + ":" + portNumber + "...");
             try {
                 if (serverCameUp(timeout, 3000, InetAddress.getByName(host), portNumber)) {
@@ -1023,6 +1026,25 @@ public class Server {
                 LOG.error(e.getMessage());
             }
         }
+    }
+
+    public static String replaceHost(String openbrowserURL, String oldHost, String newHost) {
+        String url = openbrowserURL;
+        try {
+            URL address = new URL(openbrowserURL);
+            String ip = address.getHost();
+            if (ip.equalsIgnoreCase(oldHost)) {
+                if (address.getPort() == -1) {
+                    openbrowserURL = address.getProtocol() + "://" + newHost + address.getFile();
+                } else {
+                    openbrowserURL = address.getProtocol() + "://" + newHost + ":" + address.getPort() + address.getFile();
+                }
+            }
+        } catch (MalformedURLException ex) {
+            ex.printStackTrace();
+            openbrowserURL = url;
+        }
+        return openbrowserURL;
     }
 
     public ServerOptions getServerOptions() {
