@@ -1032,8 +1032,8 @@ public class Server {
         String url = openbrowserURL;
         try {
             URL address = new URL(openbrowserURL);
-            String ip = address.getHost();
-            if (ip.equalsIgnoreCase(oldHost)) {
+            String host = address.getHost();
+            if (host.equalsIgnoreCase(oldHost)) {
                 if (address.getPort() == -1) {
                     openbrowserURL = address.getProtocol() + "://" + newHost + address.getFile();
                 } else {
