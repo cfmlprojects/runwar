@@ -55,6 +55,7 @@ import java.net.*;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
+import javax.servlet.Servlet;
 
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
@@ -82,18 +83,20 @@ public class Server {
     private File statusFile = null;
     public static final String bar = "******************************************************************************";
     private SSLContext sslContext;
+    private Thread shutDownThread;
     private SecurityManager securityManager;
     private String serverMode;
     private PrintStream originalSystemOut;
     private PrintStream originalSystemErr;
 
     private static final int METADATA_MAX_AGE = 2000;
+    private static final Thread mainThread = Thread.currentThread();
 
     private static XnioWorker worker, logWorker;
     private runwar.util.PortRequisitioner ports;
     private static HTTP2Proxy http2proxy;
     private Tray tray;
-    private FusionReactor fusionReactor;
+    //private FusionReactor fusionReactor;
 
     public Server() {
     }
@@ -142,6 +145,17 @@ public class Server {
         startServer(args);
     }
 
+    public static void ensureJavaVersion() {
+        Class<?> nio;
+        LOG.debug("Checking that we're running on > java7");
+        try{
+            nio = Server.class.getClassLoader().loadClass("java.nio.charset.StandardCharsets");
+            nio.getClass().getName();
+        } catch (java.lang.ClassNotFoundException e) {
+            throw new RuntimeException("Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting...");
+        }
+    }
+
     public synchronized void startServer(final String[] args) throws Exception {
         startServer(CommandLineHandler.parseArguments(args));
     }
@@ -149,12 +163,12 @@ public class Server {
     public synchronized void restartServer() throws Exception {
         restartServer(getServerOptions());
     }
-
     public synchronized void restartServer(final ServerOptions options) throws Exception {
         LaunchUtil.displayMessage(options.processName(), "Info", "Restarting server...");
         LOG.info(bar);
         LOG.info("***  Restarting server");
         LOG.info(bar);
+        stopServer();
         LaunchUtil.restartApplication(() -> {
             LOG.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
             stopServer();
@@ -278,12 +292,12 @@ public class Server {
         securityManager = new SecurityManager();
 
         // if the war is archived, unpack it to system temp
-        if (warFile.exists() && !warFile.isDirectory()) {
+        if(warFile.exists() && !warFile.isDirectory()) {
             URL zipResource = warFile.toURI().toURL();
             String warDir = warFile.getName().toLowerCase().replace(".war", "");
             warFile = new File(warFile.getParentFile(), warDir);
-            if (!warFile.exists()) {
-                if (!warFile.mkdir()) {
+            if(!warFile.exists()) {
+                if(!warFile.mkdir()){
                     LOG.error("Unable to explode WAR to " + warFile.getAbsolutePath());
                 } else {
                     LOG.debug("Exploding compressed WAR to " + warFile.getAbsolutePath());
@@ -321,7 +335,7 @@ public class Server {
         if (warFile.isDirectory() && webXmlFile != null && webXmlFile.exists()) {
             if (libDirs == null) {
                 libDirs = "";
-            } else if (libDirs.length() > 0) {
+            } else if( libDirs.length() > 0 ) {
                 libDirs = libDirs + ",";
             }
             libDirs = libDirs + webinf.getAbsolutePath() + "/lib";
@@ -350,13 +364,20 @@ public class Server {
             cp.add(serverOptions.mariaDB4jImportSQLFile().toURI().toURL());
         }
         cp.addAll(getClassesList(new File(webinf, "/classes")));
-//        cp.addAll(getClassesList(new File(webinf, "/cfclasses")));
         initClassLoader(cp);
 
-        fusionReactor = new FusionReactor(_classLoader);
+        serverMode = Mode.WAR;
+        if(!webinf.exists()) {
+            serverMode = Mode.DEFAULT;
+            if(getCFMLServletClass(cfengine) != null) {
+                serverMode = Mode.SERVLET;
+            }
+        }
+        LOG.debugf("Server Mode: %s",serverMode);
 
         // redirect out and err to context logger
         //hookSystemStreams();
+
         String osName = System.getProperties().getProperty("os.name");
         String iconPNG = System.getProperty("cfml.server.trayicon");
         if (iconPNG != null && iconPNG.length() > 0) {
@@ -380,7 +401,7 @@ public class Server {
                 Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
                 dockMethod.invoke(appInstance, dockIcon);
             } catch (Exception e) {
-                LOG.warn("error setting dock icon image", e);
+                LOG.warn("error setting dock icon image",e);
             }
         }
         LOG.info(bar);
@@ -400,6 +421,7 @@ public class Server {
         }
         LOG.info("Log Directory: " + serverOptions.logDir().getAbsolutePath());
         LOG.info(bar);
+        addShutDownHook();
 
         LOG.debug("Transfer Min Size: " + serverOptions.transferMinSize());
 
@@ -468,7 +490,6 @@ public class Server {
         // TODO: add buffer pool size (maybe-- direct is best at 16k), enable/disable be good I reckon tho
         servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
                 new WebSocketDeploymentInfo().setBuffers(new DefaultByteBufferPool(true, 1024 * 16)).setWorker(worker));
-
         LOG.debug("Added websocket context");
 
         manager = defaultContainer().addDeployment(servletBuilder);
@@ -534,9 +555,9 @@ public class Server {
                     exchange.getResponseHeaders().add(SECURE, "true");
                 }
 
-                if (fusionReactor.hasFusionReactor()) {
+             /*   if (fusionReactor.hasFusionReactor()) {
                     fusionReactor.setFusionReactorInfo("myTransaction", "myTransacitonApplication");
-                }
+                }*/
 
                 CONTEXT_LOG.debug("requested: '" + fullExchangePath(exchange) + "'");
                 // sessionConfig.setSessionId(exchange, ""); // TODO: see if this suppresses jsessionid
@@ -578,13 +599,6 @@ public class Server {
             httpHandler = new ErrorHandler(pathHandler);
         }
 
-        /*
-        // if we do some kind of nifty single-sign-on deal we need this but just overhead otherwise
-        SessionCookieConfig sessionConfig = new SessionCookieConfig();
-        sessionConfig.setHttpOnly(serverOptions.cookieHttpOnly());
-        sessionConfig.setSecure(serverOptions.cookieSecure());
-        httpHandler = new SessionAttachmentHandler(httpHandler, new InMemorySessionManager("", 1, true), sessionConfig);
-         */
         if (serverOptions.logAccessEnable()) {
 //            final String PATTERN = "cs-uri cs(test-header) x-O(aa) x-H(secure)";
             RunwarAccessLogReceiver accessLogReceiver = RunwarAccessLogReceiver.builder().setLogWriteExecutor(logWorker)
@@ -599,6 +613,7 @@ public class Server {
 //            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
             httpHandler = new AccessLogHandler(httpHandler, accessLogReceiver, "combined", Server.class.getClassLoader());
         }
+
 
         if (serverOptions.logRequestsEnable()) {
             LOG.debug("Enabling request dumper");
@@ -621,7 +636,7 @@ public class Server {
             httpHandler = http2proxy.proxyHandler(httpHandler);
         }
 
-        if (serverOptions.basicAuthEnable()) {
+        if(serverOptions.basicAuthEnable()) {
             securityManager.configureAuth(httpHandler, serverBuilder, options);
         } else {
             serverBuilder.setHandler(httpHandler);
@@ -633,7 +648,7 @@ public class Server {
             if (pidFile != null && pidFile.length() > 0) {
                 File file = new File(pidFile);
                 file.deleteOnExit();
-                try (PrintWriter writer = new PrintWriter(file)) {
+                try(PrintWriter writer = new PrintWriter(file)){
                     writer.print(PID);
                 }
             }
@@ -751,7 +766,6 @@ public class Server {
             originalSystemOut = System.out;
             originalSystemErr = System.err;
             System.setOut(new LoggerPrintStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.INFO));
-            // filter out SLF4j binding errors (yeah yeah)
             System.setErr(new LoggerPrintStream(CONTEXT_LOG, org.jboss.logging.Logger.Level.ERROR, "^SLF4J:.*"));
         }
     }
@@ -766,8 +780,39 @@ public class Server {
         }
     }
 
+    private void addShutDownHook() {
+        if(shutDownThread == null) {
+            shutDownThread = new Thread(() -> {
+                LOG.debug("Running shutdown hook");
+                try {
+                    if(!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
+                        LOG.debug("shutdown hook:stopServer()");
+                        stopServer();
+                    }
+//                    if(tempWarDir != null) {
+//                        LaunchUtil.deleteRecursive(tempWarDir);
+//                    }
+                    if(mainThread.isAlive()) {
+                        LOG.debug("shutdown hook joining main thread");
+                        mainThread.interrupt();
+                        mainThread.join();
+                    }
+                } catch ( Exception e) {
+                    e.printStackTrace();
+                }
+                LOG.debug("Shutdown hook finished");
+            });
+            Runtime.getRuntime().addShutdownHook(shutDownThread);
+            LOG.debug("Added shutdown hook");
+        }
+    }
+
     public synchronized void stopServer() {
         int exitCode = 0;
+        if(shutDownThread != null && Thread.currentThread() != shutDownThread) {
+            LOG.debug("Removed shutdown hook");
+            Runtime.getRuntime().removeShutdownHook(shutDownThread);
+        }
         if (monitor != null) {
             monitor.removeShutDownHook();
         }
@@ -825,6 +870,7 @@ public class Server {
                 tray.unhookTray();
                 unhookSystemStreams();
 
+
                 if (System.getProperty("runwar.classlist") != null && Boolean.parseBoolean(System.getProperty("runwar.classlist"))) {
                     ClassLoaderUtils.listAllClasses(serverOptions.logDir() + "/classlist.txt");
                 }
@@ -835,8 +881,9 @@ public class Server {
                 LOG.debug("Stopping server monitor");
                 if (monitor != null) {
                     MonitorThread monitorThread = monitor;
-                    monitorThread.stopListening();
                     monitor = null;
+                    monitorThread.stopListening();
+                    monitorThread.interrupt();
                 } else {
                     LOG.error("server monitor was null!");
                 }
@@ -859,7 +906,7 @@ public class Server {
         final DirectBufferCache dataCache = new DirectBufferCache(1000, 10, 1000 * 10 * 1000, BufferAllocator.DIRECT_BYTE_BUFFER_ALLOCATOR, METADATA_MAX_AGE);
         final int metadataCacheSize = 100;
         final long maxFileSize = 10000;
-        return new CachingResourceManager(metadataCacheSize, maxFileSize, dataCache, mappedResourceManager, METADATA_MAX_AGE);
+        return new CachingResourceManager(metadataCacheSize,maxFileSize, dataCache, mappedResourceManager, METADATA_MAX_AGE);
     }
 
     public static File getThisJarLocation() {
@@ -870,10 +917,64 @@ public class Server {
         return PID;
     }
 
+    private int getPortOrErrorOut(int portNumber, String host) {
+        try(ServerSocket nextAvail = new ServerSocket(portNumber, 1, getInetAddress(host))) {
+            portNumber = nextAvail.getLocalPort();
+            nextAvail.close();
+            return portNumber;
+        } catch (java.net.BindException e) {
+            throw new RuntimeException("Error getting port " + portNumber + "!  Cannot start:  " + e.getMessage());
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Unknown host (" + host + ")");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private InetAddress getInetAddress(String host) {
+        try {
+            return InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Error getting inet address for " + host);
+        }
+    }
+
     private List<URL> getJarList(String libDirs) throws IOException {
         return RunwarConfigurer.getJarList(libDirs);
     }
 
+    @SuppressWarnings("unchecked")
+    private static Class<Servlet> getCFMLServletClass(String cfengine) {
+        Class<Servlet> cfmlServlet = null;
+        try {
+            cfmlServlet = (Class<Servlet>) _classLoader.loadClass(cfengine + ".loader.servlet.CFMLServlet");
+            LOG.debug("dynamically loaded CFML servlet from runwar child classloader");
+        } catch (java.lang.ClassNotFoundException devnul) {
+            try {
+                cfmlServlet = (Class<Servlet>) Server.class.getClassLoader().loadClass(cfengine + ".loader.servlet.CFMLServlet");
+                LOG.debug("dynamically loaded CFML servlet from runwar classloader");
+            } catch(java.lang.ClassNotFoundException e) {
+                LOG.trace("No CFML servlet found in class loader hierarchy");
+            }
+        }
+        return cfmlServlet;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private static Class<Servlet> getRestServletClass(String cfengine) {
+        Class<Servlet> restServletClass = null;
+        try {
+            restServletClass = (Class<Servlet>) _classLoader.loadClass(cfengine + ".loader.servlet.RestServlet");
+        } catch (java.lang.ClassNotFoundException e) {
+            try {
+                restServletClass = (Class<Servlet>) Server.class.getClassLoader().loadClass(cfengine + ".loader.servlet.RestServlet");
+            } catch (ClassNotFoundException e1) {
+                e1.printStackTrace();
+            }
+        }
+        return restServletClass;
+    }
+    
     private List<URL> getClassesList(File classesDir) throws IOException {
         List<URL> classpath = new ArrayList<>();
         if (classesDir == null) {
@@ -990,7 +1091,6 @@ public class Server {
     }
 
     class OpenBrowserTask extends TimerTask {
-
         public void run() {
             int portNumber = ports.get("http").socket;
             String protocol = "http";
@@ -1086,7 +1186,6 @@ public class Server {
     }
 
     public static class Mode {
-
         public static final String WAR = "war";
         public static final String SERVLET = "servlet";
         public static final String DEFAULT = "default";
