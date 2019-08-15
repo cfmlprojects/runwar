@@ -316,11 +316,11 @@ public class LaunchUtil {
     }
 
     public static void displayMessage(String type, String text) {
-        displayMessage("RunWWAR",type, text);
+        displayMessage("RunWAR",type, text);
     }
     
     public static void displayMessage(String type, String text, int hideAfter) {
-        displayMessage("RunWWAR",type, text, hideAfter);
+        displayMessage("RunWAR",type, text, hideAfter);
     }
 
     public static void displayMessage(String processName, String type, String text) {
