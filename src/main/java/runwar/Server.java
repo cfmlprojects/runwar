@@ -42,7 +42,6 @@ import runwar.tray.Tray;
 import runwar.undertow.MappedResourceManager;
 import runwar.undertow.RequestDebugHandler;
 import runwar.util.ClassLoaderUtils;
-import runwar.util.FusionReactor;
 import runwar.util.PortRequisitioner;
 import runwar.util.RequestDumper;
 
@@ -59,8 +58,6 @@ import javax.servlet.Servlet;
 
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
 
@@ -1132,11 +1129,8 @@ public class Server {
             URL address = new URL(openbrowserURL);
             String host = address.getHost();
             if (host.equalsIgnoreCase(oldHost)) {
-                if (address.getPort() == -1) {
-                    openbrowserURL = address.getProtocol() + "://" + newHost + address.getFile();
-                } else {
-                    openbrowserURL = address.getProtocol() + "://" + newHost + ":" + address.getPort() + address.getFile();
-                }
+                    URL ob=new URL(address.getProtocol(), newHost, address.getPort() , address.getFile());
+                    openbrowserURL=ob.toString();
             }
         } catch (MalformedURLException ex) {
             ex.printStackTrace();
