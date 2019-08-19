@@ -44,7 +44,7 @@ public class WebXMLParser {
         try {
             final String webinfPath;
             if (File.separatorChar == '\\') {
-                webinfPath = webinf.getCanonicalPath().replace("\\", "\\\\");
+                webinfPath = webinf.getCanonicalPath().replace("\\\\", "\\");
             } else {
                 webinfPath = webinf.getCanonicalPath();
             }
