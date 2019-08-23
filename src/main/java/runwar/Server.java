@@ -63,8 +63,8 @@ import static runwar.logging.RunwarLogger.LOG;
 
 public class Server {
 
-    public static volatile String processName = "RunWAR";
-    private ServerOptionsImpl serverOptions;
+    public  static String processName = "RunWAR";
+    private volatile static ServerOptionsImpl serverOptions;
     private static MariaDB4jManager mariadb4jManager;
     private DeploymentManager manager;
     private Undertow undertow;
@@ -90,7 +90,7 @@ public class Server {
     private static final Thread mainThread = Thread.currentThread();
 
     private static XnioWorker worker, logWorker;
-    private runwar.util.PortRequisitioner ports;
+    private volatile static runwar.util.PortRequisitioner ports;
     private static HTTP2Proxy http2proxy;
     private Tray tray;
     //private FusionReactor fusionReactor;
