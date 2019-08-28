@@ -135,7 +135,7 @@ public class LaunchUtil {
         	}
         	formattedArgs.append( "  "+ arg );
         }
-        RunwarLogger.LOG.debug( formattedArgs.toString() );
+        RunwarLogger.LOG.debug("args ->" + formattedArgs.toString() );
         
         RunwarLogger.LOG.debug("timeout of " + timeout / 1000 + " seconds");
         String line;
@@ -159,7 +159,6 @@ public class LaunchUtil {
                         serverIsUp = true;
                         break;
                     } else if (exit == 1) {
-                        System.out.println();
                         printExceptionLine(line);
                         while ((line = br.readLine()) != null) {
                             printExceptionLine(line);
@@ -167,6 +166,7 @@ public class LaunchUtil {
                         System.exit(1);
                     }
                 } catch (IllegalThreadStateException t) {
+                    //t.printStackTrace();
                     // This exceptions means the process has not yet finished.
                     // decide to continue, exit(0), or exit(1)
                     serverIsUp = processOutout(line, process, andExit);

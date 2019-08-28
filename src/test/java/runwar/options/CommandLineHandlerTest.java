@@ -101,7 +101,7 @@ public class CommandLineHandlerTest {
     public void testGetCommandLineArgs() {
         ServerOptionsImpl serverOptions = new ServerOptionsImpl();
         serverOptions.commandLineArgs("-war src/test/resources/war/simple.war -b false -pidfile \"/some/file\"".split(" "));
-        assertEquals(10, serverOptions.commandLineArgs().length);
+        assertEquals(12, serverOptions.commandLineArgs().length);
     }
 
 }

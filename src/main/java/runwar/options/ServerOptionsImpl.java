@@ -150,7 +150,7 @@ public class ServerOptionsImpl implements ServerOptions {
             arg = arg.trim();
             if (arg.contains("background") || arg.equalsIgnoreCase("-b") || arg.contains("balance")
                     || arg.startsWith("--port") || arg.equalsIgnoreCase("-p") || arg.startsWith("--stop-port")
-                    || arg.contains("stopsocket")) {
+                    || arg.contains("stopsocket") || arg.contains("--host")) {
                 skipNext = true;
             } else {
                 if(skipNext) {
@@ -160,6 +160,8 @@ public class ServerOptionsImpl implements ServerOptions {
                 }
             }
         }
+        argarray.add("--host");
+        argarray.add(String.valueOf(host()));
         argarray.add("--background");
         argarray.add(Boolean.toString(background()));
         argarray.add("--port");
