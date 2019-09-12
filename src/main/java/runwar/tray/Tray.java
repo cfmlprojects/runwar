@@ -52,7 +52,7 @@ public class Tray {
             return;
         }
 //        available 3.13+
-//        SystemTray.AUTO_SIZE = true;
+        SystemTray.AUTO_TRAY_SIZE = true;
         SystemTray.FORCE_GTK2 = true;
         System.setProperty("SWT_GTK3", "0");
 //        SystemTray.FORCE_TRAY_TYPE = TrayType.;
