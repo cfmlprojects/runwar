@@ -75,6 +75,7 @@ class MonitorThread extends Thread {
                         }
                     } catch (SocketException e) {
                         // reset
+                        e.printStackTrace();
                         MONITOR_LOG.debug(e);
                     }
                 }
@@ -119,6 +120,7 @@ class MonitorThread extends Thread {
                 out.flush();
             }
         } catch (IOException e) {
+            e.printStackTrace();
             // expected if already stopping
             //MONITOR_LOG.trace(e);
         }

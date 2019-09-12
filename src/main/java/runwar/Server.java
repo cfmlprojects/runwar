@@ -337,7 +337,6 @@ public class Server {
         if (serverOptions.background()) {
             setServerState(ServerState.STARTING_BACKGROUND);
             // this will eventually system.exit();
-            LOG.error("HELLO HOST:"+serverOptions.host());
             LaunchUtil.relaunchAsBackgroundProcess(serverOptions.background(false), true);
             setServerState(ServerState.STARTED_BACKGROUND);
             // just in case
@@ -514,7 +513,7 @@ public class Server {
 
         manager = defaultContainer().addDeployment(servletBuilder);
 
-        // stupid hack for older adobe versions
+        //hack for older adobe versions
         String originalJavaVersion = System.getProperty("java.version", "");
         if (serverOptions.cfEngineName().equalsIgnoreCase("adobe") && !servletBuilder.getDisplayName().contains("2018")) {
             if (LaunchUtil.versionGreaterThanOrEqualTo(originalJavaVersion, "1.9")) {
@@ -1087,24 +1086,33 @@ public class Server {
     }
 
     public static boolean checkServerIsUp(InetAddress server, int port) throws ConnectException {
-        try (Socket sock = new Socket()) {
+        Socket sock = null;
+        try {
+            sock = new Socket();
             InetSocketAddress sa = new InetSocketAddress(server, port);
             sock.connect(sa, 500);
             return true;
         } catch (ConnectException e) {
-            throw e;
+            LOG.debug("Error while connecting. " + e.getMessage());
         } catch (SocketTimeoutException e) {
             LOG.debug("Socket Timeout: " + server.getHostAddress() + ":" + port + " - " + e.getMessage() + ".");
         } catch (SocketException e) {
             LOG.debug("Socket Exception: " + server.getHostAddress() + ":" + port + " - " + e.getMessage() + ".");
         } catch (IOException e) {
-            LOG.warn("IO Exception: " + server.getHostAddress() + ":" + port + " - " + e.getMessage() + ".");
+            e.printStackTrace();
+        } finally {
+            if (sock != null) {
+                try {
+                    sock.close();
+                } catch (IOException e) {
+                    // don't care
+        }
+            }
         }
         return false;
     }
 
     class OpenBrowserTask extends TimerTask {
-
         public void run() {
             int portNumber = ports.get("http").socket;
             String protocol = "http";
@@ -1140,6 +1148,7 @@ public class Server {
                 e.printStackTrace();
                 LOG.error(e.getMessage());
             }
+            return;
         }
     }
 
@@ -1166,8 +1175,11 @@ public class Server {
     private synchronized void setServerState(String state) {
         serverState = state;
         if (statusFile != null) {
-            try (PrintWriter writer = new PrintWriter(statusFile)) {
+            try {
+                PrintWriter writer;
+                writer = new PrintWriter(statusFile);
                 writer.print(state);
+                writer.close();
             } catch (FileNotFoundException e) {
                 LOG.error(e.getMessage());
             }
@@ -1187,7 +1199,6 @@ public class Server {
     }
 
     public static class ServerState {
-
         public static final String STARTING = "STARTING";
         public static final String STARTED = "STARTED";
         public static final String STARTING_BACKGROUND = "STARTING_BACKGROUND";
@@ -1198,7 +1209,6 @@ public class Server {
     }
 
     public static class Mode {
-
         public static final String WAR = "war";
         public static final String SERVLET = "servlet";
         public static final String DEFAULT = "default";
