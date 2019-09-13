@@ -593,9 +593,11 @@ public class Server {
                     });
                 }
 
-          
-                super.handleRequest(exchange);
-                
+                if (serverOptions.debug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
+                    new RequestDumper().handleRequest(exchange);
+                } else {
+                    super.handleRequest(exchange);
+                }
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
@@ -1057,6 +1059,8 @@ public class Server {
                 }
             } catch (ConnectException e) {
                 // expexted
+                e.printStackTrace();
+                LOG.error(e);
                 return true;
             }
         }
@@ -1077,6 +1081,7 @@ public class Server {
                     return true;
                 }
             } catch (ConnectException e) {
+                e.printStackTrace();
                 LOG.debug("Error while connecting: " + server.getHostAddress() + ":" + port + " - " + e.getMessage());
             }
         }

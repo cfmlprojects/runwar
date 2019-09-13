@@ -33,13 +33,12 @@ public class Stop {
             out.close();
             s.close();
             if (!Server.serverWentDown(10000, 500, addr, socketNumber)) {
-                System.err
-                        .println("Timeout stopping server.  Did you set a stop-password, and are you passing it?  Check the log for more information.");
+                System.out.println("Timeout stopping server.  Did you set a stop-password, and are you passing it?  Check the log for more information.");
                 System.exit(1);
             }
         } catch (Exception e) {
-            System.err
-                    .println("Could not stop server.  Are you sure it is running, and listing for stop requests on port "
+            e.printStackTrace();
+            System.out.println("Could not stop server.  Are you sure it is running, and listing for stop requests on port "
                             + socketNumber + "?");
             System.exit(1);
         }
