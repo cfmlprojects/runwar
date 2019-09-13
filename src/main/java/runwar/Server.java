@@ -592,12 +592,6 @@ public class Server {
                         nextListener.proceed();
                     });
                 }
-
-                if (serverOptions.debug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
-                    new RequestDumper().handleRequest(exchange);
-                } else {
-                    super.handleRequest(exchange);
-                }
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
