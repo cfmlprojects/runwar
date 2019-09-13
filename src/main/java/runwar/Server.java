@@ -592,6 +592,10 @@ public class Server {
                         nextListener.proceed();
                     });
                 }
+
+          
+                super.handleRequest(exchange);
+                
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);

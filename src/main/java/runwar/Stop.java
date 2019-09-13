@@ -25,7 +25,7 @@ public class Stop {
             InetAddress addr = InetAddress.getByName(host);
             Socket s = new Socket(addr, socketNumber);
             OutputStream out = s.getOutputStream();
-            System.out.println("*** sending stop request to socket " + addr.getHostAddress() + ":" + socketNumber);
+            System.out.println("**** sending stop request to socket " + addr.getHostAddress() + ":" + socketNumber);
             for (int i = 0; i < stoppassword.length; i++) {
                 out.write(stoppassword[i]);
             }
