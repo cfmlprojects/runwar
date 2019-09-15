@@ -794,8 +794,9 @@ public class Server {
     }
 
     private void addShutDownHook() {
-        if (shutDownThread == null) {
-            shutDownThread = new Thread(() -> {
+        if(shutDownThread == null) {
+            shutDownThread = new Thread() {
+                public void run() {
                 LOG.debug("Running shutdown hook");
                 try {
                     if (!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
@@ -814,7 +815,8 @@ public class Server {
                     e.printStackTrace();
                 }
                 LOG.debug("Shutdown hook finished");
-            });
+                }
+            };
             Runtime.getRuntime().addShutdownHook(shutDownThread);
             LOG.debug("Added shutdown hook");
         }
