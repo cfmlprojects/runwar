@@ -1,6 +1,5 @@
 package runwar;
 
-//import daevil.Daevil;
 import runwar.options.ServerOptions;
 import runwar.util.PortRequisitioner;
 
@@ -16,7 +15,7 @@ import java.net.SocketException;
 import static runwar.logging.RunwarLogger.MONITOR_LOG;
 import static runwar.Server.bar;
 
-class MonitorThread extends Thread {
+class MonitorThreadD extends Thread {
 
     private static final Thread mainThread = Thread.currentThread();
     private final PortRequisitioner ports;
@@ -26,7 +25,7 @@ class MonitorThread extends Thread {
     private static ServerOptions serverOptions;
     private Thread shutDownThread;
 
-    MonitorThread(Server server) {
+    MonitorThreadD(Server server) {
         this.server = server;
         serverOptions = server.getServerOptions();
         this.stopPassword = serverOptions.stopPassword();

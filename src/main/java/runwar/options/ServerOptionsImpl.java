@@ -83,7 +83,7 @@ public class ServerOptionsImpl implements ServerOptions {
             .set(Options.WORKER_TASK_MAX_THREADS, 30)
             .set(Options.TCP_NODELAY, true)
             .set(Options.CORK, true);
-
+    private boolean testing = false;
     private OptionMap.Builder undertowOptions = OptionMap.builder();
 
     static {
@@ -930,6 +930,15 @@ public class ServerOptionsImpl implements ServerOptions {
     public ServerOptions debug(boolean debug) {
         this.debug = debug;
         if (debug && logLevel == "WARN") {
+            logLevel = "DEBUG";
+        }
+        return this;
+    }
+    
+      @Override
+    public ServerOptions testing(boolean testing) {
+        this.testing = testing;
+        if (testing && logLevel == "WARN") {
             logLevel = "DEBUG";
         }
         return this;
@@ -2061,6 +2070,11 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public OptionMap.Builder undertowOptions() {
         return this.undertowOptions;
+    }
+
+    @Override
+    public boolean testing() {
+        return testing;
     }
 
 }

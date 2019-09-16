@@ -24,7 +24,7 @@ public abstract class AbstractServerTest {
                 .sslPort(0)
                 .http2ProxySSLPort(0)
                 .trayEnable(false)
-                .debug(true).background(false);
+                .debug(true).background(false).testing(true);
     }
 
     abstract ServerOptions getServerOptions();

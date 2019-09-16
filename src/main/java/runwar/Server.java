@@ -216,7 +216,7 @@ public class Server {
             statusFile = serverOptions.statusFile();
         }
         String warPath = serverOptions.warUriString();
-        char[] stopPassword = serverOptions.stopPassword();
+        char[] stoppassword = serverOptions.stopPassword();
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
         processName = serverOptions.processName();
@@ -593,7 +593,7 @@ public class Server {
                     });
                 }
 
-                if (serverOptions.debug() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
+                if (serverOptions.debug() && serverOptions.testing() &&exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
                     new RequestDumper().handleRequest(exchange);
                 } else {
                     super.handleRequest(exchange);
@@ -674,7 +674,7 @@ public class Server {
 
         // start the stop monitor thread
         assert monitor == null;
-        monitor = new MonitorThread(this);
+        monitor = new MonitorThread(stoppassword);
         monitor.start();
         LOG.debug("started stop monitor");
         tray = new Tray();
@@ -828,9 +828,9 @@ public class Server {
             LOG.debug("Removed shutdown hook");
             Runtime.getRuntime().removeShutdownHook(shutDownThread);
         }
-        if (monitor != null) {
-            monitor.removeShutDownHook();
-        }
+//        if (monitor != null) {
+//            monitor.removeShutDownHook();
+//        }
         switch (getServerState()) {
             case ServerState.STOPPING:
                 LOG.warn("Stop server called, however the server is already stopping.");
@@ -896,7 +896,7 @@ public class Server {
                 if (monitor != null) {
                     MonitorThread monitorThread = monitor;
                     monitor = null;
-                    monitorThread.stopListening();
+                    monitorThread.stopListening(false);
                     monitorThread.interrupt();
                 } else {
                     LOG.error("server monitor was null!");
@@ -1217,6 +1217,121 @@ public class Server {
         public static final String WAR = "war";
         public static final String SERVLET = "servlet";
         public static final String DEFAULT = "default";
+    }
+    
+    private class MonitorThread extends Thread {
+
+        private char[] stoppassword;
+        private volatile boolean listening = false;
+        private volatile boolean systemExitOnStop = true;
+        private ServerSocket serverSocket;
+
+        public MonitorThread(char[] stoppassword) {
+            this.stoppassword = stoppassword;
+            setDaemon(true);
+            setName("StopMonitor");
+        }
+
+        @Override
+        public void run() {
+            // Executor exe = Executors.newCachedThreadPool();
+            int exitCode = 0;
+            serverSocket = null;
+            try {
+                serverSocket = new ServerSocket(serverOptions.stopPort(), 1, InetAddress.getByName(serverOptions.host()));
+                listening = true;
+                LOG.info(bar);
+                LOG.info("*** starting 'stop' listener thread - Host: " + serverOptions.host()
+                        + " - Socket: " + serverOptions.stopPort());
+                LOG.info(bar);
+                while (listening) {
+                    LOG.debug("StopMonitor listening for password");
+                    if(serverState == ServerState.STOPPED || serverState == ServerState.STOPPING){
+                        listening = false;
+                    }
+                    final Socket clientSocket = serverSocket.accept();
+                    int r, i = 0;
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                    try {
+                        while (listening && (r = reader.read()) != -1) {
+                            char ch = (char) r;
+                            if (stoppassword.length > i && ch == stoppassword[i]) {
+                                i++;
+                            } else {
+                                i = 0; // prevent prefix only matches
+                            }
+                        }
+                        if (i == stoppassword.length) {
+                            listening = false;
+                        } else {
+                            if(listening) {
+                                LOG.warn("Incorrect password used when trying to stop server.");
+                            } else {
+                                LOG.debug("stopped listening for stop password.");
+                            }
+                                
+                        }
+                    } catch (java.net.SocketException e) {
+                        // reset
+                    }
+                    try {
+                        clientSocket.close();
+                    } catch (IOException e) {
+                        LOG.error(e);
+                    }
+                }
+            } catch (Exception e) {
+                LOG.error(e);
+                exitCode = 1;
+                e.printStackTrace();
+            } finally {
+                LOG.debug("Closing server socket");
+                try {
+                    serverSocket.close();
+                    serverSocket = null;
+                } catch (IOException e) {
+                    LOG.error(e);
+                    e.printStackTrace();
+                }
+                try {
+                    if (mainThread.isAlive()) {
+                        LOG.debug("monitor joining main thread");
+                        mainThread.interrupt();
+                        try{
+                            mainThread.join();
+                        } catch (InterruptedException ie){
+                            // expected
+                        }
+                    }
+                } catch (Exception e) {
+                    LOG.error(e);
+                    e.printStackTrace();
+                }
+            }
+            if(systemExitOnStop)
+                System.exit(exitCode); // this will call our shutdown hook
+//            Thread.currentThread().interrupt();
+            return;
+        }
+        
+        public void stopListening(boolean systemExitOnStop) {
+            this.systemExitOnStop = systemExitOnStop;
+            listening = false;
+            // send a char to the reader so it will stop waiting
+            Socket s;
+            try {
+                s = new Socket(InetAddress.getByName(serverOptions.host()), serverOptions.stopPort());
+                OutputStream out = s.getOutputStream();
+                out.write('s');
+                out.flush();
+                out.close();
+                s.close();
+            } catch (IOException e) {
+                // expected if already stopping
+            }
+
+        }
+        
     }
 
 }

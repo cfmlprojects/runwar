@@ -45,6 +45,7 @@ public class BasicAuthTest extends AbstractServerTest {
                 .serverName("basicAuth")
                 .basicAuth(users)
                 .basicAuthEnable(true);
+                
     }
 
     @Test

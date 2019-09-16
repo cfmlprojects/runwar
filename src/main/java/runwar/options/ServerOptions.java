@@ -278,8 +278,10 @@ public interface ServerOptions {
     ServerOptions jarURL(URL jarURL);
 
     boolean debug();
+    boolean testing();
 
     ServerOptions debug(boolean debug);
+    ServerOptions testing(boolean testing);
 
     File workingDir();
 
