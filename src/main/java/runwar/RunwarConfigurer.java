@@ -58,7 +58,7 @@ class RunwarConfigurer {
         String cfusionDir = new File(webInfDir,"cfusion").getAbsolutePath().replace('\\', '/');
         String cfformDir = new File(webInfDir,"cfform").getAbsolutePath().replace('\\', '/');
 
-        final String cfClasspath = "%s/lib/updates/,%s/lib/,%s/lib/axis2,%s/gateway/lib/,%s/../cfform/jars,%s/../flex/jars,%s/lib/oosdk/lib,%s/lib/oosdk/classes".replaceAll("%s", cfusionDir);
+        final String cfClasspath = "%s/lib/updates,%s/lib/,%s/lib/axis2,%s/gateway/lib/,%s/../cfform/jars,%s/../flex/jars,%s/lib/oosdk/lib,%s/lib/oosdk/classes".replaceAll("%s", cfusionDir);
         final HashMap<String,String> cfprops = new HashMap<>();
         cfprops.put("coldfusion.home", cfusionDir);
         cfprops.put("coldfusion.rootDir", cfusionDir);
