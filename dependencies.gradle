@@ -18,7 +18,7 @@ ext {
     bndVersion = '1.5.0'
     spotlessVersion = '3.5.1'
 //    systemTrayVersion = '3.14'
-    systemTrayVersion = '3.13'
+    systemTrayVersion = '3.17'
     jbossJspApiVersion = '1.0.3'
     mavenRepo = "${System.getProperty("user.home")}/cfdistro/artifacts/"
 }
@@ -74,8 +74,8 @@ dependencies {
     }
 
     // squish the dorkbox stuff together for java 9+
-    compile("com.dorkbox:Notify:3.7")
-    compile("com.dorkbox:SystemTray:3.13-SNAPSHOT"){
+    dorkboxDependency("com.dorkbox:Notify:3.7")
+    dorkboxDependency("com.dorkbox:SystemTray:${systemTrayVersion}") {
         exclude group: 'ch.qos.logback', module: 'logback-core'
         exclude group: 'ch.qos.logback', module: 'logback-classic'
     }
