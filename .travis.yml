@@ -10,7 +10,7 @@ deploy:
     on:
       branch:
         - develop
-    skip_cleanup: false
+    skip_cleanup: true
     access_key_id: $AWS_ACCESS_KEY
     secret_access_key: $AWS_ACCESS_SECRET
     bucket: "downloads.ortussolutions.com"
