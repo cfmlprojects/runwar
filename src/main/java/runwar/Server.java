@@ -1150,7 +1150,6 @@ public class Server {
                     LOG.errorf("Timeout of %s reached, could not open browser to url: %s", timeout, openbrowserURL);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 LOG.error(e.getMessage());
             }
             return;
