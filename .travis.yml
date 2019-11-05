@@ -2,7 +2,7 @@ language: java
 
 script:
 - ./gradlew --refresh-dependencies
-- mv dist/libs/runwar-$version-SNAPSHOT.jar dist/libs/s3/runwar-$version-SNAPSHOT.jar
+- ./setup.sh
 
 deploy:
   # Upload binaries
