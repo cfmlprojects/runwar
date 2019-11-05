@@ -16,8 +16,8 @@ ext {
         revision = git.head().id
         masterRevision = git.resolve.toCommit(git.resolve.toBranch('origin/master')).id
         isSnapshot = masterRevision != revision
-//    isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
-//    version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
+//      isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
+//      version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
         version = version +  (isSnapshot ? "-SNAPSHOT" : "")
         // + (git.status().isClean() ? "" : "+dirty")
         println "Building Version ${version} - Branch ${git.branch.current().name}"
