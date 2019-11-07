@@ -11,7 +11,7 @@ configurations {
 
 ext {
 //    undertowVersion = '1.4.24.Final'
-    undertowVersion = '2.0.20.Final'
+    undertowVersion = '2.0.27.Final'
     urlRewriteVersion = '5.0.2'
     proguardVersion = '6.0.2'
     goomphVersion = '3.17.1'
