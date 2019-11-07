@@ -8,25 +8,25 @@ buildscript {
 import org.ajoberstar.grgit.Grgit
 
 ext {
-    version = "4.0.0"
+    app_version = "4.0.0"
     isSnapshot = true
     try{
         git = Grgit.open(dir: file('.'))
         describedCommit = git.describe().toString().trim()
         revision = git.head().id
-        masterRevision = git.resolve.toCommit(git.resolve.toBranch('origin/master')).id
+        //masterRevision = git.resolve.toCommit(git.resolve.toBranch('origin/master')).id
         //isSnapshot = masterRevision != revision
 //      isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
 //      version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
-        version = version +  (isSnapshot ? "-SNAPSHOT" : "")
+        app_version = app_version +  (isSnapshot ? "-SNAPSHOT" : "")
         // + (git.status().isClean() ? "" : "+dirty")
-        println "Building Version ${version} - Branch ${git.branch.current().name}"
+        println "Building Version ${app_version} - Branch ${git.branch.current().name}"
         println "Commit message:" + git.head().fullMessage
     } catch (Exception e) {
         e.printStackTrace()
     }
 }
-version = ext.version
+app_version = ext.app_version
 
 task generateScmInfoFile {
     doLast {
