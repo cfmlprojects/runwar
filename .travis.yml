@@ -2,6 +2,9 @@ language: java
 
 script:
 - ./gradlew --refresh-dependencies
+- mkdir dist/libs/s3
+- mv dist/libs/runwar* dist/libs/s3
+
 
 deploy:
   # Upload binaries
@@ -13,6 +16,6 @@ deploy:
     access_key_id: $AWS_ACCESS_KEY
     secret_access_key: $AWS_ACCESS_SECRET
     bucket: "downloads.ortussolutions.com"
-    local-dir: dist/libs
-    upload-dir: cfmlprojects/runwar/$version
+    local-dir: dist/libs/s3
+    upload-dir: cfmlprojects/runwar/$version-SNAPSHOT
     acl: public_read
