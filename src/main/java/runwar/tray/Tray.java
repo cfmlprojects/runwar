@@ -598,7 +598,7 @@ public class Tray {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            displayMessage( "Info", "Opening browser to " + url);
+            displayMessage(variableMap.get("processName"), "Info", "Opening browser to " + url);
             openURL(url);
         }
     }

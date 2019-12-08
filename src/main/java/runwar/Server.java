@@ -63,7 +63,7 @@ import static runwar.logging.RunwarLogger.LOG;
 
 public class Server {
 
-    public  static String processName = "RunWAR";
+    public  static String processName = "Starting Server...";
     private volatile static ServerOptionsImpl serverOptions;
     private static MariaDB4jManager mariadb4jManager;
     private DeploymentManager manager;
@@ -276,7 +276,8 @@ public class Server {
                     File keyFile = serverOptions.sslKey();
                     char[] keypass = serverOptions.sslKeyPass();
                     String[] sslAddCerts = serverOptions.sslAddCerts();
-                    sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{serverName});
+                    
+                    sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{serverOptions.host()});
                     if (keypass != null) {
                         Arrays.fill(keypass, '*');
                     }

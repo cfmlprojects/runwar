@@ -113,8 +113,10 @@ public class SSLUtil
         SSLContext sslContext;
         try {
             if (openssl && hostNames == null) {
+                RunwarLogger.SECURITY_LOGGER.debug("Using openssl TSL");
                 sslContext = SSLContext.getInstance("openssl.TLS");
             } else {
+                RunwarLogger.SECURITY_LOGGER.debug("UsingTSL");
                 sslContext = SSLContext.getInstance("TLS");
 //                sslContext = SSLContext.getInstance("TLSv1.2");
             }
@@ -132,6 +134,7 @@ public class SSLUtil
         if (hostNames != null) {
             SNIContextMatcher.Builder sniMatchBuilder = new SNIContextMatcher.Builder().setDefaultContext(sslContext);
             for(String hostName : hostNames){
+                RunwarLogger.SECURITY_LOGGER.debug("host:" + hostName);
                 sniMatchBuilder.addMatch(hostName,sslContext);
             }
             RunwarLogger.SECURITY_LOGGER.debug("Creating SNI SSL context for hosts: " + Arrays.toString(hostNames));
@@ -290,14 +293,19 @@ public class SSLUtil
         try {
             final Certificate certificate = CertificateFactory.getInstance("X.509").generateCertificate(fullStream(file));
             keyStore.setCertificateEntry(alias, certificate);
-            X500Name x500name = new JcaX509CertificateHolder((X509Certificate) certificate).getSubject();
-            String CN =  IETFUtils.valueToString(x500name.getRDNs(BCStyle.CN)[0].getFirst().getValue());
-            RunwarLogger.SECURITY_LOGGER.debug("Added certificate file:" + file.getAbsolutePath());
-            RunwarLogger.SECURITY_LOGGER.debugf("  %s  certificate, public key [ %s ] CN=%s", certificate.getType(), certificate.getPublicKey().getAlgorithm(), CN);
+            String CN = "";
+            try{
+                X500Name x500name = new JcaX509CertificateHolder((X509Certificate) certificate).getSubject();
+                CN =  IETFUtils.valueToString(x500name.getRDNs(BCStyle.CN)[0].getFirst().getValue());
+                RunwarLogger.SECURITY_LOGGER.debug("Added certificate file:" + file.getAbsolutePath());
+                RunwarLogger.SECURITY_LOGGER.debugf("  %s  certificate, public key [ %s ] CN=%s", certificate.getType(), certificate.getPublicKey().getAlgorithm(), CN);
+            }catch(Exception e){
+                RunwarLogger.SECURITY_LOGGER.debug("The added certificate doesn't have a CN, public key cannot be displayed:" + e.getMessage());
+            }
+            
         }
         catch (Exception ex) {
-            RunwarLogger.SECURITY_LOGGER.error("Could not load certificate file:" + file.getAbsolutePath());
-            ex.printStackTrace();
+            RunwarLogger.SECURITY_LOGGER.error("Could not load certificate file:" + file.getAbsolutePath() + " " + ex.getMessage());
         }
     }
     
