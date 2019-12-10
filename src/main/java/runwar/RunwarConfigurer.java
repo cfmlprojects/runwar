@@ -239,9 +239,11 @@ class RunwarConfigurer {
                     String rewriteFileName = "urlrewrite";
                     rewriteFileName += serverOptions.urlRewriteApacheFormat() ? ".htaccess" : ".xml";
                     File webInfRewriteFile = new File(webInfDir, rewriteFileName);
-                    if(serverOptions.urlRewriteFile().getAbsolutePath() != webInfRewriteFile.getAbsolutePath()){
+                    if(!serverOptions.urlRewriteFile().equals(webInfRewriteFile)){
                         LaunchUtil.copyFile(serverOptions.urlRewriteFile(), webInfRewriteFile);
                         LOG.debug("Copying URL rewrite file " + serverOptions.urlRewriteFile().getAbsolutePath() + " to WEB-INF: " + webInfRewriteFile.getAbsolutePath());
+                    }else{
+                        LOG.debug("Keeping the rewrite file ");
                     }
                     urlRewriteFile = "/WEB-INF/"+rewriteFileName;
                 }
