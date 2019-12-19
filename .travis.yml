@@ -11,11 +11,11 @@ deploy:
   - provider: s3
     on:
       branch:
-        - develop
+        - master
     skip_cleanup: true
     access_key_id: $AWS_ACCESS_KEY
     secret_access_key: $AWS_ACCESS_SECRET
     bucket: "downloads.ortussolutions.com"
     local-dir: dist/libs/s3
-    upload-dir: cfmlprojects/runwar/$version-SNAPSHOT
+    upload-dir: cfmlprojects/runwar/$version
     acl: public_read
