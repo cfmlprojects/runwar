@@ -4,18 +4,23 @@ import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import runwar.security.SSLUtil;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -45,6 +50,7 @@ public class TestHttpClient extends DefaultHttpClient {
 
     public TestHttpClient() {
         instances.add(this);
+        this.setCookieStore(new BasicCookieStore());
     }
 
     public TestHttpClient(HttpParams params) {
@@ -75,9 +81,33 @@ public class TestHttpClient extends DefaultHttpClient {
     }
 
     public void setSSLContext(final SSLContext sslContext) {
+        if(!DefaultServer.getServerOptions().sslEnable()){
+            return;
+        }
         SchemeRegistry registry = getConnectionManager().getSchemeRegistry();
+        TrustStrategy trustStrategy = new TrustStrategy() {
+
+            public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                for (X509Certificate cert: chain) {
+//                    System.err.println(cert);
+                }
+                return true;
+            }
+
+        };
         registry.unregister("https");
-        if (DefaultServer.getHostAddress(DefaultServer.DEFAULT).equals("localhost")) {
+        try {
+            SSLSocketFactory sslSocketFactory = new SSLSocketFactory("TLS", SSLUtil.getServerKeyStore(), "password", SSLUtil.getTrustStore(), null,
+                    trustStrategy, new AllowAllHostnameVerifier());
+            registry.register(new Scheme("https", 443, sslSocketFactory));
+            registry.register(new Scheme("https", DefaultServer.getHostSSLPort("default"), sslSocketFactory));
+
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
+/*
+        if (DefaultServer.getHostAddress(DefaultServer.DEFAULT).equals("localhost") || DefaultServer.getHostAddress(DefaultServer.DEFAULT).equals("127.0.0.1")) {
             registry.register(new Scheme("https", 443, new SSLSocketFactory(sslContext)));
             registry.register(
                     new Scheme("https", DefaultServer.getHostSSLPort("default"), new SSLSocketFactory(sslContext)));
@@ -86,6 +116,7 @@ public class TestHttpClient extends DefaultHttpClient {
             registry.register(new Scheme("https", DefaultServer.getHostSSLPort("default"),
                     new SSLSocketFactory(sslContext, NO_OP_VERIFIER)));
         }
+*/
     }
 
     public static void afterTest() {

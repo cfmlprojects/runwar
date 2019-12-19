@@ -1,51 +1,62 @@
 package runwar.options;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import io.undertow.UndertowOptions;
 import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import org.xnio.Option;
+import org.xnio.OptionMap;
+import org.xnio.Options;
 import runwar.Server;
 import runwar.Server.Mode;
+import runwar.logging.RunwarLogger;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static runwar.util.Reflection.setOptionMapValue;
 
 public class ServerOptionsImpl implements ServerOptions {
-    private String serverName = "default", processName = "RunWAR", loglevel = "INFO";
+    private String serverName = null, processName = "RunWAR", logLevel = "INFO";
     private String host = "127.0.0.1", contextPath = "/";
-    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
+    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779, http2ProxySSLPort = 1444;
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
-    private boolean debug = false, isBackground = true, logAccessEnable = false, logRequestsEnable = false, openbrowser = false;
-    private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server.", logRequestBaseFileName="requests.", logAccessBaseFileName="access.", libDirs = null;
+    private boolean debug = false, isBackground = true, logAccessEnable = false, logRequestsEnable = false, openbrowser = false, startedFromCommandline = false;
+    private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server", logRequestBaseFileName="requests", logAccessBaseFileName="access", logSuffix="txt", libDirs = null;
     private int launchTimeout = 50 * 1000; // 50 secs
     private URL jarURL = null;
-    private File warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, trayConfig, statusFile = null;
+    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null;
     private String iconImage = null;
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
-    private boolean trayEnabled = true;
-    private boolean directoryListingEnabled = true;
-    private boolean directoryListingRefreshEnabled = false;
-    private boolean cacheEnabled = false;
+    private boolean trayEnable = true;
+    private boolean directoryListingEnable = true;
+    private boolean directoryListingRefreshEnable = false;
+    private boolean cacheEnable = false;
     private String[] welcomeFiles;
     private File sslCertificate, sslKey, configFile;
     private char[] sslKeyPass = null;
     private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
     private String action = "start";
-    private String cfengineName = "lucee";
-    private boolean customHTTPStatusEnabled = true;
-    private boolean gzipEnabled = false;
+    private String cfengineName = "";
+    private boolean customHTTPStatusEnable = true;
+    private boolean gzipEnable = false;
     private Long transferMinSize = (long) 100;
-    private boolean mariadb4jEnabled = false;
+    private boolean mariadb4jEnable = false;
     private int mariadb4jPort = 13306;
     private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
     private List<String> jvmArgs = null;
     private Map<Integer, String> errorPages = null;
-    private boolean servletRestEnabled = true;
+    private boolean servletRestEnable = false;
     private String[] servletRestMappings = { "/rest" };
-    private boolean filterPathInfoEnabled = true;
+    private boolean filterPathInfoEnable = true;
     private String[] sslAddCerts = null;
     private String[] cmdlineArgs = null;
     private String[] loadBalance = null;
@@ -53,353 +64,370 @@ public class ServerOptionsImpl implements ServerOptions {
     private boolean enableBasicAuth = false;
     private boolean directBuffers = true;
     int bufferSize, ioThreads, workerThreads = 0;
-    private boolean proxyPeerAddressEnabled = false;
-    private boolean http2enabled = false;
+    private boolean proxyPeerAddressEnable = false;
+    private boolean http2enable = false;
     private boolean secureCookies = false, cookieHttpOnly = false, cookieSecure = false;
     private JSONArray trayConfigJSON;
+    private boolean bufferEnable = false;
+    private boolean sslEccDisable = true;
+    private boolean sslSelfSign = false;
+    private boolean service = false;
+    private static String logPattern = "[%-5p] %c: %m%n";
+    private final Map<String, String> aliases = new HashMap<>();
+    private Set<String> contentDirectories = new HashSet<>();
+    private OptionMap.Builder serverXnioOptions = OptionMap.builder()
+            .set(Options.WORKER_IO_THREADS, 8)
+            .set(Options.CONNECTION_HIGH_WATER, 1000000)
+            .set(Options.CONNECTION_LOW_WATER, 1000000)
+            .set(Options.WORKER_TASK_CORE_THREADS, 30)
+            .set(Options.WORKER_TASK_MAX_THREADS, 30)
+            .set(Options.TCP_NODELAY, true)
+            .set(Options.CORK, true);
+    private boolean testing = false;
+    private OptionMap.Builder undertowOptions = OptionMap.builder();
 
     static {
-        userPasswordList = new HashMap<String, String>();
+        userPasswordList = new HashMap<>();
         userPasswordList.put("bob", "12345");
         userPasswordList.put("alice", "secret");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setCommandLineArgs(java.lang.String[])
+
+    /*public String toJson(){
+        return runwar.rock.json.ServerOptionsJSON.template(this).render().toString();
+    }*/
+
+    public String toJson(Set<String> set){
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.addAll(set);
+        return jsonArray.toJSONString();
+    }
+
+    /*public void toJson(Path path){
+        try(FileWriter fw = new FileWriter(path.toFile())){
+            fw.write(toJson());
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }*/
+
+    public String toJson(Map<?,?> map){
+        final Map<String,String> finalMap = new HashMap<>();
+        map.forEach((o, o2) -> {
+            if(o instanceof Integer){
+                finalMap.put(Integer.toString((Integer) o),(String)o2);
+            } else {
+                finalMap.put((String)o,(String)o2);
+            }
+        });
+        return new JSONObject(finalMap).toJSONString();
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#commandLineArgs(java.lang.String[])
      */
     @Override
-    public ServerOptions setCommandLineArgs(String[] args) {
+    public ServerOptions commandLineArgs(String[] args) {
         this.cmdlineArgs = args;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getCommandLineArgs()
+    /** 
+     * @see runwar.options.ServerOptions#commandLineArgs()
      */
     @Override
-    public String[] getCommandLineArgs() {
+    public String[] commandLineArgs() {
         // TODO: totally refactor argument handling so we can serialize and not
         // muck around like this.
         List<String> argarray = new ArrayList<String>();
         if (cmdlineArgs == null) {
             cmdlineArgs = "".split("");
             argarray.add("-war");
-            argarray.add(getWarFile().getAbsolutePath());
+            argarray.add(warFile() != null ? warFile().getAbsolutePath() : new File(".").getAbsolutePath());
         }
+        Boolean skipNext = false;
         for (String arg : cmdlineArgs) {
-            if (arg.contains("background") || arg.startsWith("-b") || arg.contains("balance")
-                    || arg.startsWith("--port") || arg.startsWith("-p") || arg.startsWith("--stop-port")
-                    || arg.contains("stopsocket")) {
-                continue;
+            arg = arg.trim();
+            if (arg.contains("background") || arg.equalsIgnoreCase("-b") || arg.contains("balance")
+                    || arg.startsWith("--port") || arg.equalsIgnoreCase("-p") || arg.startsWith("--stop-port")
+                    || arg.contains("stopsocket") || arg.contains("--host")) {
+                skipNext = true;
             } else {
-                argarray.add(arg);
+                if(skipNext) {
+                    skipNext = false;
+                } else {
+                    argarray.add(arg);
+                }
             }
         }
+        argarray.add("--host");
+        argarray.add(String.valueOf(host()));
         argarray.add("--background");
-        argarray.add(Boolean.toString(isBackground()));
+        argarray.add(Boolean.toString(background()));
         argarray.add("--port");
-        argarray.add(Integer.toString(getPortNumber()));
+        argarray.add(Integer.toString(httpPort()));
         argarray.add("--stop-port");
-        argarray.add(Integer.toString(getSocketNumber()));
+        argarray.add(Integer.toString(stopPort()));
         return argarray.toArray(new String[argarray.size()]);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getServerName()
+    /** 
+     * @see runwar.options.ServerOptions#serverName()
      */
     @Override
-    public String getServerName() {
+    public String serverName() {
+        if(serverName == null){
+            serverName = Paths.get(".").toFile().getAbsoluteFile().getParentFile().getName();
+            assert serverName.length() > 3;
+        }
         return serverName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setServerName(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#serverName(java.lang.String)
      */
     @Override
-    public ServerOptions setServerName(String serverName) {
+    public ServerOptions serverName(String serverName) {
         this.serverName = serverName;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getLoglevel()
+    /** 
+     * @see runwar.options.ServerOptions#logLevel()
      */
     @Override
-    public String getLoglevel() {
-        return loglevel;
+    public String logLevel() {
+        return logLevel;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLoglevel(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#logLevel(java.lang.String)
      */
     @Override
-    public ServerOptions setLoglevel(String loglevel) {
-        this.loglevel = loglevel.toUpperCase();
+    public ServerOptions logLevel(String level) {
+        this.logLevel = level.toUpperCase();
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getContextPath()
+    /** 
+     * @see runwar.options.ServerOptions#contextPath()
      */
     @Override
-    public String getContextPath() {
+    public String contextPath() {
         return contextPath;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getConfigFile()
+    /** 
+     * @see runwar.options.ServerOptions#configFile()
      */
     @Override
-    public File getConfigFile() {
+    public File configFile() {
         return configFile;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setConfigFile(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#configFile(java.io.File)
      */
     @Override
-    public ServerOptions setConfigFile(File file) {
+    public ServerOptions configFile(File file) {
         this.configFile = file;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setContextPath(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#contextPath(java.lang.String)
      */
     @Override
-    public ServerOptions setContextPath(String contextPath) {
+    public ServerOptions contextPath(String contextPath) {
         this.contextPath = contextPath;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getHost()
+    /** 
+     * @see runwar.options.ServerOptions#host()
      */
     @Override
-    public String getHost() {
+    public String host() {
         return host;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setHost(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#host(java.lang.String)
      */
     @Override
-    public ServerOptions setHost(String host) {
+    public ServerOptions host(String host) {
         this.host = host;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getPortNumber()
+    /** 
+     * @see runwar.options.ServerOptions#httpPort()
      */
     @Override
-    public int getPortNumber() {
+    public int httpPort() {
         return portNumber;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setPortNumber(int)
+    /** 
+     * @see runwar.options.ServerOptions#httpPort(int)
      */
     @Override
-    public ServerOptions setPortNumber(int portNumber) {
+    public ServerOptions httpPort(int portNumber) {
         this.portNumber = portNumber;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getAJPPort()
+    /** 
+     * @see runwar.options.ServerOptions#ajpPort()
      */
     @Override
-    public int getAJPPort() {
+    public int ajpPort() {
         return ajpPort;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setAJPPort(int)
+    /** 
+     * @see runwar.options.ServerOptions#ajpPort(int)
      */
     @Override
-    public ServerOptions setAJPPort(int ajpPort) {
+    public ServerOptions ajpPort(int ajpPort) {
         this.ajpPort = ajpPort;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getSSLPort()
+    /** 
+     * @see runwar.options.ServerOptions#sslPort()
      */
     @Override
-    public int getSSLPort() {
+    public int sslPort() {
         return sslPort;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSSLPort(int)
+    /** 
+     * @see runwar.options.ServerOptions#sslPort(int)
      */
     @Override
-    public ServerOptions setSSLPort(int sslPort) {
+    public ServerOptions sslPort(int sslPort) {
         this.sslPort = sslPort;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isEnableSSL()
+    /** 
+     * @see runwar.options.ServerOptions#sslEnable()
      */
     @Override
-    public boolean isEnableSSL() {
+    public boolean sslEnable() {
         return enableSSL;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setEnableSSL(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#sslEnable(boolean)
      */
     @Override
-    public ServerOptions setEnableSSL(boolean enableSSL) {
+    public ServerOptions sslEnable(boolean enableSSL) {
         this.enableSSL = enableSSL;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isEnableHTTP()
+    /** 
+     * @see runwar.options.ServerOptions#httpEnable()
      */
     @Override
-    public boolean isEnableHTTP() {
+    public boolean httpEnable() {
         return enableHTTP;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setEnableHTTP(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#httpEnable(boolean)
      */
     @Override
-    public ServerOptions setEnableHTTP(boolean bool) {
+    public ServerOptions httpEnable(boolean bool) {
         this.enableHTTP = bool;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isURLRewriteApacheFormat()
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteApacheFormat()
      */
     @Override
-    public boolean isURLRewriteApacheFormat() {
-        return getURLRewriteFile() == null ? false : getURLRewriteFile().getPath().endsWith(".htaccess") || getURLRewriteFile().getPath().endsWith(".conf");
+    public boolean urlRewriteApacheFormat() {
+        return urlRewriteFile() == null ? false : urlRewriteFile().getPath().endsWith(".htaccess") || urlRewriteFile().getPath().endsWith(".conf");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isEnableURLRewrite()
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteEnable()
      */
     @Override
-    public boolean isEnableURLRewrite() {
+    public boolean urlRewriteEnable() {
         return enableURLRewrite;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setEnableURLRewrite(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteEnable(boolean)
      */
     @Override
-    public ServerOptions setEnableURLRewrite(boolean bool) {
+    public ServerOptions urlRewriteEnable(boolean bool) {
         this.enableURLRewrite = bool;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setURLRewriteFile(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteFile(java.io.File)
      */
     @Override
-    public ServerOptions setURLRewriteFile(File file) {
+    public ServerOptions urlRewriteFile(File file) {
         this.urlRewriteFile = file;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getURLRewriteFile()
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteFile()
      */
     @Override
-    public File getURLRewriteFile() {
+    public File urlRewriteFile() {
         return this.urlRewriteFile;
     }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * runwar.options.ServerOptions#setURLRewriteCheckInterval(java.lang.String)
+    
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteLog(java.io.File)
      */
     @Override
-    public ServerOptions setURLRewriteCheckInterval(String interval) {
+    public ServerOptions urlRewriteLog(File file) {
+        this.urlRewriteLog = file;
+        return this;
+    }
+    
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteLog()
+     */
+    @Override
+    public File urlRewriteLog() {
+        return this.urlRewriteLog;
+    }
+
+    /** 
+     * @see
+     * runwar.options.ServerOptions#urlRewriteCheckInterval(java.lang.String)
+     */
+    @Override
+    public ServerOptions urlRewriteCheckInterval(String interval) {
         this.urlRewriteCheckInterval = interval;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getURLRewriteCheckInterval()
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteCheckInterval()
      */
     @Override
-    public String getURLRewriteCheckInterval() {
+    public String urlRewriteCheckInterval() {
         return this.urlRewriteCheckInterval;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see
-     * runwar.options.ServerOptions#setURLRewriteStatusPath(java.lang.String)
+     * runwar.options.ServerOptions#urlRewriteStatusPath(java.lang.String)
      */
     @Override
-    public ServerOptions setURLRewriteStatusPath(String path) {
+    public ServerOptions urlRewriteStatusPath(String path) {
         if (!path.startsWith("/")) {
             path = '/' + path;
         }
@@ -407,54 +435,72 @@ public class ServerOptionsImpl implements ServerOptions {
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getURLRewriteStatusPath()
+    /** 
+     * @see runwar.options.ServerOptions#urlRewriteStatusPath()
      */
     @Override
-    public String getURLRewriteStatusPath() {
+    public String urlRewriteStatusPath() {
         return this.urlRewriteStatusPath;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getSocketNumber()
+    /** 
+     * @see runwar.options.ServerOptions#stopPort()
      */
     @Override
-    public int getSocketNumber() {
+    public int stopPort() {
         return socketNumber;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSocketNumber(int)
+    /** 
+     * @see runwar.options.ServerOptions#stopPort(int)
      */
     @Override
-    public ServerOptions setSocketNumber(int socketNumber) {
+    public ServerOptions stopPort(int socketNumber) {
         this.socketNumber = socketNumber;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getLogDir()
+    /** 
+     * @see runwar.options.ServerOptions#logPattern(java.lang.String)
      */
     @Override
-    public File getLogDir() {
+    public ServerOptions logPattern(String pattern) {
+        if (pattern != null && pattern.length() > 0)
+            logPattern = pattern;
+        return this;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#logPattern()
+     */
+    @Override
+    public String logPattern() {
+        return logPattern;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#hasLogDir()
+     */
+    @Override
+    public boolean hasLogDir() {
+        return logDir != null;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#logDir()
+     */
+    @Override
+    public File logDir() {
         if (logDir == null) {
             String defaultLogDir = new File(Server.getThisJarLocation().getParentFile(), "./.logs/")
                     .getAbsolutePath();
             logDir = new File(defaultLogDir);
-            if (getWarFile() != null) {
-                File warFile = getWarFile();
+            if (warFile() != null) {
+                File warFile = warFile();
                 if (warFile.isDirectory() && new File(warFile, "WEB-INF").exists()) {
                     defaultLogDir = warFile.getPath() + "/WEB-INF/logs/";
-                } else if (getCFEngineName().length() != 0) {
-                    String serverConfigDir = getCFMLServletConfigServerDir();
+                } else if (cfEngineName().length() != 0) {
+                    String serverConfigDir = cfmlServletConfigServerDir();
                     if (serverConfigDir != null) {
                         defaultLogDir = new File(serverConfigDir, "log/").getAbsolutePath();
                     }
@@ -462,102 +508,171 @@ public class ServerOptionsImpl implements ServerOptions {
                 logDir = new File(defaultLogDir);
             }
         }
+        assert logDir != null;
         return logDir;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLogDir(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#logDir(java.lang.String)
      */
     @Override
-    public ServerOptions setLogDir(String logDir) {
+    public ServerOptions logDir(String logDir) {
         if (logDir != null && logDir.length() > 0)
             this.logDir = new File(logDir);
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLogDir(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#logDir(java.io.File)
      */
     @Override
-    public ServerOptions setLogDir(File logDir) {
+    public ServerOptions logDir(File logDir) {
         this.logDir = logDir;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLogFileName(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#logFileName(java.lang.String)
      */
     @Override
-    public ServerOptions setLogFileName(String name) {
+    public ServerOptions logFileName(String name) {
         this.logFileBaseName = name;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLogFileName()
+    /** 
+     * @see runwar.options.ServerOptions#logFileName()
      */
     @Override
-    public String getLogFileName() {
-        this.logFileBaseName = this.logFileBaseName == null ? "server." : this.logFileBaseName;
+    public String logFileName() {
+        this.logFileBaseName = (this.logFileBaseName == null) ? "server." : this.logFileBaseName;
         return this.logFileBaseName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getCfmlDirs()
+    /** 
+     * @see runwar.options.ServerOptions#logFileName(java.lang.String)
      */
     @Override
-    public String getCfmlDirs() {
-        if (cfmlDirs == null && getWarFile() != null) {
-            setCfmlDirs(getWarFile().getAbsolutePath());
+    public ServerOptions logSuffix(String suffix) {
+        this.logSuffix = suffix;
+        return this;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#logFileName()
+     */
+    @Override
+    public String logSuffix() {
+        return this.logSuffix;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#contentDirs()
+     */
+    @Override
+    public String contentDirs() {
+        if (cfmlDirs == null && warFile() != null) {
+            contentDirs(warFile().getAbsolutePath());
         }
         return cfmlDirs;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setCfmlDirs(java.lang.String)
-     */
     @Override
-    public ServerOptions setCfmlDirs(String cfmlDirs) {
-        this.cfmlDirs = cfmlDirs;
+    public Set<String> contentDirectories() {
+        if(contentDirs() != null){
+            Stream.of(contentDirs().split(",")).forEach(aDirList -> {
+                String dir;
+                String[] directoryAndAliasList = aDirList.trim().split("=");
+                if (directoryAndAliasList.length == 1) {
+                    dir = directoryAndAliasList[0].trim();
+                    if(dir.length() > 0)
+                        contentDirectories.add(dir);
+                }
+            });
+        }
+        return contentDirectories;
+    }
+
+    @Override
+    public ServerOptions contentDirectories(List<String> dirs) {
+        contentDirectories.addAll(dirs);  // a set so we can always safely add
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isBackground()
+    @Override
+    public ServerOptions contentDirectories(Set<String> dirs) {
+        contentDirectories = dirs;
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#contentDirs(java.lang.String)
      */
     @Override
-    public boolean isBackground() {
+    public ServerOptions contentDirs(String dirs) {
+        this.cfmlDirs = dirs;
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#aliases()
+     */
+    @Override
+    public Map<String,String> aliases() {
+        if(contentDirs() == null && aliases.size() == 0){
+            return new HashMap<>();
+        }
+        Stream.of(contentDirs().split(",")).forEach(aDirList -> {
+            Path path;
+            String dir = "";
+            String virtual = "";
+            String[] directoryAndAliasList = aDirList.trim().split("=");
+            if (directoryAndAliasList.length == 1) {
+                dir = directoryAndAliasList[0].trim();
+                if(dir.length() > 0)
+                    contentDirectories.add(dir); // a set so we can always safely add
+            } else {
+                dir = directoryAndAliasList[1].trim();
+                virtual = directoryAndAliasList[0].trim();
+            }
+            dir = dir.endsWith("/") ? dir : dir + '/';
+            path = Paths.get(dir).normalize().toAbsolutePath();
+            if(virtual.length() != 0){
+                virtual = virtual.startsWith("/") ? virtual : "/" + virtual;
+                virtual = virtual.endsWith("/") ? virtual.substring(0, virtual.length() - 1) : virtual;
+                aliases.put(virtual.toLowerCase(), path.toString());
+            }
+        });
+        return aliases;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#contentDirs(java.lang.String)
+     */
+    @Override
+    public ServerOptions aliases(Map<String,String> aliases) {
+        this.aliases.putAll(aliases);
+        return this;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#background()
+     */
+    @Override
+    public boolean background() {
         return isBackground;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setBackground(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#background(boolean)
      */
     @Override
-    public ServerOptions setBackground(boolean isBackground) {
+    public ServerOptions background(boolean isBackground) {
         this.isBackground = isBackground;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see runwar.options.ServerOptions#logRequestsEnable()
      */
     @Override
@@ -565,9 +680,7 @@ public class ServerOptionsImpl implements ServerOptions {
         return logRequestsEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see runwar.options.ServerOptions#logRequestsEnable(boolean)
      */
     @Override
@@ -576,9 +689,7 @@ public class ServerOptionsImpl implements ServerOptions {
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see runwar.options.ServerOptions#logRequestsEnable()
      */
     @Override
@@ -586,9 +697,7 @@ public class ServerOptionsImpl implements ServerOptions {
         return logAccessEnable;
     }
     
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see runwar.options.ServerOptions#logRequestsEnable(boolean)
      */
     @Override
@@ -596,756 +705,632 @@ public class ServerOptionsImpl implements ServerOptions {
         this.logAccessEnable = enable;
         return this;
     }
-    
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isKeepRequestLog()
-     */
-    @Override
-    @Deprecated
-    public boolean isKeepRequestLog() {
-        return logRequestsEnable;
-    }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setKeepRequestLog(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#logRequestsDir(java.io.File)
      */
     @Override
-    @Deprecated
-    public ServerOptions setKeepRequestLog(boolean keepRequestLog) {
-        this.logRequestsEnable = keepRequestLog;
-        return this;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLogRequestsDir(java.io.File)
-     */
-    @Override
-    public ServerOptions setLogRequestsDir(File logDir) {
+    public ServerOptions logRequestsDir(File logDir) {
         this.logRequestsDir = logDir;
         return this;
     }
     @Override
-    public ServerOptions setLogRequestsDir(String logDir) {
+    public ServerOptions logRequestsDir(String logDir) {
         this.logRequestsDir = new File(logDir);
         return this;
     }
     @Override
-    public File getLogRequestsDir() {
+    public File logRequestsDir() {
         if(this.logRequestsDir == null)
-            return getLogDir();
+            return logDir();
         return this.logRequestsDir;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLogRequestsBaseFileName(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#logRequestsBaseFileName(java.lang.String)
      */
     @Override
-    public ServerOptions setLogRequestsBaseFileName(String name) {
+    public ServerOptions logRequestsBaseFileName(String name) {
         this.logRequestBaseFileName= name;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getLogRequestsBaseFileName()
+    /** 
+     * @see runwar.options.ServerOptions#logRequestsBaseFileName()
      */
     @Override
-    public String getLogRequestsBaseFileName() {
+    public String logRequestsBaseFileName() {
         return this.logRequestBaseFileName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLogAccessDir(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#logAccessDir(java.io.File)
      */
     @Override
-    public ServerOptions setLogAccessDir(File logDir) {
+    public ServerOptions logAccessDir(File logDir) {
         this.logAccessDir = logDir;
         return this;
     }
     @Override
-    public ServerOptions setLogAccessDir(String logDir) {
+    public ServerOptions logAccessDir(String logDir) {
         this.logAccessDir = new File(logDir);
         return this;
     }
     @Override
-    public File getLogAccessDir() {
+    public File logAccessDir() {
         if(this.logAccessDir == null)
-            return getLogDir();
+            return logDir();
         return this.logAccessDir;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLogAccessBaseFileName(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#logAccessBaseFileName(java.lang.String)
      */
     @Override
-    public ServerOptions setLogAccessBaseFileName(String name) {
+    public ServerOptions logAccessBaseFileName(String name) {
         this.logAccessBaseFileName = name;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getLogAccessBaseFileName()
+    /** 
+     * @see runwar.options.ServerOptions#logAccessBaseFileName()
      */
     @Override
-    public String getLogAccessBaseFileName() {
+    public String logAccessBaseFileName() {
         return this.logAccessBaseFileName;
     }
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isOpenbrowser()
+    /** 
+     * @see runwar.options.ServerOptions#openbrowser()
      */
     @Override
-    public boolean isOpenbrowser() {
+    public boolean openbrowser() {
         return openbrowser;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setOpenbrowser(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#openbrowser(boolean)
      */
     @Override
-    public ServerOptions setOpenbrowser(boolean openbrowser) {
+    public ServerOptions openbrowser(boolean openbrowser) {
         this.openbrowser = openbrowser;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getOpenbrowserURL()
+    /** 
+     * @see runwar.options.ServerOptions#openbrowserURL()
      */
     @Override
-    public String getOpenbrowserURL() {
+    public String openbrowserURL() {
         return openbrowserURL;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setOpenbrowserURL(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#openbrowserURL(java.lang.String)
      */
     @Override
-    public ServerOptions setOpenbrowserURL(String openbrowserURL) {
+    public ServerOptions openbrowserURL(String openbrowserURL) {
         this.openbrowserURL = openbrowserURL;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getPidFile()
+    /** 
+     * @see runwar.options.ServerOptions#pidFile()
      */
     @Override
-    public String getPidFile() {
+    public String pidFile() {
         return pidFile;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setPidFile(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#pidFile(java.lang.String)
      */
     @Override
-    public ServerOptions setPidFile(String pidFile) {
+    public ServerOptions pidFile(String pidFile) {
         this.pidFile = pidFile;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isEnableAJP()
+    /** 
+     * @see runwar.options.ServerOptions#ajpEnable()
      */
     @Override
-    public boolean isEnableAJP() {
+    public boolean ajpEnable() {
         return enableAJP;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setEnableAJP(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#ajpEnable(boolean)
      */
     @Override
-    public ServerOptions setEnableAJP(boolean enableAJP) {
+    public ServerOptions ajpEnable(boolean enableAJP) {
         this.enableAJP = enableAJP;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getLaunchTimeout()
+    /** 
+     * @see runwar.options.ServerOptions#launchTimeout()
      */
     @Override
-    public int getLaunchTimeout() {
+    public int launchTimeout() {
         return launchTimeout;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLaunchTimeout(int)
+    /** 
+     * @see runwar.options.ServerOptions#launchTimeout(int)
      */
     @Override
-    public ServerOptions setLaunchTimeout(int launchTimeout) {
+    public ServerOptions launchTimeout(int launchTimeout) {
         this.launchTimeout = launchTimeout;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getProcessName()
+    /** 
+     * @see runwar.options.ServerOptions#processName()
      */
     @Override
-    public String getProcessName() {
+    public String processName() {
         return processName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setProcessName(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#processName(java.lang.String)
      */
     @Override
-    public ServerOptions setProcessName(String processName) {
+    public ServerOptions processName(String processName) {
         this.processName = processName;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getLibDirs()
+    /** 
+     * @see runwar.options.ServerOptions#libDirs()
      */
     @Override
-    public String getLibDirs() {
+    public String libDirs() {
         return libDirs;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLibDirs(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#libDirs(java.lang.String)
      */
     @Override
-    public ServerOptions setLibDirs(String libDirs) {
+    public ServerOptions libDirs(String libDirs) {
         this.libDirs = libDirs;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getJarURL()
+    /** 
+     * @see runwar.options.ServerOptions#jarURL()
      */
     @Override
-    public URL getJarURL() {
+    public URL jarURL() {
         return jarURL;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setJarURL(java.net.URL)
+    /** 
+     * @see runwar.options.ServerOptions#jarURL(java.net.URL)
      */
     @Override
-    public ServerOptions setJarURL(URL jarURL) {
+    public ServerOptions jarURL(URL jarURL) {
         this.jarURL = jarURL;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isDebug()
+    /** 
+     * @see runwar.options.ServerOptions#debug()
      */
     @Override
-    public boolean isDebug() {
+    public boolean debug() {
         return debug;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setDebug(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#debug(boolean)
      */
     @Override
-    public ServerOptions setDebug(boolean debug) {
+    public ServerOptions debug(boolean debug) {
         this.debug = debug;
-        if (debug && loglevel == "WARN") {
-            loglevel = "DEBUG";
+        if (debug && logLevel == "WARN") {
+            logLevel = "DEBUG";
+        }
+        return this;
+    }
+    
+      @Override
+    public ServerOptions testing(boolean testing) {
+        this.testing = testing;
+        if (testing && logLevel == "WARN") {
+            logLevel = "DEBUG";
         }
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getWarFile()
+    /** 
+     * @see runwar.options.ServerOptions#workingDir()
      */
     @Override
-    public File getWarFile() {
+    public File workingDir() {
+        return workingDir != null ? workingDir: Paths.get(".").toFile().getAbsoluteFile();
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#workingDir(java.io.File)
+     */
+    @Override
+    public ServerOptions workingDir(File workingDir) {
+        this.workingDir = workingDir;
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#warFile()
+     */
+    @Override
+    public File warFile() {
         return warFile;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setWarFile(java.io.File)
+    /**
+     * @see runwar.options.ServerOptions#warFile(java.io.File)
      */
     @Override
-    public ServerOptions setWarFile(File warFile) {
+    public ServerOptions warFile(File warFile) {
         this.warFile = warFile;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getWebInfDir()
+    /**
+     * @see runwar.options.ServerOptions#webInfDir()
      */
     @Override
-    public File getWebInfDir() {
+    public File webInfDir() {
         if(webInfDir == null) {
-            if(getWarFile() != null && warFile.exists() && warFile.isDirectory()) {
-                webInfDir = new File(warFile, "WEB-INF");
-            }
-            if (webXmlFile != null && new File(webXmlFile.getParentFile(), "lib").exists()) {
+            if (webXmlFile != null && (webXmlFile.getParentFile().getName().equalsIgnoreCase("WEB-INF") || new File(webXmlFile.getParentFile(), "lib").exists())) {
                 webInfDir = webXmlFile.getParentFile();
+            } else if(warFile() != null && warFile.exists() && warFile.isDirectory()) {
+                webInfDir = new File(warFile, "WEB-INF");
             }
         }
         return webInfDir;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setWebInfDir(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#webInfDir(java.io.File)
      */
     @Override
-    public ServerOptions setWebInfDir(File webInfDir) {
+    public ServerOptions webInfDir(File webInfDir) {
         this.webInfDir = webInfDir;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getWebXmlFile()
+    /** 
+     * @see runwar.options.ServerOptions#webXmlFile()
      */
     @Override
-    public File getWebXmlFile() {
-        if(webXmlFile == null && getWebInfDir() != null) {
-            setWebXmlFile(new File(getWebInfDir(),"web.xml"));
+    public File webXmlFile() {
+        if(webXmlFile == null && webInfDir() != null) {
+            webXmlFile(new File(webInfDir(),"web.xml"));
         }
         return webXmlFile;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getWebXmlPath()
+    /** 
+     * @see runwar.options.ServerOptions#webXmlPath()
      */
     @Override
-    public String getWebXmlPath() throws MalformedURLException {
+    public String webXmlPath() throws MalformedURLException {
         return webXmlFile.toURI().toURL().toString();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setWebXmlFile(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#webXmlFile(java.io.File)
      */
     @Override
-    public ServerOptions setWebXmlFile(File webXmlFile) {
+    public ServerOptions webXmlFile(File webXmlFile) {
         this.webXmlFile = webXmlFile;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getIconImage()
+    /** 
+     * @see runwar.options.ServerOptions#iconImage()
      */
     @Override
-    public String getIconImage() {
+    public String iconImage() {
         return iconImage;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setIconImage(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#iconImage(java.lang.String)
      */
     @Override
-    public ServerOptions setIconImage(String iconImage) {
+    public ServerOptions iconImage(String iconImage) {
         this.iconImage = iconImage;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getTrayConfig()
+    /** 
+     * @see runwar.options.ServerOptions#trayConfig()
      */
     @Override
-    public File getTrayConfig() {
+    public File trayConfig() {
         return trayConfig;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getTrayConfigJSON()
+    /** 
+     * @see runwar.options.ServerOptions#trayConfigJSON()
      */
     @Override
-    public JSONArray getTrayConfigJSON() {
+    public JSONArray trayConfigJSON() {
         return trayConfigJSON;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setTrayConfig(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#trayConfig(java.io.File)
      */
     @Override
-    public ServerOptions setTrayConfig(File trayConfig) {
+    public ServerOptions trayConfig(File trayConfig) {
         this.trayConfig = trayConfig;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see
-     * runwar.options.ServerOptions#setTrayConfig(net.minidev.json.JSONArray)
+     * runwar.options.ServerOptions#trayConfig(net.minidev.json.JSONArray)
      */
     @Override
-    public ServerOptions setTrayConfig(JSONArray trayConfig) {
+    public ServerOptions trayConfig(JSONArray trayConfig) {
         this.trayConfigJSON = trayConfig;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isTrayEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#trayEnable()
      */
     @Override
-    public boolean isTrayEnabled() {
-        return trayEnabled;
+    public boolean trayEnable() {
+        return trayEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setTrayEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#trayEnable(boolean)
      */
     @Override
-    public ServerOptions setTrayEnabled(boolean enabled) {
-        this.trayEnabled = enabled;
+    public ServerOptions trayEnable(boolean enable) {
+        this.trayEnable = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getStatusFile()
+    /** 
+     * @see runwar.options.ServerOptions#statusFile()
      */
     @Override
-    public File getStatusFile() {
+    public File statusFile() {
         return statusFile;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setStatusFile(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#statusFile(java.io.File)
      */
     @Override
-    public ServerOptions setStatusFile(File statusFile) {
+    public ServerOptions statusFile(File statusFile) {
         this.statusFile = statusFile;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getCFMLServletConfigWebDir()
+    /** 
+     * @see runwar.options.ServerOptions#cfmlServletConfigWebDir()
      */
     @Override
-    public String getCFMLServletConfigWebDir() {
+    public String cfmlServletConfigWebDir() {
         return cfmlServletConfigWebDir;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see
-     * runwar.options.ServerOptions#setCFMLServletConfigWebDir(java.lang.String)
+     * runwar.options.ServerOptions#cfmlServletConfigWebDir(java.lang.String)
      */
     @Override
-    public ServerOptions setCFMLServletConfigWebDir(String cfmlServletConfigWebDir) {
+    public ServerOptions cfmlServletConfigWebDir(String cfmlServletConfigWebDir) {
         this.cfmlServletConfigWebDir = cfmlServletConfigWebDir;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getCFMLServletConfigServerDir()
+    /** 
+     * @see runwar.options.ServerOptions#cfmlServletConfigServerDir()
      */
     @Override
-    public String getCFMLServletConfigServerDir() {
+    public String cfmlServletConfigServerDir() {
         if (cfmlServletConfigServerDir == null)
             cfmlServletConfigServerDir = System.getProperty("cfml.server.config.dir");
         return cfmlServletConfigServerDir;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see
-     * runwar.options.ServerOptions#setCFMLServletConfigServerDir(java.lang.
-     * String)
+     * runwar.options.ServerOptions#cfmlServletConfigServerDir(java.lang.String)
      */
     @Override
-    public ServerOptions setCFMLServletConfigServerDir(String cfmlServletConfigServerDir) {
+    public ServerOptions cfmlServletConfigServerDir(String cfmlServletConfigServerDir) {
         this.cfmlServletConfigServerDir = cfmlServletConfigServerDir;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isCacheEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#cacheEnable()
      */
     @Override
-    public boolean isCacheEnabled() {
-        return cacheEnabled;
+    public boolean cacheEnable() {
+        return cacheEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setCacheEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#cacheEnable(boolean)
      */
     @Override
-    public ServerOptions setCacheEnabled(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
+    public ServerOptions cacheEnable(boolean cacheEnable) {
+        this.cacheEnable = cacheEnable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isDirectoryListingEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#directoryListingEnable()
      */
     @Override
-    public boolean isDirectoryListingEnabled() {
-        return directoryListingEnabled;
+    public boolean directoryListingEnable() {
+        return directoryListingEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setDirectoryListingEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#directoryListingEnable(boolean)
      */
     @Override
-    public ServerOptions setDirectoryListingEnabled(boolean directoryListingEnabled) {
-        this.directoryListingEnabled = directoryListingEnabled;
+    public ServerOptions directoryListingEnable(boolean directoryListingEnable) {
+        this.directoryListingEnable = directoryListingEnable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isDirectoryListingRefreshEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#directoryListingRefreshEnable()
      */
     @Override
-    public boolean isDirectoryListingRefreshEnabled() {
-        return directoryListingRefreshEnabled;
+    public boolean directoryListingRefreshEnable() {
+        return directoryListingRefreshEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see
-     * runwar.options.ServerOptions#setDirectoryListingRefreshEnabled(boolean)
+     * runwar.options.ServerOptions#directoryListingRefreshEnable(boolean)
      */
     @Override
-    public ServerOptions setDirectoryListingRefreshEnabled(boolean directoryListingRefreshEnabled) {
-        this.directoryListingRefreshEnabled = directoryListingRefreshEnabled;
+    public ServerOptions directoryListingRefreshEnable(boolean directoryListingRefreshEnable) {
+        this.directoryListingRefreshEnable = directoryListingRefreshEnable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getWelcomeFiles()
+    /** 
+     * @see runwar.options.ServerOptions#welcomeFiles()
      */
     @Override
-    public String[] getWelcomeFiles() {
+    public String[] welcomeFiles() {
         return welcomeFiles;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setWelcomeFiles(java.lang.String[])
+    /** 
+     * @see runwar.options.ServerOptions#welcomeFiles(java.lang.String[])
      */
     @Override
-    public ServerOptions setWelcomeFiles(String[] welcomeFiles) {
+    public ServerOptions welcomeFiles(String[] welcomeFiles) {
         this.welcomeFiles = welcomeFiles;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getWarPath()
+    /**
+     * @see runwar.options.ServerOptions#warUriString()
      */
     @Override
-    public String getWarPath() {
+    public String warUriString() {
+        if(warFile() == null)
+            return "";
         try {
-            return getWarFile().toURI().toURL().toString();
+            return warFile().toURI().toURL().toString();
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return "";
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSSLCertificate(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#sslCertificate(java.io.File)
      */
     @Override
-    public ServerOptions setSSLCertificate(File file) {
+    public ServerOptions sslCertificate(File file) {
         this.sslCertificate = file;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getSSLCertificate()
+    /** 
+     * @see runwar.options.ServerOptions#sslCertificate()
      */
     @Override
-    public File getSSLCertificate() {
+    public File sslCertificate() {
+        if(sslCertificate != null && !sslCertificate.exists() && !sslSelfSign){
+            throw new IllegalArgumentException("Certificate file does not exist: " + sslCertificate.getAbsolutePath());
+        }
         return this.sslCertificate;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSSLKey(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#sslKey(java.io.File)
      */
     @Override
-    public ServerOptions setSSLKey(File file) {
+    public ServerOptions sslKey(File file) {
         this.sslKey = file;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getSSLKey()
+    /** 
+     * @see runwar.options.ServerOptions#sslKey()
      */
     @Override
-    public File getSSLKey() {
+    public File sslKey() {
         return this.sslKey;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSSLKeyPass(char[])
+    /** 
+     * @see runwar.options.ServerOptions#sslKeyPass(char[])
      */
     @Override
-    public ServerOptions setSSLKeyPass(char[] pass) {
+    public ServerOptions sslKeyPass(char[] pass) {
         this.sslKeyPass = pass;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getSSLKeyPass()
+    /** 
+     * @see runwar.options.ServerOptions#sslKeyPass()
      */
     @Override
-    public char[] getSSLKeyPass() {
+    public char[] sslKeyPass() {
         return this.sslKeyPass;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setStopPassword(char[])
+    /** 
+     * @see runwar.options.ServerOptions#stopPassword(char[])
      */
     @Override
-    public ServerOptions setStopPassword(char[] password) {
+    public ServerOptions stopPassword(char[] password) {
         this.stopPassword = password;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getStopPassword()
+    /** 
+     * @see runwar.options.ServerOptions#stopPassword()
      */
     @Override
-    public char[] getStopPassword() {
+    public char[] stopPassword() {
         return this.stopPassword;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setAction(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#action(java.lang.String)
      */
     @Override
-    public ServerOptions setAction(String action) {
+    public ServerOptions action(String action) {
         this.action = action;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getAction()
+    /** 
+     * @see runwar.options.ServerOptions#action()
      */
     @Override
-    public String getAction() {
+    public String action() {
         return this.action;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setCFEngineName(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#cfEngineName(java.lang.String)
      */
     @Override
-    public ServerOptions setCFEngineName(String cfengineName) {
+    public ServerOptions cfEngineName(String cfengineName) {
         if (cfengineName.toLowerCase().equals("lucee") || cfengineName.toLowerCase().equals("adobe")
                 || cfengineName.toLowerCase().equals("railo") || cfengineName.toLowerCase().equals("")) {
             this.cfengineName = cfengineName.toLowerCase();
@@ -1356,225 +1341,188 @@ public class ServerOptionsImpl implements ServerOptions {
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getCFEngineName()
+    /** 
+     * @see runwar.options.ServerOptions#cfEngineName()
      */
     @Override
-    public String getCFEngineName() {
-        return this.cfengineName;
+    public String cfEngineName() {
+        if(cfengineName.isEmpty() && webInfDir() != null && webInfDir().exists() && new File(webInfDir(),"cfusion").exists()) {
+            cfengineName = "adobe";
+        } else if(cfengineName.isEmpty() && webInfDir() != null && webInfDir().exists() && new File(webInfDir(),"lucee").exists()) {
+            cfengineName = "lucee";
+        }
+        return cfengineName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setCustomHTTPStatusEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#customHTTPStatusEnable(boolean)
      */
     @Override
-    public ServerOptions setCustomHTTPStatusEnabled(boolean enabled) {
-        this.customHTTPStatusEnabled = enabled;
+    public ServerOptions customHTTPStatusEnable(boolean enable) {
+        this.customHTTPStatusEnable = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isCustomHTTPStatusEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#customHTTPStatusEnable()
      */
     @Override
-    public boolean isCustomHTTPStatusEnabled() {
-        return this.customHTTPStatusEnabled;
+    public boolean customHTTPStatusEnable() {
+        return this.customHTTPStatusEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSendfileEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#sendfileEnable(boolean)
      */
     @Override
-    public ServerOptions setSendfileEnabled(boolean enabled) {
-        if (!enabled) {
+    public ServerOptions sendfileEnable(boolean enable) {
+        if (!enable) {
             this.transferMinSize = Long.MAX_VALUE;
         }
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setTransferMinSize(java.lang.Long)
+    /** 
+     * @see runwar.options.ServerOptions#transferMinSize(java.lang.Long)
      */
     @Override
-    public ServerOptions setTransferMinSize(Long minSize) {
+    public ServerOptions transferMinSize(Long minSize) {
         this.transferMinSize = minSize;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getTransferMinSize()
+    /** 
+     * @see runwar.options.ServerOptions#transferMinSize()
      */
     @Override
-    public Long getTransferMinSize() {
+    public Long transferMinSize() {
         return this.transferMinSize;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setGzipEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#gzipEnable(boolean)
      */
     @Override
-    public ServerOptions setGzipEnabled(boolean enabled) {
-        this.gzipEnabled = enabled;
+    public ServerOptions gzipEnable(boolean enable) {
+        this.gzipEnable = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isGzipEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#gzipEnable()
      */
     @Override
-    public boolean isGzipEnabled() {
-        return this.gzipEnabled;
+    public boolean gzipEnable() {
+        return this.gzipEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setMariaDB4jEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jEnable(boolean)
      */
     @Override
-    public ServerOptions setMariaDB4jEnabled(boolean enabled) {
-        this.mariadb4jEnabled = enabled;
+    public ServerOptions mariaDB4jEnable(boolean enable) {
+        this.mariadb4jEnable = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isMariaDB4jEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jEnable()
      */
     @Override
-    public boolean isMariaDB4jEnabled() {
-        return this.mariadb4jEnabled;
+    public boolean mariaDB4jEnable() {
+        return this.mariadb4jEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setMariaDB4jPort(int)
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jPort(int)
      */
     @Override
-    public ServerOptions setMariaDB4jPort(int port) {
+    public ServerOptions mariaDB4jPort(int port) {
         this.mariadb4jPort = port;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getMariaDB4jPort()
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jPort()
      */
     @Override
-    public int getMariaDB4jPort() {
+    public int mariaDB4jPort() {
         return this.mariadb4jPort;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setMariaDB4jBaseDir(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jBaseDir(java.io.File)
      */
     @Override
-    public ServerOptions setMariaDB4jBaseDir(File dir) {
+    public ServerOptions mariaDB4jBaseDir(File dir) {
         this.mariadb4jBaseDir = dir;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getMariaDB4jBaseDir()
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jBaseDir()
      */
     @Override
-    public File getMariaDB4jBaseDir() {
+    public File mariaDB4jBaseDir() {
         return this.mariadb4jBaseDir;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setMariaDB4jDataDir(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jDataDir(java.io.File)
      */
     @Override
-    public ServerOptions setMariaDB4jDataDir(File dir) {
+    public ServerOptions mariaDB4jDataDir(File dir) {
         this.mariadb4jDataDir = dir;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getMariaDB4jDataDir()
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jDataDir()
      */
     @Override
-    public File getMariaDB4jDataDir() {
+    public File mariaDB4jDataDir() {
         return this.mariadb4jDataDir;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setMariaDB4jImportSQLFile(java.io.File)
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jImportSQLFile(java.io.File)
      */
     @Override
-    public ServerOptions setMariaDB4jImportSQLFile(File file) {
+    public ServerOptions mariaDB4jImportSQLFile(File file) {
         this.mariadb4jImportSQLFile = file;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getMariaDB4jImportSQLFile()
+    /** 
+     * @see runwar.options.ServerOptions#mariaDB4jImportSQLFile()
      */
     @Override
-    public File getMariaDB4jImportSQLFile() {
+    public File mariaDB4jImportSQLFile() {
         return this.mariadb4jImportSQLFile;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setJVMArgs(java.util.List)
+    /** 
+     * @see runwar.options.ServerOptions#jvmArgs(java.util.List)
      */
     @Override
-    public ServerOptions setJVMArgs(List<String> args) {
+    public ServerOptions jvmArgs(List<String> args) {
         this.jvmArgs = args;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getJVMArgs()
+    /** 
+     * @see runwar.options.ServerOptions#jvmArgs()
      */
     @Override
-    public List<String> getJVMArgs() {
+    public List<String> jvmArgs() {
         return this.jvmArgs;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setErrorPages(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#errorPages(java.lang.String)
      */
     @Override
-    public ServerOptions setErrorPages(String errorpages) {
+    public ServerOptions errorPages(String errorpages) {
         this.errorPages = new HashMap<Integer, String>();
         String[] pageList = errorpages.split(",");
         for (int x = 0; x < pageList.length; x++) {
@@ -1595,130 +1543,106 @@ public class ServerOptionsImpl implements ServerOptions {
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setErrorPages(java.util.Map)
+    /** 
+     * @see runwar.options.ServerOptions#errorPages(java.util.Map)
      */
     @Override
-    public ServerOptions setErrorPages(Map<Integer, String> errorpages) {
+    public ServerOptions errorPages(Map<Integer, String> errorpages) {
         this.errorPages = errorpages;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getErrorPages()
+    /** 
+     * @see runwar.options.ServerOptions#errorPages()
      */
     @Override
-    public Map<Integer, String> getErrorPages() {
+    public Map<Integer, String> errorPages() {
         return this.errorPages;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setServletRestEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#servletRestEnable(boolean)
      */
     @Override
-    public ServerOptions setServletRestEnabled(boolean enabled) {
-        this.servletRestEnabled = enabled;
+    public ServerOptions servletRestEnable(boolean enable) {
+        this.servletRestEnable = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getServletRestEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#servletRestEnable()
      */
     @Override
-    public boolean getServletRestEnabled() {
-        return this.servletRestEnabled;
+    public boolean servletRestEnable() {
+        return this.servletRestEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see
-     * runwar.options.ServerOptions#setServletRestMappings(java.lang.String)
+     * runwar.options.ServerOptions#servletRestMappings(java.lang.String)
      */
     @Override
-    public ServerOptions setServletRestMappings(String mappings) {
-        return setServletRestMappings(mappings.split(","));
+    public ServerOptions servletRestMappings(String mappings) {
+        return servletRestMappings(mappings.split(","));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /** 
      * @see
-     * runwar.options.ServerOptions#setServletRestMappings(java.lang.String[])
+     * runwar.options.ServerOptions#servletRestMappings(java.lang.String[])
      */
     @Override
-    public ServerOptions setServletRestMappings(String[] mappings) {
+    public ServerOptions servletRestMappings(String[] mappings) {
         this.servletRestMappings = mappings;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getServletRestMappings()
+    /** 
+     * @see runwar.options.ServerOptions#servletRestMappings()
      */
     @Override
-    public String[] getServletRestMappings() {
+    public String[] servletRestMappings() {
         return this.servletRestMappings;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setFilterPathInfoEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#filterPathInfoEnable(boolean)
      */
     @Override
-    public ServerOptions setFilterPathInfoEnabled(boolean enabled) {
-        this.filterPathInfoEnabled = enabled;
+    public ServerOptions filterPathInfoEnable(boolean enable) {
+        this.filterPathInfoEnable = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isFilterPathInfoEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#filterPathInfoEnable()
      */
     @Override
-    public boolean isFilterPathInfoEnabled() {
-        return this.filterPathInfoEnabled;
+    public boolean filterPathInfoEnable() {
+        return this.filterPathInfoEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setEnableBasicAuth(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#basicAuthEnable(boolean)
      */
     @Override
-    public ServerOptions setEnableBasicAuth(boolean enable) {
+    public ServerOptions basicAuthEnable(boolean enable) {
         this.enableBasicAuth = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isEnableBasicAuth()
+    /** 
+     * @see runwar.options.ServerOptions#basicAuthEnable()
      */
     @Override
-    public boolean isEnableBasicAuth() {
+    public boolean basicAuthEnable() {
         return this.enableBasicAuth;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setBasicAuth(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#basicAuth(java.lang.String)
      */
     @Override
-    public ServerOptions setBasicAuth(String userPasswordList) {
+    public ServerOptions basicAuth(String userPasswordList) {
         HashMap<String, String> ups = new HashMap<String, String>();
         try {
             for (String up : userPasswordList.split("(?<!\\\\),")) {
@@ -1730,225 +1654,183 @@ public class ServerOptionsImpl implements ServerOptions {
         } catch (Exception e) {
             throw new RuntimeException("Incorrect 'users' format (user=pass,user2=pass2) : " + userPasswordList);
         }
-        return setBasicAuth(ups);
+        return basicAuth(ups);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setBasicAuth(java.util.Map)
+    /** 
+     * @see runwar.options.ServerOptions#basicAuth(java.util.Map)
      */
     @Override
-    public ServerOptions setBasicAuth(Map<String, String> userPassList) {
+    public ServerOptions basicAuth(Map<String, String> userPassList) {
         userPasswordList = userPassList;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getBasicAuth()
+    /** 
+     * @see runwar.options.ServerOptions#basicAuth()
      */
     @Override
-    public Map<String, String> getBasicAuth() {
+    public Map<String, String> basicAuth() {
         return userPasswordList;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSSLAddCerts(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#sslAddCerts(java.lang.String)
      */
     @Override
-    public ServerOptions setSSLAddCerts(String sslCerts) {
-        return setSSLAddCerts(sslCerts.split("(?<!\\\\),"));
+    public ServerOptions sslAddCerts(String sslCerts) {
+        return sslAddCerts(sslCerts.split("(?<!\\\\),"));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSSLAddCerts(java.lang.String[])
+    /** 
+     * @see runwar.options.ServerOptions#sslAddCerts(java.lang.String[])
      */
     @Override
-    public ServerOptions setSSLAddCerts(String[] sslCerts) {
+    public ServerOptions sslAddCerts(String[] sslCerts) {
         this.sslAddCerts = sslCerts;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getSSLAddCerts()
+    /** 
+     * @see runwar.options.ServerOptions#sslAddCerts()
      */
     @Override
-    public String[] getSSLAddCerts() {
+    public String[] sslAddCerts() {
         return this.sslAddCerts;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getBufferSize()
+    /** 
+     * @see runwar.options.ServerOptions#bufferSize()
      */
     @Override
-    public int getBufferSize() {
+    public int bufferSize() {
         return bufferSize;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setBufferSize(int)
+    /** 
+     * @see runwar.options.ServerOptions#bufferSize(int)
      */
     @Override
-    public ServerOptions setBufferSize(int bufferSize) {
+    public ServerOptions bufferSize(int bufferSize) {
         this.bufferSize = bufferSize;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getIoThreads()
+    /** 
+     * @see runwar.options.ServerOptions#ioThreads()
      */
     @Override
-    public int getIoThreads() {
+    public int ioThreads() {
         return ioThreads;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setIoThreads(int)
+    /** 
+     * @see runwar.options.ServerOptions#ioThreads(int)
      */
     @Override
-    public ServerOptions setIoThreads(int ioThreads) {
+    public ServerOptions ioThreads(int ioThreads) {
         this.ioThreads = ioThreads;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getWorkerThreads()
+    /** 
+     * @see runwar.options.ServerOptions#workerThreads()
      */
     @Override
-    public int getWorkerThreads() {
+    public int workerThreads() {
         return workerThreads;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setWorkerThreads(int)
+    /** 
+     * @see runwar.options.ServerOptions#workerThreads(int)
      */
     @Override
-    public ServerOptions setWorkerThreads(int workerThreads) {
+    public ServerOptions workerThreads(int workerThreads) {
         this.workerThreads = workerThreads;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setDirectBuffers(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#directBuffers(boolean)
      */
     @Override
-    public ServerOptions setDirectBuffers(boolean enable) {
+    public ServerOptions directBuffers(boolean enable) {
         this.directBuffers = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isDirectBuffers()
+    /** 
+     * @see runwar.options.ServerOptions#directBuffers()
      */
     @Override
-    public boolean isDirectBuffers() {
+    public boolean directBuffers() {
         return this.directBuffers;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLoadBalance(java.lang.String)
+    /** 
+     * @see runwar.options.ServerOptions#loadBalance(java.lang.String)
      */
     @Override
-    public ServerOptions setLoadBalance(String hosts) {
-        return setLoadBalance(hosts.split("(?<!\\\\),"));
+    public ServerOptions loadBalance(String hosts) {
+        return loadBalance(hosts.split("(?<!\\\\),"));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setLoadBalance(java.lang.String[])
+    /** 
+     * @see runwar.options.ServerOptions#loadBalance(java.lang.String[])
      */
     @Override
-    public ServerOptions setLoadBalance(String[] hosts) {
+    public ServerOptions loadBalance(String[] hosts) {
         this.loadBalance = hosts;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#getLoadBalance()
+    /** 
+     * @see runwar.options.ServerOptions#loadBalance()
      */
     @Override
-    public String[] getLoadBalance() {
+    public String[] loadBalance() {
         return this.loadBalance;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setProxyPeerAddressEnabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#proxyPeerAddressEnable(boolean)
      */
     @Override
-    public ServerOptions setProxyPeerAddressEnabled(boolean enable) {
-        this.proxyPeerAddressEnabled = enable;
+    public ServerOptions proxyPeerAddressEnable(boolean enable) {
+        this.proxyPeerAddressEnable = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isProxyPeerAddressEnabled()
+    /** 
+     * @see runwar.options.ServerOptions#proxyPeerAddressEnable()
      */
     @Override
-    public boolean isProxyPeerAddressEnabled() {
-        return this.proxyPeerAddressEnabled;
+    public boolean proxyPeerAddressEnable() {
+        return this.proxyPeerAddressEnable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setHTTP2Enabled(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#http2Enable(boolean)
      */
     @Override
-    public ServerOptions setHTTP2Enabled(boolean enable) {
-        this.http2enabled = enable;
+    public ServerOptions http2Enable(boolean enable) {
+        this.http2enable = enable;
         return this;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#isHTTP2Enabled()
+    /** 
+     * @see runwar.options.ServerOptions#http2Enable()
      */
     @Override
-    public boolean isHTTP2Enabled() {
-        return this.http2enabled;
+    public boolean http2Enable() {
+        return this.http2enable;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setSecureCookies(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#secureCookies(boolean)
      */
     @Override
-    public ServerOptions setSecureCookies(boolean enable) {
+    public ServerOptions secureCookies(boolean enable) {
         this.secureCookies = enable;
         this.cookieHttpOnly = enable;
         this.cookieSecure = enable;
@@ -1956,62 +1838,243 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
     /*
-     * @see runwar.options.ServerOptions#isSecureCookies()
+     * @see runwar.options.ServerOptions#secureCookies()
      */
     @Override
-    public boolean isSecureCookies() {
+    public boolean secureCookies() {
         return this.secureCookies;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setCookieHttpOnly(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#cookieHttpOnly(boolean)
      */
     @Override
-    public ServerOptions setCookieHttpOnly(boolean enable) {
+    public ServerOptions cookieHttpOnly(boolean enable) {
         this.cookieHttpOnly= enable;
         return this;
     }
 
     /*
-     * @see runwar.options.ServerOptions#isCookieHttpOnly()
+     * @see runwar.options.ServerOptions#cookieHttpOnly()
      */
     @Override
-    public boolean isCookieHttpOnly() {
+    public boolean cookieHttpOnly() {
         return this.cookieHttpOnly;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see runwar.options.ServerOptions#setCookieSecure(boolean)
+    /** 
+     * @see runwar.options.ServerOptions#cookieSecure(boolean)
      */
     @Override
-    public ServerOptions setCookieSecure(boolean enable) {
+    public ServerOptions cookieSecure(boolean enable) {
         this.cookieSecure = enable;
         return this;
     }
 
     /*
-     * @see runwar.options.ServerOptions#isCookieSecure()
+     * @see runwar.options.ServerOptions#cookieSecure()
      */
     @Override
-    public boolean isCookieSecure() {
+    public boolean cookieSecure() {
         return this.cookieSecure;
     }
     
     /*
-     * @see runwar.options.ServerOptions#isSecureCookies()
+     * @see runwar.options.ServerOptions#secureCookies()
      */
     @Override
-    public String getServerMode() {
-        if(getWebInfDir() != null && getWebInfDir().exists()) {
+    public String serverMode() {
+        if(webInfDir() != null && webInfDir().exists()) {
             return Mode.WAR;
-        } else if( new File(getWarFile(), "WEB-INF").exists()) {
+        } else if( new File(warFile(), "WEB-INF").exists()) {
             return Mode.WAR;
         }
         return Mode.DEFAULT;
     }
+
+
+    /*
+     * @see runwar.options.ServerOptions#bufferEnable(boolean)
+     */
+    @Override
+    public ServerOptions bufferEnable(boolean enable) {
+        this.bufferEnable = enable;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#bufferEnable()
+     */
+    @Override
+    public boolean bufferEnable() {
+        return this.bufferEnable ;
+    }
     
+    /*
+     * @see runwar.options.ServerOptions#startedFromCommandLine(boolean)
+     */
+    @Override
+    public ServerOptions startedFromCommandLine(boolean enable) {
+        this.startedFromCommandline = enable;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#startedFromCommandLine()
+     */
+    @Override
+    public boolean startedFromCommandLine() {
+        return this.startedFromCommandline;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#http2ProxySSLPort()
+     */
+    @Override
+    public int http2ProxySSLPort() {
+        return http2ProxySSLPort;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#setsetHttp2ProxySSLPort(int)
+     */
+    @Override
+    public ServerOptions http2ProxySSLPort(int portNumber) {
+        http2ProxySSLPort = portNumber;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#SSLECCDISABLE(boolean)
+     */
+    @Override
+    public ServerOptions sslEccDisable(boolean enable) {
+        this.sslEccDisable = enable;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#SSLECCDISABLE()
+     */
+    @Override
+    public boolean sslEccDisable() {
+        return this.sslEccDisable;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#sslSelfSign(boolean)
+     */
+    @Override
+    public ServerOptions sslSelfSign(boolean enable) {
+        this.sslSelfSign = enable;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#sslSelfSign()
+     */
+    @Override
+    public boolean sslSelfSign() { return this.sslSelfSign; }
+
+    /*
+     * @see runwar.options.ServerOptions#ignoreWebXmlWelcomePages()
+     */
+    @Override
+    public boolean ignoreWebXmlWelcomePages() {
+        return welcomeFiles() != null && welcomeFiles().length > 0;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#ignoreWebXmlWelcomePages()
+     */
+    @Override
+    public boolean ignoreWebXmlRestMappings() {
+        return servletRestMappings() != null && servletRestMappings().length > 0;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#service()
+     */
+    @Override
+    public boolean service() {
+        return service;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#service(boolean)
+     */
+    @Override
+    public ServerOptions service(boolean enable) {
+        service = enable;
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions(java.lang.String)
+     */
+    @Override
+    public ServerOptions xnioOptions(String options) {
+        String[] optionList = options.split(",");
+        for (int x = 0; x < optionList.length; x++) {
+            String[] splitted = optionList[x].split("=");
+            setOptionMapValue(serverXnioOptions, Options.class, splitted[0].trim(), splitted[1].trim());
+        }
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions(OptionMap.Builder)
+     */
+    @Override
+    public ServerOptions xnioOptions(OptionMap.Builder options) {
+        this.serverXnioOptions = options;
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions()
+     */
+    @Override
+    public OptionMap.Builder xnioOptions() {
+        return this.serverXnioOptions;
+    }
+
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions(java.lang.String)
+     */
+    @Override
+    public ServerOptions undertowOptions(String options) {
+        String[] optionList = options.split(",");
+        for (int x = 0; x < optionList.length; x++) {
+            String[] splitted = optionList[x].split("=");
+            String optionName = splitted[0].trim().toUpperCase();
+            String optionValue = splitted[1].trim();
+            setOptionMapValue(undertowOptions, UndertowOptions.class, optionName, optionValue);
+        }
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#undertowOptions(OptionMap.Builder)
+     */
+    @Override
+    public ServerOptions undertowOptions(OptionMap.Builder options) {
+        this.undertowOptions = options;
+        return this;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#xnioOptions()
+     */
+    @Override
+    public OptionMap.Builder undertowOptions() {
+        return this.undertowOptions;
+    }
+
+    @Override
+    public boolean testing() {
+        return testing;
+    }
+
 }

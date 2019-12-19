@@ -18,11 +18,7 @@ import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -39,10 +35,12 @@ import java.util.zip.GZIPInputStream;
 import javax.swing.JOptionPane;
 
 
+import com.vdurmont.semver4j.Semver;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
 import dorkbox.util.ActionHandler;
 import dorkbox.util.OS;
+import runwar.logging.LoggerFactory;
 import runwar.logging.RunwarLogger;
 import runwar.options.ServerOptions;
 
@@ -56,6 +54,14 @@ public class LaunchUtil {
     private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
     private static String uname;
     private static String linuxRelease;
+    static {
+        LoggerFactory.initialize();
+    }
+
+    public static void initializeLogging() {
+        System.out.println("Initialized logging");
+        LoggerFactory.initialize();
+    }
 
     public static File getJreExecutable() throws FileNotFoundException {
         String jreDirectory = System.getProperty("java.home");
@@ -106,6 +112,7 @@ public class LaunchUtil {
 
     public static void launch(List<String> cmdarray, int timeout, boolean andExit) throws IOException, InterruptedException {
         // byte[] buffer = new byte[1024];
+        LoggerFactory.initialize();
         boolean serverIsUp = false;
         ProcessBuilder processBuilder = new ProcessBuilder(cmdarray);
         processBuilder.redirectErrorStream(true);
@@ -128,7 +135,7 @@ public class LaunchUtil {
         	}
         	formattedArgs.append( "  "+ arg );
         }
-        RunwarLogger.LOG.debug( formattedArgs.toString() );
+        RunwarLogger.LOG.debug("args ->" + formattedArgs.toString() );
         
         RunwarLogger.LOG.debug("timeout of " + timeout / 1000 + " seconds");
         String line;
@@ -152,7 +159,6 @@ public class LaunchUtil {
                         serverIsUp = true;
                         break;
                     } else if (exit == 1) {
-                        System.out.println();
                         printExceptionLine(line);
                         while ((line = br.readLine()) != null) {
                             printExceptionLine(line);
@@ -160,6 +166,7 @@ public class LaunchUtil {
                         System.exit(1);
                     }
                 } catch (IllegalThreadStateException t) {
+                    //t.printStackTrace();
                     // This exceptions means the process has not yet finished.
                     // decide to continue, exit(0), or exit(1)
                     serverIsUp = processOutout(line, process, andExit);
@@ -182,10 +189,10 @@ public class LaunchUtil {
     }
 
     private static boolean processOutout(String line, Process process, boolean exitWhenUp) {
-        RunwarLogger.LOG.info("processoutput: " + line);
+        RunwarLogger.BACKGROUNDED_LOG.debug(line);
         if (line.indexOf("Server is up - ") != -1) {
             // start up was successful, quit out
-            System.out.println(line);
+//             System.out.println(line);
             if(exitWhenUp) {
                 System.exit(0);
             } else {
@@ -208,9 +215,9 @@ public class LaunchUtil {
     }
 
     public static void relaunchAsBackgroundProcess(ServerOptions serverOptions, boolean andExit) {
-        serverOptions.setBackground(false);
-        relaunchAsBackgroundProcess(serverOptions.getLaunchTimeout(), serverOptions.getCommandLineArgs(),
-                serverOptions.getJVMArgs(), serverOptions.getProcessName(), andExit);
+        serverOptions.background(false);
+        relaunchAsBackgroundProcess(serverOptions.launchTimeout(), serverOptions.commandLineArgs(),
+                serverOptions.jvmArgs(), serverOptions.processName(), andExit);
     }
 
     public static void relaunchAsBackgroundProcess(int timeout, String[] args, List<String> jvmArgs, String processName) {
@@ -222,6 +229,7 @@ public class LaunchUtil {
             if (relaunching)
                 return;
             relaunching = true;
+            LoggerFactory.initialize();
             String path = LaunchUtil.class.getProtectionDomain().getCodeSource().getLocation().getPath();
             RunwarLogger.LOG.info("Starting background " + processName + " from: " + path + " ");
             String decodedPath = URLDecoder.decode(path, "UTF-8");
@@ -308,20 +316,30 @@ public class LaunchUtil {
     }
 
     public static void displayMessage(String type, String text) {
-        String processName = Server.getServerOptions() != null ? Server.getServerOptions().getProcessName() : "RunWAR";
+        displayMessage("RunWAR",type, text);
+    }
+    
+    public static void displayMessage(String type, String text, int hideAfter) {
+        displayMessage("RunWAR",type, text, hideAfter);
+    }
+
+    public static void displayMessage(String processName, String type, String text) {
+        displayMessage(processName, type, text, 5000);
+    }
+    public static void displayMessage(String processName, String type, String text, int hideAfter) {
         try{
             if(type.toLowerCase().startsWith("warn")) {
-                displayMessage(processName, text, MessageType.WARNING);
+                displayMessage(processName, text, MessageType.WARNING, hideAfter);
             } else if (type.toLowerCase().startsWith("error")) {
-                displayMessage(processName, text, MessageType.ERROR);
+                displayMessage(processName, text, MessageType.ERROR, hideAfter);
             } else {
-                displayMessage(processName, text, MessageType.INFO);
+                displayMessage(processName, text, MessageType.INFO, hideAfter);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
+
     public static void printMessage(String title, String text, MessageType type) {
         if(type == MessageType.ERROR) {
             System.err.println(title + " " + text);
@@ -331,12 +349,15 @@ public class LaunchUtil {
     }
     
     public static void displayMessage(String title, String text, MessageType type) {
-//        boolean trayEnable = Server.getServerOptions() != null ? Server.getServerOptions().isTrayEnabled() : false;
+        displayMessage(title,text,type,5000);
+    }
+
+    public static void displayMessage(String title, String text, MessageType type, int hideAfter) {
+//        boolean trayEnable = Server.getServerOptions() != null ? Server.getServerOptions().trayEnable() : false;
         if(GraphicsEnvironment.isHeadless()) {
             printMessage(title, text, type);
             return;
         }
-        int hideAfter = 5000;
         try {
             Pos position = OS.isMacOsX() ? Pos.TOP_RIGHT : Pos.BOTTOM_RIGHT;
             final Notify notify = Notify.create()
@@ -454,7 +475,10 @@ public class LaunchUtil {
     }
 
     public static String getResourceAsString(String path) {
-        return readStream(LaunchUtil.class.getClassLoader().getResourceAsStream(path));
+        InputStream streamPath = LaunchUtil.class.getClassLoader().getResourceAsStream(path);
+        if(streamPath == null)
+            return null;
+        return readStream(streamPath);
     }
 
     public static void unzipInteralZip(ClassLoader classLoader, String resourcePath, File libDir, boolean debug) {
@@ -600,7 +624,6 @@ public class LaunchUtil {
             try {
                 if (is != null)
                     is.close();
-                if (outPrint != null)
                     outPrint.close();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -634,7 +657,6 @@ public class LaunchUtil {
         } catch (Exception e) {
             RunwarLogger.LOG.error("Error copying stream.", e);
         }
-
     }
 
     public static int writeStreamTo(final InputStream input, final OutputStream output, int bufferSize)
@@ -684,20 +706,32 @@ public class LaunchUtil {
         }
     }
 
-    public static void assertJavaVersion8() {
-        String version = System.getProperty("java.version");
-        System.out.println("Java version " + version);
-        if (version.charAt(0) == '1' && Integer.parseInt(version.charAt(2) + "") < 8) {
-            System.out.println("** Requires Java 1.8 or later");
-            System.out.println("The HTTP2 spec requires certain cyphers that are not present in older JVM's");
-            System.out.println("See section 9.2.2 of the HTTP2 specification for details");
+    public static void assertMinimumJavaVersion(String minVersion) {
+        Semver systemJavaVersion = new Semver(System.getProperty("java.version","").replace('_','.'), Semver.SemverType.LOOSE);
+        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
+        System.out.println("Java version " + systemJavaVersion.toString() + " (requires >= " + minVersion + ")");
+        if (systemJavaVersion.toStrict().isLowerThan(minimumJavaVersion.toStrict())) {
+            System.out.println("** Requires Java " + minimumJavaVersion.toStrict() + " or later, current: " + systemJavaVersion.toStrict());
             System.exit(1);
         }
+    }
+
+    public static boolean versionLowerThanOrEqualTo(String version, String minVersion) {
+        Semver systemJavaVersion = new Semver(version.replace('_','.'), Semver.SemverType.LOOSE);
+        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
+        return systemJavaVersion.isLowerThanOrEqualTo(minimumJavaVersion);
+    }
+
+    public static boolean versionGreaterThanOrEqualTo(String version, String minVersion) {
+        Semver systemJavaVersion = new Semver(version.replace('_','.'), Semver.SemverType.LOOSE);
+        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
+        return systemJavaVersion.isGreaterThanOrEqualTo(minimumJavaVersion);
     }
 
     public static String getOS() {
         return OS_NAME;
     }
+
     public static String getDataDirectory() {
         String parent;
         String folder = "runwar";
@@ -713,6 +747,7 @@ public class LaunchUtil {
         }
         return parent + File.separator + folder;
     }
+
     public static boolean isWindows() {
         return (OS_NAME.contains("win"));
     }
@@ -813,7 +848,7 @@ public class LaunchUtil {
      * 
      * @param runBeforeRestart
      *            some custom code to be run before restarting
-     * @throws IOException
+     * @throws IOException if one happens
      */
     public static void restartApplication(Runnable runBeforeRestart) throws IOException {
         try {
@@ -870,4 +905,28 @@ public class LaunchUtil {
             throw new IOException("Error while trying to restart the application", e);
         }
     }
+
+    public static int getPortOrErrorOut(int portNumber, String host) {
+        try(ServerSocket nextAvail = new ServerSocket(portNumber, 1, getInetAddress(host))) {
+            portNumber = nextAvail.getLocalPort();
+            nextAvail.close();
+            return portNumber;
+        } catch (java.net.BindException e) {
+            throw new RuntimeException("Error getting port " + portNumber + "!  Cannot start:  " + e.getMessage());
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Unknown host (" + host + ")");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static InetAddress getInetAddress(String host) {
+        try {
+            return InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Error getting inet address for " + host);
+        }
+    }
+
+
 }

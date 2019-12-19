@@ -1,14 +1,11 @@
 package runwar.logging;
 
-import io.undertow.client.ClientConnection;
 import io.undertow.protocols.ssl.SslConduit;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
-import runwar.Server;
-
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Cause;
@@ -31,6 +28,7 @@ import static org.jboss.logging.Logger.Level.ERROR;
 import static org.jboss.logging.Logger.Level.INFO;
 import static org.jboss.logging.Logger.Level.WARN;
 
+
 /**
  * log messages start at 5000
  *
@@ -38,20 +36,25 @@ import static org.jboss.logging.Logger.Level.WARN;
 @MessageLogger(projectCode = "RW")
 public interface RunwarLogger extends BasicLogger {
 
-    boolean initialized = LoggerFactory.defaults();
+    boolean initialized = LoggerFactory.initialize();
 
     /*
      * public default void doityo() {
      * LoggerFactory.init(Server.getServerOptions());
      * System.out.println("default method");
      * System.setProperty("runwar.logfile", "/tmp/fart");
-     * System.setProperty("runwar.loglevel", "DEBUG" );
+     * System.setProperty("runwar.logLevel", "DEBUG" );
      * System.setProperty("runwar.logpattern", "%m%n" ); }
      */
     Logger LOG = Logger.getLogger("runwar.server");
+    Logger CONTEXT_LOG = Logger.getLogger("runwar.context");
     Logger CONF_LOG = Logger.getLogger("runwar.config");
+    Logger MAPPER_LOG = Logger.getLogger("runwar.request");
     Logger SECURITY_LOGGER = Logger.getLogger("runwar.security");
-//  RunwarLogger ROOT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName());
+    Logger BACKGROUNDED_LOG = Logger.getLogger("runwar.background");
+    Logger MONITOR_LOG = Logger.getLogger("runwar.monitor");
+
+    //  RunwarLogger ROOT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName());
 //    RunwarLogger CLIENT_LOGGER = Logger.getMessageLogger(RunwarLogger.class, ClientConnection.class.getPackage().getName());
 //
 //    RunwarLogger REQUEST_LOGGER = Logger.getMessageLogger(RunwarLogger.class, RunwarLogger.class.getPackage().getName() + ".request");
@@ -64,6 +67,7 @@ public interface RunwarLogger extends BasicLogger {
      * Logger used for IO exceptions. Generally these should be suppressed,
      * because they are of little interest, and it is easy for an attacker to
      * fill up the logs by intentionally causing IO exceptions.
+     * @param cause the cause
      */
     // RunwarLogger REQUEST_IO_LOGGER =
     // Logger.getMessageLogger(RunwarLogger.class,
@@ -204,9 +208,6 @@ public interface RunwarLogger extends BasicLogger {
     @Message(id = 5036, value = "ALPN negotiation failed for %s and no fallback defined, closing connection")
     void noALPNFallback(SocketAddress address);
 
-    /**
-     * Undertow mod_cluster proxy messages
-     */
     @LogMessage(level = WARN)
     @Message(id = 5037, value = "Name of the cookie containing the session id, %s, had been too long and was truncated to: %s")
     void stickySessionCookieLengthTruncated(String original, String current);
@@ -429,4 +430,9 @@ public interface RunwarLogger extends BasicLogger {
     @LogMessage(level = DEBUG)
     @Message(id = 5092, value = "Failed to free direct buffer")
     void directBufferDeallocationFailed(@Cause Throwable t);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 6091, value = "Missing required param %s")
+    void missingRequiredParam(String param);
+    
 }

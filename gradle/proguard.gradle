@@ -7,7 +7,11 @@ buildscript {
 }
 
 task proguard(type: proguard.gradle.ProGuardTask) {
-    ext.outJar = "${project.buildDir}/proguard/${jar.archiveName}.jar"
+    dependsOn configurations.dorkboxDependency
+    ext.outJar = "${project.buildDir}/proguard/${jar.archiveName.replace("core.jar","mini.jar")}"
+    doFirst{
+        println "Running proguard task with java ${System.getProperty("java.home")} : ${ext.outJar}"
+    }
     doFirst{ delete outJar }
 
     injars  shadowJar.outputs.files
@@ -24,13 +28,19 @@ task proguard(type: proguard.gradle.ProGuardTask) {
     } else {
         // As of Java 9, the runtime classes are packaged in modular jmod files.
         libraryjars "${System.getProperty('java.home')}/jmods/java.base.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/java.desktop.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/java.management.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/java.instrument.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/jdk.unsupported.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/jdk.*.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/*.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
     }
 
-    configurations.testRuntime.resolvedConfiguration.resolvedArtifacts.each { dep ->
-
-        //        libraryjars dep.getFile()
-
-    }
+//    configurations.testRuntime.resolvedConfiguration.resolvedArtifacts.each { dep ->
+//
+//        //        libraryjars dep.getFile()
+//
+//    }
 
 
     // Save the obfuscation mapping to a file, so you can de-obfuscate any stack
@@ -94,12 +104,22 @@ task proguard(type: proguard.gradle.ProGuardTask) {
 
     keep 'class org.apache.log4j.pattern.** {*;}'
     keep 'class org.apache.log4j.** {*;}'
+    keep 'class org.jboss.logmanager.** {*;}'
+    keep 'class java.util.logging.*'
     keep 'class com.jcabi.** {*;}'
     keep 'class org.xnio.** {*;}'
     keep 'class io.undertow.** {*;}'
+    keep 'class org.cfmlprojects.** {*;}'
     keep 'class dorkbox.util.jna.** {*;}'
     keep 'class com.sun.jna.** {*;}'
     keep 'class dorkbox.systemTray.** {*;}'
+
+    dontwarn 'java.util.logging.**'
+    dontwarn 'runwar.**'
+    dontwarn 'org.xnio.sasl.**'
+    dontwarn 'org.osgi.**'
+    dontwarn 'javax.**'
+    dontwarn 'org.w3c.dom.*'
 
     dontwarn
 

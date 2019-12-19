@@ -1,15 +1,7 @@
 package runwar.undertow;
 
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import io.undertow.UndertowLogger;
 import io.undertow.attribute.StoredResponse;
 import io.undertow.security.api.SecurityContext;
-import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -22,6 +14,8 @@ import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.LocaleUtils;
+
+import java.util.*;
 
 public class RequestDebugHandler implements HttpHandler {
 
@@ -39,35 +33,27 @@ public class RequestDebugHandler implements HttpHandler {
         // Log pre-service information
         final SecurityContext sc = exchange.getSecurityContext();
         sb.append("\n----------------------------REQUEST---------------------------\n");
-        sb.append("               URI=" + exchange.getRequestURI() + "\n");
-        sb.append(" characterEncoding=" + exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING) + "\n");
-        sb.append("     contentLength=" + exchange.getRequestContentLength() + "\n");
-        sb.append("       contentType=" + exchange.getRequestHeaders().get(Headers.CONTENT_TYPE) + "\n");
-        // sb.append(" contextPath=" + exchange.getContextPath());
-        if (sc != null) {
-            if (sc.isAuthenticated()) {
-                sb.append("          authType=" + sc.getMechanismName() + "\n");
-                sb.append("         principle=" + sc.getAuthenticatedAccount().getPrincipal() + "\n");
-            } else {
-                sb.append("          authType=none" + "\n");
-            }
-        }
+        sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
+        sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING)).append("\n");
+        sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
+        sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE)).append("\n");
+        // sb.append(" contextPath=" + exchange.contextPath());
+        isAuthenticatedAppend(sb, sc);
 
         Map<String, Cookie> cookies = exchange.getRequestCookies();
         if (cookies != null) {
             for (Map.Entry<String, Cookie> entry : cookies.entrySet()) {
                 Cookie cookie = entry.getValue();
-                sb.append("            cookie=" + cookie.getName() + "=" + cookie.getValue() + "\n");
+                sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("\n");
             }
         }
         for (HeaderValues header : exchange.getRequestHeaders()) {
             for (String value : header) {
-                sb.append("            header=" + header.getHeaderName() + "=" + value + "\n");
+                sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
             }
         }
-        sb.append("            locale="
-                + LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE)) + "\n");
-        sb.append("            method=" + exchange.getRequestMethod() + "\n");
+        sb.append("            locale=").append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE))).append("\n");
+        sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
         Map<String, Deque<String>> pnames = exchange.getQueryParameters();
         for (Map.Entry<String, Deque<String>> entry : pnames.entrySet()) {
             String pname = entry.getKey();
@@ -84,63 +70,63 @@ public class RequestDebugHandler implements HttpHandler {
             sb.append("\n");
         }
         // sb.append(" pathInfo=" + exchange.getPathInfo());
-        sb.append("          protocol=" + exchange.getProtocol() + "\n");
-        sb.append("       queryString=" + exchange.getQueryString() + "\n");
-        sb.append("        remoteAddr=" + exchange.getSourceAddress() + "\n");
-        sb.append("        remoteHost=" + exchange.getSourceAddress().getHostName() + "\n");
+        sb.append("          protocol=").append(exchange.getProtocol()).append("\n");
+        sb.append("       queryString=").append(exchange.getQueryString()).append("\n");
+        sb.append("        remoteAddr=").append(exchange.getSourceAddress()).append("\n");
+        sb.append("        remoteHost=").append(exchange.getSourceAddress().getHostName()).append("\n");
         // sb.append("requestedSessionId=" + exchange.getRequestedSessionId());
-        sb.append("            scheme=" + exchange.getRequestScheme() + "\n");
-        sb.append("              host=" + exchange.getRequestHeaders().getFirst(Headers.HOST) + "\n");
-        sb.append("        serverPort=" + exchange.getDestinationAddress().getPort() + "\n");
+        sb.append("            scheme=").append(exchange.getRequestScheme()).append("\n");
+        sb.append("              host=").append(exchange.getRequestHeaders().getFirst(Headers.HOST)).append("\n");
+        sb.append("        serverPort=").append(exchange.getDestinationAddress().getPort()).append("\n");
         // sb.append(" servletPath=" + exchange.getServletPath());
-        sb.append("          isSecure=" + exchange.isSecure() + "\n");
+        sb.append("          isSecure=").append(exchange.isSecure()).append("\n");
 
-        exchange.addExchangeCompleteListener(new ExchangeCompletionListener() {
-            @Override
-            public void exchangeEvent(final HttpServerExchange exchange, final NextListener nextListener) {
+        exchange.addExchangeCompleteListener((exchange1, nextListener) -> {
 
-                dumpRequestBody(exchange, sb);
+            dumpRequestBody(exchange1, sb);
 
-                // Log post-service information
-                sb.append("--------------------------RESPONSE--------------------------\n");
-                if (sc != null) {
-                    if (sc.isAuthenticated()) {
-                        sb.append("          authType=" + sc.getMechanismName() + "\n");
-                        sb.append("         principle=" + sc.getAuthenticatedAccount().getPrincipal() + "\n");
-                    } else {
-                        sb.append("          authType=none" + "\n");
-                    }
+            // Log post-service information
+            sb.append("--------------------------RESPONSE--------------------------\n");
+            isAuthenticatedAppend(sb, sc);
+            sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
+            sb.append("       contentType=").append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
+            Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
+            if (cookies1 != null) {
+                for (Cookie cookie : cookies1.values()) {
+                    sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("; domain=").append(cookie.getDomain()).append("; path=").append(cookie.getPath()).append("\n");
                 }
-                sb.append("     contentLength=" + exchange.getResponseContentLength() + "\n");
-                sb.append("       contentType=" + exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE) + "\n");
-                Map<String, Cookie> cookies = exchange.getResponseCookies();
-                if (cookies != null) {
-                    for (Cookie cookie : cookies.values()) {
-                        sb.append("            cookie=" + cookie.getName() + "=" + cookie.getValue() + "; domain="
-                                + cookie.getDomain() + "; path=" + cookie.getPath() + "\n");
-                    }
-                }
-                for (HeaderValues header : exchange.getResponseHeaders()) {
-                    for (String value : header) {
-                        sb.append("            header=" + header.getHeaderName() + "=" + value + "\n");
-                    }
-                }
-                sb.append("            status=" + exchange.getStatusCode() + "\n");
-                String storedResponse = StoredResponse.INSTANCE.readAttribute(exchange);
-                if (storedResponse != null) {
-                    sb.append("body=\n");
-                    sb.append(storedResponse);
-                }
-
-                sb.append("\n==============================================================");
-
-                nextListener.proceed();
-                requestLogReceiver.logMessage(sb.toString());
             }
+            for (HeaderValues header : exchange1.getResponseHeaders()) {
+                for (String value : header) {
+                    sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
+                }
+            }
+            sb.append("            status=").append(exchange1.getStatusCode()).append("\n");
+            String storedResponse = StoredResponse.INSTANCE.readAttribute(exchange1);
+            if (storedResponse != null) {
+                sb.append("body=\n");
+                sb.append(storedResponse);
+            }
+
+            sb.append("\n==============================================================");
+
+            nextListener.proceed();
+            requestLogReceiver.logMessage(sb.toString());
         });
 
         // Perform the exchange
         next.handleRequest(exchange);
+    }
+
+    private void isAuthenticatedAppend(StringBuilder sb, SecurityContext sc) {
+        if (sc != null) {
+            if (sc.isAuthenticated()) {
+                sb.append("          authType=").append(sc.getMechanismName()).append("\n");
+                sb.append("         principle=").append(sc.getAuthenticatedAccount().getPrincipal()).append("\n");
+            } else {
+                sb.append("          authType=none" + "\n");
+            }
+        }
     }
 
     private void dumpRequestBody(HttpServerExchange exchange, StringBuilder sb) {
@@ -154,7 +140,7 @@ public class RequestDebugHandler implements HttpHandler {
 
                     sb.append(formField).append("=");
                     for (FormData.FormValue formValue : formValues) {
-                        sb.append(formValue.isFile() ? "[file-content]" : formValue.getValue());
+                        sb.append(formValue.isFileItem() ? "[file-content]" : formValue.getValue());
                         sb.append("\n");
 
                         if (formValue.getHeaders() != null) {

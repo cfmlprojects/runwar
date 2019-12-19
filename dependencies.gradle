@@ -1,0 +1,194 @@
+buildscript {
+    repositories { maven { url "https://plugins.gradle.org/m2/" } }
+    dependencies { classpath "com.github.jengelman.gradle.plugins:shadow:4.0.2" }
+}
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+configurations {
+    dorkboxDependency
+    jbossJspDependency
+}
+
+ext {
+//    undertowVersion = '1.4.24.Final'
+    undertowVersion = '2.0.27.Final'
+    urlRewriteVersion = '5.0.2'
+    proguardVersion = '6.0.2'
+    goomphVersion = '3.17.1'
+    bndVersion = '1.5.0'
+    spotlessVersion = '3.5.1'
+//    systemTrayVersion = '3.14'
+    systemTrayVersion = '3.17'
+    jbossJspApiVersion = '1.0.3'
+    mavenRepo = "${System.getProperty("user.home")}/cfdistro/artifacts/"
+}
+
+repositories {
+    mavenLocal()
+    maven { url "http://repo.maven.apache.org/maven2" }
+    maven { url "http://repository.jboss.org/nexus/content/repositories/releases" }
+    maven { url "http://cfmlprojects.org/artifacts" }
+}
+
+task dorkboxUberJar(type: ShadowJar) {
+    description = 'java 9+ has problems with the same packages in different jars'
+    classifier = null
+    baseName = 'dorkbox'
+    mergeServiceFiles()
+    version = systemTrayVersion
+    configurations = [project.configurations.dorkboxDependency]
+}
+
+task jbossJspJar(type: ShadowJar) {
+    description = 'java 9+ error about version numbers or something'
+    classifier = null
+    baseName = "jboss-jsp-api"
+    version = jbossJspApiVersion
+    mergeServiceFiles()
+    configurations = [project.configurations.jbossJspDependency]
+}
+
+dependencies {
+    // undertow
+    compile group: 'io.undertow', name: 'undertow-websockets-jsr', version: project.undertowVersion
+/*
+    compile('io.undertow:undertow-jsp:1.0.0.Beta27'){
+        exclude group: 'io.undertow', module: 'undertow-servlet'
+        exclude group: 'org.jboss.spec.javax.annotation', module: 'jboss-annotations-api_1.1_spec'
+        exclude group: 'io.undertow.jastow', module: 'jastow'
+        exclude group: 'org.jboss.logging', module: 'jboss-logging-processor'
+        exclude group: 'org.jboss.spec.javax.servlet', module: 'jboss-servlet-api_3.1_spec'
+        exclude group: 'org.jboss.web', module: 'jasper-jdt'
+    }
+*/
+//    compile('javax.servlet:jsp-api:2.0')
+    // squish the jsp stuff together for java 9+
+    jbossJspDependency('org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.3_spec:1.0.2.Final') { transitive = false }
+    compile("org.cfmlprojects:jboss-jsp-api:${jbossJspApiVersion}")
+    compile(files(jbossJspJar.archivePath){ builtBy jbossJspJar })
+
+    compile("org.jboss.spec.javax.el:jboss-el-api_3.0_spec:1.0.2.Final")
+
+    compile("io.undertow:undertow-servlet:${project.undertowVersion}") {
+        exclude group: 'org.jboss.spec.javax.annotation', module: 'jboss-annotations-api_1.2_spec'
+    }
+
+    // squish the dorkbox stuff together for java 9+
+    dorkboxDependency("com.dorkbox:Notify:3.7")
+    dorkboxDependency("com.dorkbox:SystemTray:${systemTrayVersion}") {
+        exclude group: 'ch.qos.logback', module: 'logback-core'
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+    }
+    compile(files(dorkboxUberJar.archivePath){ builtBy dorkboxUberJar })
+
+    // java 9+ compat
+    compile 'com.sun.activation:javax.activation:1.2.0'
+    //compile 'org.cfmlprojects:javashim:1.0.1'
+    // daemon scripts
+    //compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
+
+    // configuration
+//    compile group: 'net.minidev', name: 'json-smart', version: '2.3'
+    compile group: 'net.minidev', name: 'json-smart-mini', version: '1.0.8'
+    compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '5.0-beta-1'
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
+    compile group: 'org.jooq', name: 'joox', version: '1.2.0'
+
+    // logging
+//    compile("log4j:log4j:1.2.17")
+//    compile("org.slf4j:slf4j-log4j12:1.8.0-beta2")
+    compile("org.slf4j:slf4j-log4j12:1.7.25")
+    //    compile("org.jboss.logmanager:jboss-logmanager:2.1.0.Final")
+    compile("org.jboss.logging:jboss-logging:3.2.1.Final")
+    compile("org.jboss.logging:jboss-logging-annotations:2.1.0.Final")
+    //    compile("org.apache.logging.log4j:log4j-core:2.10.0")
+    //    compile("org.apache.logging.log4j:log4j-slf4j-impl:2.10.0")
+
+    // forked version of tuckey for now
+    compile("org.cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}")
+    // regexpathinfofilter lets us handle *.cfm/* paths
+    compile("org.cfmlprojects:regexpathinfofilter:1.0.1")
+
+    compile("net.java.dev.jna:jna:4.3.0")
+    compile("net.java.dev.jna:jna-platform:4.3.0")
+
+    // ssl
+    compile("org.bouncycastle:bcpkix-jdk15on:1.57")
+    // version compare
+    compile("com.vdurmont:semver4j:2.2.0") { transitive = false }
+    // ansi colors for logging system output
+    compile("com.jcabi:jcabi-log:0.18") { transitive = false }
+
+    if( org.gradle.util.VersionNumber.parse( System.getProperty( 'java.version' ) ) > org.gradle.util.VersionNumber.parse( '1.8' ) ) {
+        // needed for hibernate annotations since not included in later JDKs
+        // the javax packages that are removed in Java 11+
+//        implementation( 'org.jboss.spec.javax.xml.ws:jboss-jaxws-api_2.3_spec:1.0.0.Final')
+//        implementation( 'org.jboss.spec.javax.xml.soap:jboss-saaj-api_1.3_spec:1.0.6.Final')
+        implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
+//        implementation 'javax.jws:jsr181-api:1.0-MR1'
+    }
+    runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
+    implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
+
+    //
+//    compile 'net.bytebuddy:byte-buddy:1.9.2'
+//    compile 'net.bytebuddy:byte-buddy-agent:1.9.2'
+    // tests
+    testCompile("org.apache.httpcomponents:httpclient:4.2.6")
+    testCompile("org.apache.httpcomponents:httpmime:4.2.6")
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.2.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
+    testCompile group: 'org.junit.platform', name: 'junit-platform-launcher', version: "1.2.0"
+    testCompile('org.junit.jupiter:junit-jupiter-params:5.2.0')
+}
+
+//configurations.compile.withDependencies {deps ->
+//    println "Resolving dependencies"
+//    dependencies {
+//        compile "log4j:log4j:1.2.17"
+//    }
+//}
+
+
+
+processResources.dependsOn(dorkboxUberJar)
+processResources.dependsOn(jbossJspJar)
+
+gradle.buildFinished {
+    if(project.gradle.startParameter.taskNames.findAll{it.contains("ublish")}){
+        def repoDir = "${mavenRepo}${project.group.replace('.','/')}/dorkbox/${systemTrayVersion}"
+        file(repoDir).listFiles().each{
+            println it
+        }
+        repoDir = "${mavenRepo}${project.group.replace('.','/')}/jboss-jsp-api/${jbossJspApiVersion}"
+        file(repoDir).listFiles().each{
+            println it
+        }
+    }
+
+}
+
+apply plugin: 'maven-publish'
+publishing {
+    repositories {
+        maven {
+            name 'cfdistro'
+            url project.mavenRepo
+        }
+    }
+    publications {
+        dorkbox(MavenPublication) {
+            groupId project.group
+            artifactId 'dorkbox'
+            version = systemTrayVersion
+            artifact dorkboxUberJar
+        }
+        jbossJsp(MavenPublication) {
+            groupId project.group
+            artifactId 'jboss-jsp-api'
+            version = jbossJspApiVersion
+            artifact jbossJspJar
+        }
+    }
+}
+

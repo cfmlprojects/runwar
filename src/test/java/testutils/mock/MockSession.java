@@ -2,13 +2,13 @@ package testutils.mock;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionContext;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+@SuppressWarnings("depricated")
 public class MockSession implements HttpSession {
 
-	MockServletContext servletContext = new MockServletContext();
+    MockServletContext servletContext = new MockServletContext();
     Hashtable<String, Object> attrs = new Hashtable<String, Object>();
     private boolean sessionNew;
 
@@ -24,26 +24,24 @@ public class MockSession implements HttpSession {
         return 0;
     }
 
-    public void setServletContext(ServletContext sc) {    
-    	servletContext = (MockServletContext) sc;
-    }
-    
-    public ServletContext getServletContext() {    	
-    	return servletContext;
+    public ServletContext getServletContext() {
+        return servletContext;
     }
 
-    public void setMaxInactiveInterval(int i) {
-
+    public void setServletContext(ServletContext sc) {
+        servletContext = (MockServletContext) sc;
     }
 
     public int getMaxInactiveInterval() {
         return 0;
     }
 
-    /**
-     * @deprecated
-     */
-    public HttpSessionContext getSessionContext() {
+    public void setMaxInactiveInterval(int i) {
+
+    }
+
+    @Deprecated
+    public javax.servlet.http.HttpSessionContext getSessionContext() {
         return null;
     }
 
@@ -51,9 +49,7 @@ public class MockSession implements HttpSession {
         return attrs.get(s);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public Object getValue(String s) {
         return null;
     }
@@ -62,9 +58,7 @@ public class MockSession implements HttpSession {
         return null;
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public String[] getValueNames() {
         return new String[0];
     }
@@ -73,9 +67,7 @@ public class MockSession implements HttpSession {
         attrs.put(s, o);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public void putValue(String s, Object o) {
 
     }
@@ -84,9 +76,7 @@ public class MockSession implements HttpSession {
         attrs.remove(s);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public void removeValue(String s) {
 
     }

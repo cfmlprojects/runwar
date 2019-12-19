@@ -1,0 +1,58 @@
+@args(runwar.options.ServerOptionsImpl options)
+{
+    "name":"@options.serverName()",
+    "startTimeout":@options.launchTimeout(),
+    "stopsocket":@options.stopPort(),
+    "debug":@options.debug(),
+    "console":false,
+    "pidFile": "@options.pidFile()?:""",
+    "openBrowser":@options.openbrowser(),
+    "openBrowserURL":"@options.openbrowserURL()?:""",
+    "app":{
+        "logDir":"@options.logDir()",
+        "cfengine":"@options.cfEngineName()",
+        "serverHomeDirectory":"@options.warFile()?:""",
+        "libDirs": "@options.libDirs()?:""",
+        "webConfigDir": "@options.cfmlServletConfigWebDir()?:""",
+        "serverConfigDir": "@options.cfmlServletConfigServerDir()?:""",
+        "webXML": "@options.webXmlFile()?:""",
+        "WARPath": "@options.warFile()?:""",
+        "restMappings": [@String.join(",", options.servletRestMappings())?:""]
+    },
+    "trayOptions":@options.trayConfigJSON()?:"[]",
+    "jvm": [@(options.jvmArgs() != null ? String.join(",", options.jvmArgs()) : "")],
+    "web":{
+        "webroot":"@options.warFile()?:""",
+        "host":"@options.host()?:""",
+        "directoryBrowsing":"@options.directoryListingEnable()?:"false"",
+        "welcomeFiles": [@(options.welcomeFiles() != null ? String.join(",", options.welcomeFiles()) : "")],
+        "contentDirs":@options.toJson(options.contentDirectories()),
+        "aliases":@options.toJson(options.aliases()),
+        "errorPages": @(options.errorPages() != null ? options.toJson(options.errorPages()) : "{}"),
+        "http":{
+            "port":@options.httpPort(),
+            "enable":@options.httpEnable()
+        },
+        "ajp":{
+            "port":@options.ajpPort(),
+            "enable":@options.ajpEnable()
+        },
+        "ssl":{
+            "enable":@options.sslEnable(),
+            "port":@options.sslPort(),
+            "certFile":"@options.sslCertificate()?:""",
+            "keyFile":"@options.sslKey()?:""",
+            "keyPass":"@options.sslKeyPass()?:"""
+        },
+        "rewrites": {
+            "enable": @options.urlRewriteEnable(),
+            "config": "@options.urlRewriteFile()?:""",
+            "statusPath": "@options.urlRewriteStatusPath()?:""",
+            "configReloadSeconds": @options.urlRewriteCheckInterval()?:0
+        },
+        "basicAuth": {
+            "enable": @options.basicAuthEnable(),
+            "users": @(options.basicAuth() != null ? options.toJson(options.basicAuth()) : "{}")
+        }
+    }
+}

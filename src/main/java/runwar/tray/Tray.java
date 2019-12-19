@@ -5,23 +5,16 @@ import static runwar.LaunchUtil.getResourceAsString;
 import static runwar.LaunchUtil.openURL;
 import static runwar.LaunchUtil.readFile;
 
-import java.awt.GraphicsEnvironment;
-import java.awt.Image;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
-
 import dorkbox.systemTray.Checkbox;
 import dorkbox.systemTray.Menu;
 import dorkbox.systemTray.MenuItem;
@@ -47,17 +40,21 @@ public class Tray {
             + "]}";
 
     private static HashMap<String,String> variableMap;
-    
+    private Server server;
+
     public static void setVariableMap(HashMap<String,String> vm) {
         variableMap = vm;
     }
 
-    public static void hookTray(final Server server) {
+    public void hookTray(final Server server) {
+        this.server = server;
         if(trayIsHooked){
             return;
         }
+//        available 3.13+
         SystemTray.AUTO_SIZE = true;
         SystemTray.FORCE_GTK2 = true;
+        SystemTray.AUTO_FIX_INCONSISTENCIES=true;
         System.setProperty("SWT_GTK3", "0");
 //        SystemTray.FORCE_TRAY_TYPE = TrayType.;
         if ( GraphicsEnvironment.isHeadless() ) {
@@ -77,29 +74,36 @@ public class Tray {
             return;
         }
 
-        ServerOptions serverOptions = Server.getServerOptions();
-        String iconImage = serverOptions.getIconImage();
-        String host = serverOptions.getHost();
-        int portNumber = serverOptions.getPortNumber();
-        final int stopSocket = serverOptions.getSocketNumber();
-        String processName = serverOptions.getProcessName();
+        ServerOptions serverOptions = server.getServerOptions();
+        String iconImage = serverOptions.iconImage();
+        String host = serverOptions.host();
+        int portNumber = serverOptions.httpPort();
+        final int stopSocket = serverOptions.stopPort();
+        String processName = serverOptions.processName();
         String PID = server.getPID();
-        String warpath = serverOptions.getWarPath();
+        String warpath = serverOptions.warUriString();
 
         final String statusText = processName + " server on " + host + ":" + portNumber + " PID:" + PID;
 
         variableMap = new HashMap<String,String>();
         variableMap.put("defaultTitle", statusText);
         variableMap.put("webroot", warpath);
+        variableMap.put("logDir", warpath);
+        variableMap.put("app.logDir", warpath);
+        variableMap.put("web.webroot", warpath);
         variableMap.put("runwar.port", Integer.toString(portNumber));
+        variableMap.put("web.http.port", Integer.toString(portNumber));
+        variableMap.put("web.ajp.port", Integer.toString(portNumber));
         variableMap.put("runwar.processName", processName);
+        variableMap.put("processName", processName);
         variableMap.put("runwar.PID", PID);
         variableMap.put("runwar.host", host);
+        variableMap.put("web.host", host);
         variableMap.put("runwar.stopsocket", Integer.toString(stopSocket));
 
         String trayConfigJSON;
-        if (serverOptions.getTrayConfig() != null) {
-            trayConfigJSON = readFile( serverOptions.getTrayConfig() );
+        if (serverOptions.trayConfig() != null) {
+            trayConfigJSON = readFile( serverOptions.trayConfig() );
         } else {
             trayConfigJSON = getResourceAsString("runwar/taskbar.json");
         }
@@ -154,23 +158,38 @@ public class Tray {
             }
             else if(itemInfo.get("action") != null) {
                 String action = getString(itemInfo, "action", "");
-                if (action.toLowerCase().equals("stopserver")) {
+                if (action.equalsIgnoreCase("stopserver")) {
                     menuItem = new MenuItem(label, is, new ExitAction(server));
                     menuItem.setShortcut('s');
-                } else if (action.toLowerCase().equals("restartserver")) {
+                } else if (action.equalsIgnoreCase("restartserver")) {
                     menuItem = new MenuItem(label, is, new RestartAction(server));
                     menuItem.setShortcut('r');
-                } else if (action.toLowerCase().equals("getversion")) {
+                } else if (action.equalsIgnoreCase("getversion")) {
                     menuItem = new MenuItem("Version: " + Server.getVersion(), is, new GetVersionAction());
                     menuItem.setShortcut('v');
-                } else if (action.toLowerCase().equals("openbrowser")) {
+                } else if (action.equalsIgnoreCase("openbrowser")) {
                     String url = itemInfo.get("url").toString();
                     menuItem = new MenuItem(label, is, new OpenBrowserAction(url));
                     menuItem.setShortcut('o');
-                } else if (action.toLowerCase().equals("openfilesystem")) {
-                    File path = new File(getString(itemInfo, "path", Server.getServerOptions().getWarPath()));
+                } else if (action.equalsIgnoreCase("openfilesystem")) {
+                    File path = new File(getString(itemInfo, "path", server.getServerOptions().warUriString()));
                     menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
+                /*} else if (action.equalsIgnoreCase("serverOptionsJson")) {
+                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
+                    menuItem.setShortcut('d');
+                } else if (action.equalsIgnoreCase("openTerminal")) {
+                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
+                    menuItem.setShortcut('d');
+                } else if (action.equalsIgnoreCase("serverOptionsSave")) {
+                    menuItem = new MenuItem(label, is, new ServerOptionsSaveAction(server.getServerOptions()));
+                    menuItem.setShortcut('d');
+                } else if (action.equalsIgnoreCase("run")) {
+                    String command = getString(itemInfo, "command", "");
+                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
+                    String output = getString(itemInfo, "output", "dialog");
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output));
+                    menuItem.setShortcut('c');*/
                 } else {
                     RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                 }
@@ -193,6 +212,35 @@ public class Tray {
         }
     }
 
+  /*  public static JSONArray loadItems(JSONArray loadItems) {
+        JSONArray items = new JSONArray();
+        if (loadItems == null) {
+            loadItems = (JSONArray) JSONValue.parse("[]");
+        }
+
+        for (Object ob : loadItems) {
+            JSONObject itemInfo = (JSONObject) ob;
+            if(itemInfo.get("label") == null) {
+                RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
+                continue;
+            }
+            String label = getString(itemInfo, "label", "");
+            itemInfo.put("label",label);
+            if(itemInfo.get("action") != null) {
+//                String action = itemInfo.get("action").toString();
+            }
+            if(itemInfo.get("url") != null) {
+                itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
+                itemInfo.put("url", getString(itemInfo, "url", ""));
+            } else if(itemInfo.get("items") != null) {
+                itemInfo.put("items", loadItems((JSONArray)itemInfo.get("items")));
+            }
+
+            items.add(itemInfo);
+        }
+        return items;
+    }*/
+
     public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {
         JSONObject config;
         JSONArray loadItems;
@@ -201,6 +249,7 @@ public class Tray {
         if(jsonText == null) {
             return null;
         }
+
         Object menuObject = JSONValue.parse(jsonText);
         if(menuObject instanceof JSONArray) {
             config = new JSONObject();
@@ -267,10 +316,11 @@ public class Tray {
     public static void unhookTray() {
         if (systemTray != null) {
             try {
-                RunwarLogger.LOG.debug("Removing tray icon");
+                RunwarLogger.LOG.debug("Removing tray");
                 systemTray.shutdown();
+                systemTray = null;
             } catch (Exception e) {
-                e.printStackTrace();
+                RunwarLogger.LOG.trace(e);
             }
         }
     }
@@ -399,8 +449,146 @@ public class Tray {
         }
         return null;
     }
+/*
+    private static void showDialog(String content){
+        final JTextArea jta = new JTextArea(content);
+        jta.setEditable(false);
+        final JScrollPane jsp = new JScrollPane(jta){
+            @Override
+            public Dimension getPreferredSize() {
+                return new Dimension(580, 420);
+            }
+        };
+        JOptionPane.showMessageDialog( null, jsp, "Output", JOptionPane.INFORMATION_MESSAGE);
+    }
 
+    private static class RunShellCommandAction implements ActionListener {
+        private String command;
+        private String executable;
+        private String workingDirectory;
+        private String output;
 
+        RunShellCommandAction(String command, String workingDirectory, String output) {
+            this.command = command;
+            this.workingDirectory= workingDirectory;
+            this.output= output.toLowerCase();
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            ByteArrayOutputStream bs = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(bs);
+            ShellProcessBuilder shellProcessBuilder = new ShellProcessBuilder(ps);
+            shellProcessBuilder.addArgument(command);
+            if(executable != "")
+                shellProcessBuilder.setExecutable(executable);
+            if(workingDirectory != "")
+                shellProcessBuilder.setWorkingDirectory(workingDirectory);
+
+            shellProcessBuilder.start();
+
+            String content = bs.toString();
+
+            if(!output.equals("none")){
+                Notify.create()
+                        .title("Run Output")
+                        .text("Running " + shellProcessBuilder.getCommand())
+                        .position(Pos.TOP_RIGHT)
+                        // .setScreen(0)
+                        .darkStyle()
+                        //.shake(1300, 10)
+                        // .hideCloseButton()
+                        .onAction(new ActionHandler<Notify>() {
+                            @Override
+                            public void handle(final Notify arg0) {
+                                showDialog(content);
+                            }
+                        }).showConfirm();
+
+                if(!output.equals("dialog")){
+                    showDialog(content);
+                }
+
+            }
+        }
+    }
+
+    private static class ServerOptionsJsonAction implements ActionListener {
+        ServerOptionsImpl serverOptions;
+
+        ServerOptionsJsonAction(ServerOptions serverOptions) {
+            this.serverOptions = (ServerOptionsImpl) serverOptions;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            showDialog(serverOptions.toJson());
+        }
+    }
+
+    private static class ToggleOnBootAction implements ActionListener {
+        ServerOptionsImpl serverOptions;
+
+        ToggleOnBootAction(ServerOptions serverOptions) {
+            this.serverOptions = (ServerOptionsImpl) serverOptions;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Service service = new Service(serverOptions);
+            HashMap<String, String> values = new HashMap<>();
+            service.commands().forEach(command ->
+                values.put(command.name, command.osCommand(OSType.host()))
+            );
+            SubmitActionlistioner onSubmit = new SubmitActionlistioner() {
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println(getForm().getFieldValue("start"));
+                    System.out.println(getForm().getFieldValue("startForeground"));
+                    System.out.println(getForm().getFieldValue("stop"));
+                    try {
+                        service.generateServiceScripts();
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
+                }
+            };
+            JsonForm.renderFormJson("runwar/form/service.form.json", values, variableMap, onSubmit);
+        }
+    }
+
+    private static class ServerOptionsSaveAction implements ActionListener {
+        ServerOptionsImpl serverOptions;
+
+        ServerOptionsSaveAction(ServerOptions serverOptions) {
+            this.serverOptions = (ServerOptionsImpl) serverOptions;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            File path = new File(serverOptions.workingDir(),"server.json");
+            final JFileChooser fc = new JFileChooser(path);
+            JPanel jPanel = new JPanel(new BorderLayout());
+            fc.setDialogTitle("Save current options to server.json");
+            fc.setName("server.json");
+            fc.setSelectedFile(path);
+            fc.setAcceptAllFileFilterUsed(true);
+            fc.setFileFilter(new FileFilter() {
+                @Override
+                public boolean accept(File file) {
+                    return file.getName().toLowerCase().endsWith(".json") || file.getName().toLowerCase().endsWith(".txt");
+                }
+
+                @Override
+                public String getDescription() {
+                    return "JSON file";
+                }
+            });
+            fc.showSaveDialog(jPanel);
+
+            //showDialog(serverOptions.toJson());
+        }
+    }
+*/
     private static class OpenBrowserAction implements ActionListener {
         private String url;
 
@@ -410,7 +598,7 @@ public class Tray {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            displayMessage("Info", "Opening browser to " + url);
+            displayMessage(variableMap.get("processName"), "Info", "Opening browser to " + url);
             openURL(url);
         }
     }
@@ -426,18 +614,20 @@ public class Tray {
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
-                System.out.println("Exiting...");
+                RunwarLogger.LOG.info("Exiting...");
                 server.stopServer();
                 String message = "Server shut down " + (server.serverWentDown() ? "" : "un") + "successfully, shutting down tray";
                 RunwarLogger.LOG.debug( message );
-                try {
-                    systemTray.shutdown();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                if(systemTray != null){
+                    try {
+                        systemTray.shutdown();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
                 System.exit(0);
             } catch (Exception e1) {
-                displayMessage("Error", e1.getMessage());
+                displayMessage(Server.processName, "Error", e1.getMessage());
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e2) {
@@ -478,7 +668,7 @@ public class Tray {
     }
     
     private static class GetVersionAction implements ActionListener {
-        
+
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
@@ -493,7 +683,7 @@ public class Tray {
             }
         }
     }
-    
+
     private static class BrowseFilesystemAction implements ActionListener {
         private String path;
 

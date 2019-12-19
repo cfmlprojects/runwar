@@ -1,10 +1,6 @@
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
-ext['signing.keyId'] =  project.config.gpg.cfmlprojects.signkeyid
-ext['signing.password'] = project.config.gpg.cfmlprojects.pass
-ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
-
 /*
  task sourceJar(type: Jar) {
  classifier "sources"
@@ -16,9 +12,26 @@ ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
  }
  */
 
+ext {
+    cfdistrorcFile = file("${config.user.home}/.cfdistrorc")
+    deployToMaven = cfdistrorcFile.exists()
+}
 artifacts { archives javadocJar, sourceJar }
 
-signing { sign configurations.archives }
+
+if (deployToMaven) {
+    ext['signing.keyId'] = project.config.gpg.cfmlprojects.signkeyid
+    ext['signing.password'] = project.config.gpg.cfmlprojects.pass
+    ext['signing.secretKeyRingFile'] = project.config.gpg.cfmlprojects.secring
+    signing { sign configurations.archives }
+} else {
+    task signArchives() {
+        description = "Add a ${cfdistrorcFile} with signing info to enbable jar signing"
+        doFirst {
+            println "Signing is disabled without keys"
+        }
+    }
+}
 
 publishing {
     publications {
@@ -47,23 +60,25 @@ publishing {
             artifact(jar) { classifier = 'core' }
             artifact(file(proguard.outJar)) { classifier = 'min' }
 
-            // create the signed artifacts
-            project.tasks.signArchives.signatureFiles.each {
-                artifact(it) {
-                    def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
-                    if (matcher.find()) {
-                        classifier = matcher.group(1)
-                    } else {
-                        classifier = null
+            if (deployToMaven) {
+                // create the signed artifacts
+                project.tasks.signArchives.signatureFiles.each {
+                    artifact(it) {
+                        def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+                        if (matcher.find()) {
+                            classifier = matcher.group(1)
+                        } else {
+                            classifier = null
+                        }
+                        extension = 'jar.asc'
                     }
-                    extension = 'jar.asc'
                 }
             }
         }
     }
     repositories {
         maven {
-            if(project.isSnapshot) {
+            if (project.isSnapshot) {
                 url "https://oss.sonatype.org/content/repositories/snapshots"
             } else {
                 url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
@@ -88,26 +103,26 @@ def customizePom(pom) {
             resolveStrategy = Closure.DELEGATE_FIRST
 
             description 'Run WARs with ease'
-            url 'https://github.com/cfmlprojects/runwar'
+            url 'https://github.com/Ortus-Solutions/runwar'
             organization {
                 name 'org.cfmlprojects'
-                url 'https://github.com/cfmlprojects'
+                url 'https://github.com/Ortus-Solutions'
             }
             issueManagement {
                 system 'GitHub'
-                url 'https://github.com/cfmlprojects/runwar/issues'
+                url 'https://github.com/Ortus-Solutions/runwar/issues'
             }
             licenses {
                 license {
                     name 'MIT'
-                    url 'https://github.com/cfmlprojects/runwar/blob/master/LICENSE'
+                    url 'https://github.com/Ortus-Solutions/runwar/blob/master/LICENSE'
                     distribution 'repo'
                 }
             }
             scm {
-                url 'https://github.com/cfmlprojects/runwar'
-                connection 'scm:git:git://github.com/cfmlprojects/runwar.git'
-                developerConnection 'scm:git:ssh://git@github.com:cfmlprojects/runwar.git'
+                url 'https://github.com/Ortus-Solutions/runwar'
+                connection 'scm:git:git://github.com/Ortus-Solutions/runwar.git'
+                developerConnection 'scm:git:ssh://git@github.com:Ortus-Solutions/runwar.git'
             }
             developers { developer { name 'Denny Valliant' } }
         }
@@ -120,4 +135,9 @@ model {
     }
     tasks.publishRunwarPublicationToMavenLocal { dependsOn project.tasks.proguard, project.tasks.signArchives }
     tasks.publishRunwarPublicationToMavenRepository { dependsOn project.tasks.proguard, project.tasks.signArchives }
+    tasks.publishRunwarPublicationToCfdistroRepository { dependsOn project.tasks.proguard, project.tasks.signArchives }
+}
+
+tasks.matching { it.name.startsWith("publish") }.all {
+    onlyIf { project.deployToMaven }
 }

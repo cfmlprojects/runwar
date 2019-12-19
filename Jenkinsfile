@@ -4,7 +4,7 @@ pipeline {
     stages {
 		   stage('Preparation') { // for display purposes
 		      // Get some code from a GitHub repository
-		      git 'https://github.com/cfmlprojects/runwar.git'
+		      git 'https://github.com/Ortus-Solutions/runwar.git'
 		   }
 		   stage('Build') {
 		      if (isUnix()) {

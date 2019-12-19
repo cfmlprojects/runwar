@@ -1,0 +1,57 @@
+{
+    "name":"http2test",
+    "startTimeout":50000,
+    "stopsocket":54118,
+    "debug":true,
+    "console":false,
+    "pidFile": "",
+    "openBrowser":false,
+    "openBrowserURL":"",
+    "app":{
+        "logDir":"src/test/resources/war/simple.war/WEB-INF/logs",
+        "cfengine":"",
+        "serverHomeDirectory":"src/test/resources/war/simple.war",
+        "libDirs": "/Users/pyro/mgmathus_github/os/runwar/src/test/resources/war/simple.war/WEB-INF/lib",
+        "webConfigDir": "",
+        "serverConfigDir": "",
+        "webXML": "src/test/resources/war/simple.war/WEB-INF/web.xml",
+        "WARPath": "src/test/resources/war/simple.war",
+        "restMappings": [/rest]
+    },
+    "trayOptions":[],
+    "jvm": [],
+    "web":{
+        "webroot":"src/test/resources/war/simple.war",
+        "host":"127.0.0.1",
+        "directoryBrowsing":"true",
+        "welcomeFiles": [],
+        "contentDirs":["..\/pub","..\/src","\/Users\/pyro\/mgmathus_github\/os\/runwar\/src\/test\/resources\/war\/simple.war"],
+        "aliases":{},
+        "errorPages": {},
+        "http":{
+            "port":54117,
+            "enable":true
+        },
+        "ajp":{
+            "port":8009,
+            "enable":false
+        },
+        "ssl":{
+            "enable":true,
+            "port":54119,
+            "certFile":"",
+            "keyFile":"",
+            "keyPass":""
+        },
+        "rewrites": {
+            "enable": false,
+            "config": "",
+            "statusPath": "",
+            "configReloadSeconds": 0
+        },
+        "basicAuth": {
+            "enable": false,
+            "users": {"user1":"password1","alice":"12345","charsetUser":"password-ü","bob":"password"}
+        }
+    }
+}

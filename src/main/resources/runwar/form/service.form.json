@@ -1,0 +1,30 @@
+{
+  "title": "Service Options",
+  "type": "object",
+  "required": [
+    "startCommand"
+  ],
+  "properties": {
+    "start": {
+      "type": "string",
+      "title": "start command",
+      "tooltip": "command used to start the server",
+      "default": "enter start command",
+      "width":"100"
+    },
+    "startForeground": {
+      "type": "string",
+      "title": "start-foreground command",
+      "tooltip": "command used to start the server in the foreground",
+      "default": "enter startForeground command",
+      "width":"100"
+    },
+    "stop": {
+      "type": "string",
+      "title": "stop",
+      "tooltip": "command used to stop the server",
+      "default": "enter stop command",
+      "width":"100"
+    }
+  }
+}

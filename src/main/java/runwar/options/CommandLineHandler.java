@@ -4,7 +4,6 @@ package runwar.options;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -33,7 +32,7 @@ public class CommandLineHandler {
     private static PosixParser parser;
     private static final String SYNTAX = " java -jar runwar.jar [-war] path/to/war [options]";
     private static final String HEADER = " The runwar lib wraps undertow with more awwsome. Defaults (parenthetical)";
-    private static final String FOOTER = " source: https://github.com/cfmlprojects/runwar.git";
+    private static final String FOOTER = " source: https://github.com/Ortus-Solutions/runwar.git";
     
     public CommandLineHandler(){
     }
@@ -98,13 +97,13 @@ public class CommandLineHandler {
         
         options.addOption( OptionBuilder
                 .withLongOpt( "http-enable" )
-                .withDescription( "Enable HTTP.  Default is true ,unless SSL or AJP are enabled." )
+                .withDescription( "Enable HTTP.  Default is true ,unless SSL or AJP are enable." )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.HTTPENABLE) );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "ajp-enable" )
-                .withDescription( "Enable AJP.  Default is false.  When enabled, http is disabled by default." )
+                .withDescription( "Enable AJP.  Default is false.  When enable, http is disabled by default." )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.AJPENABLE) );
         
@@ -113,6 +112,12 @@ public class CommandLineHandler {
                 .withDescription( "Enable URL Rewriting.  Default is true." )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create(Keys.URLREWRITEENABLE) );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "urlrewrite-log" )
+                .withDescription( "URL rewriting log file." )
+                .hasArg().withArgName("path/to/urlrewrite/log")
+                .create(Keys.URLREWRITELOG) );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "urlrewrite-file" )
@@ -134,7 +139,7 @@ public class CommandLineHandler {
         
         options.addOption( OptionBuilder
                 .withLongOpt( "ssl-enable" )
-                .withDescription( "Enable SSL.  Default is false.  When enabled, http is disabled by default." )
+                .withDescription( "Enable SSL.  Default is false.  When enable, http is disabled by default." )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
                 .create("sslenable") );
         
@@ -520,14 +525,44 @@ public class CommandLineHandler {
                 .withLongOpt( "cookie-secure" )
                 .withDescription( "Set cookie 'secure' header" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
-                .create(Keys.COOKIEHTTPONLY) );
+                .create(Keys.COOKIESECURE) );
 
         options.addOption( OptionBuilder
                 .withLongOpt( "webinf-path" )
                 .withDescription( "Set WEB-INF path" )
                 .hasArg().withArgName("path/to/WEB-INF")
                 .create(Keys.WEBINF) );
-        
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "ssl-eccdisable" )
+                .withDescription( "Disable EC SSL algorithms" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.SSLECCDISABLE) );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "ssl-selfsign" )
+                .withDescription( "Generate a self-signed certificate, use -sslcert and -sslkey parameters to specify key paths" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.SSLSELFSIGN) );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "service" )
+                .withDescription( "Generate and run a service configuration" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.SERVICE) );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "xnio-options" )
+                .withDescription( "List of XNIO options" )
+                .hasArg().withArgName("WORKER_IO_THREADS=16,TCP_NODELAY=false")
+                .create(Keys.XNIOOPTIONS) );
+
+        options.addOption( OptionBuilder
+                .withLongOpt( "undertow-options" )
+                .withDescription( "List of Undertow options" )
+                .hasArg().withArgName("MAX_PARAMETERS=12,MAX_HEADERS=200")
+                .create(Keys.UNDERTOWOPTIONS) );
+
         options.addOption( new Option( "h", Keys.HELP, false, "print this message" ) );
         options.addOption( new Option( "v", "version", false, "print runwar version and undertow version" ) );
         
@@ -551,34 +586,31 @@ public class CommandLineHandler {
 
         try {
             CommandLine line = parser.parse( getOptions(), args );
-            // parse the command line arguments
-            if (line.hasOption("c")) {
-                String config = line.getOptionValue("c");
-                serverOptions = new ConfigParser(getFile(config)).getServerOptions();
-            }
 
             if (line.hasOption(Keys.DEBUG)) {
-                Boolean debug= Boolean.valueOf(line.getOptionValue(Keys.DEBUG));
-                serverOptions.setDebug(debug);
+                boolean debug = Boolean.valueOf(line.getOptionValue(Keys.DEBUG));
+                serverOptions.debug(debug);
                 if(debug) {
-                    serverOptions.setLoglevel(Keys.DEBUG);
+                    serverOptions.logLevel(Keys.DEBUG);
                 }
             }
 
-            if (line.hasOption("level") && line.getOptionValue("level").length() > 0) {
-                serverOptions.setLoglevel(line.getOptionValue("level"));
-            }
-            
-            if (line.hasOption(Keys.WAR)) {
-                String warPath = line.getOptionValue(Keys.WAR);
-                serverOptions.setWarFile(getFile(warPath));
-            } 
-            if (line.hasOption(Keys.LOGBASENAME)) {
-                serverOptions.setLogFileName(line.getOptionValue(Keys.LOGBASENAME));
+            if (hasOptionValue(line, "level")) {
+                serverOptions.logLevel(line.getOptionValue("level"));
             }
 
-            if (line.hasOption(Keys.LOGDIR)) {
-                serverOptions.setLogDir(line.getOptionValue(Keys.LOGDIR));
+            if (line.hasOption(Keys.WAR)) {
+                String warPath = line.getOptionValue(Keys.WAR);
+                serverOptions.warFile(getFile(warPath));
+            } 
+            if (hasOptionValue(line, Keys.LOGBASENAME)) {
+                serverOptions.logFileName(line.getOptionValue(Keys.LOGBASENAME));
+            }
+
+            if (hasOptionValue(line, Keys.LOGDIR)) {
+                serverOptions.logDir(line.getOptionValue(Keys.LOGDIR));
+            } else {
+                serverOptions.logDir();
             }
             return serverOptions;
         }
@@ -594,7 +626,7 @@ public class CommandLineHandler {
 //        parser.acceptsAll(asList("c",ServerOptions.CONFIG)).withRequiredArg()
 //        .describedAs( "config file" )
 //        .ofType( File.class );
-        serverOptions.setCommandLineArgs(args);
+        serverOptions.commandLineArgs(args);
         parser = new PosixParser();
 
         /*
@@ -639,59 +671,59 @@ public class CommandLineHandler {
                 CONF_LOG.debug("Loading config from file: " + getFile(config));
                 serverOptions = new ConfigParser(getFile(config)).getServerOptions();
             }
-            
-            if (line.hasOption(Keys.NAME)) {
-                serverOptions.setServerName(line.getOptionValue(Keys.NAME));
+
+            if (hasOptionValue(line, Keys.NAME)) {
+                serverOptions.serverName(line.getOptionValue(Keys.NAME));
             }
             
             if (line.hasOption(Keys.DEBUG)) {
                 Boolean debug= Boolean.valueOf(line.getOptionValue(Keys.DEBUG));
-                serverOptions.setDebug(debug);
+                serverOptions.debug(debug);
                 if(debug) {
-                    serverOptions.setLoglevel(Keys.DEBUG);
+                    serverOptions.logLevel(Keys.DEBUG);
                     CONF_LOG.debug("Enabling debug mode");
                 }
             }
-            
-            if (line.hasOption("level") && line.getOptionValue("level").length() > 0) {
-                serverOptions.setLoglevel(line.getOptionValue("level"));
+
+            if (hasOptionValue(line, "level")) {
+                serverOptions.logLevel(line.getOptionValue("level"));
             }
             
             if (line.hasOption(Keys.BACKGROUND)) {
-                serverOptions.setBackground(Boolean.valueOf(line.getOptionValue(Keys.BACKGROUND)));
+                serverOptions.background(Boolean.valueOf(line.getOptionValue(Keys.BACKGROUND)));
             }
-            if (line.hasOption(Keys.LIBDIRS) && line.getOptionValue(Keys.LIBDIRS).length() > 0) {
+            if (hasOptionValue(line, Keys.LIBDIRS)) {
                 String[] list = line.getOptionValue(Keys.LIBDIRS).split(",");
                 for (String path : list) {
                     File lib = new File(path);
                     if (!lib.exists() || !lib.isDirectory())
                         printUsage("No such lib directory "+path,1);
                 }               
-                serverOptions.setLibDirs(line.getOptionValue(Keys.LIBDIRS));
+                serverOptions.libDirs(line.getOptionValue(Keys.LIBDIRS));
             }
-            if (line.hasOption(Keys.WELCOMEFILES) && line.getOptionValue(Keys.WELCOMEFILES).length() > 0) {
-                serverOptions.setWelcomeFiles(line.getOptionValue(Keys.WELCOMEFILES).split(","));
+            if (hasOptionValue(line, Keys.WELCOMEFILES)) {
+                serverOptions.welcomeFiles(line.getOptionValue(Keys.WELCOMEFILES).split(","));
             }
-            if (line.hasOption(Keys.JAR)) {
+            if (hasOptionValue(line, Keys.JAR)) {
                 File jar = new File(line.getOptionValue(Keys.JAR));
                 if (!jar.exists() || jar.isDirectory())
                     printUsage("No such jar "+jar,1);
-                serverOptions.setJarURL(jar.toURI().toURL());
+                serverOptions.jarURL(jar.toURI().toURL());
             }
             
-            if (line.hasOption(Keys.TIMEOUT)) {
-                serverOptions.setLaunchTimeout(((Number)line.getParsedOptionValue(Keys.TIMEOUT)).intValue() * 1000);
+            if (hasOptionValue(line, Keys.TIMEOUT)) {
+                serverOptions.launchTimeout(((Number)line.getParsedOptionValue(Keys.TIMEOUT)).intValue() * 1000);
             }
             if (line.hasOption(Keys.PASSWORD)) {
-                serverOptions.setStopPassword(line.getOptionValue(Keys.PASSWORD).toCharArray());
+                serverOptions.stopPassword(line.getOptionValue(Keys.PASSWORD).toCharArray());
             }
             if (line.hasOption(Keys.STOPSOCKET)) {
-                serverOptions.setSocketNumber(((Number)line.getParsedOptionValue(Keys.STOPSOCKET)).intValue());
+                serverOptions.stopPort(((Number)line.getParsedOptionValue(Keys.STOPSOCKET)).intValue());
             }
-            if (line.hasOption(Keys.WAR)) {
+            if (hasOptionValue(line, Keys.WAR)) {
                 String warPath = line.getOptionValue(Keys.WAR);
-                serverOptions.setWarFile(getFile(warPath));
-            } else if (!line.hasOption(Keys.STOP) && !line.hasOption("c") && !line.hasOption(Keys.LOADBALANCE)) {
+                serverOptions.warFile(getFile(warPath));
+            } else if (!line.hasOption(Keys.STOP) && !line.hasOption("c") && !line.hasOption(Keys.LOADBALANCE) && !line.hasOption(Keys.SSLSELFSIGN)) {
                 printUsage("Must specify -war path/to/war, or -stop [-stop-socket]",1);
             } 
             if(line.hasOption("D")){
@@ -703,285 +735,324 @@ public class CommandLineHandler {
                 }
             }
             
-            if (line.hasOption(Keys.WEBXMLPATH)) {
+            if (hasOptionValue(line, Keys.WEBXMLPATH)) {
                 String webXmlPath = line.getOptionValue(Keys.WEBXMLPATH);
                 File webXmlFile = new File(webXmlPath);
                 if(webXmlFile.exists()) {
-                    serverOptions.setWebXmlFile(webXmlFile);
+                    serverOptions.webXmlFile(webXmlFile);
                 } else {
                     throw new RuntimeException("Could not find web.xml! " + webXmlPath);
                 }
             }
             
             if (line.hasOption(Keys.STOP)) {
-                serverOptions.setAction(Keys.STOP);
+                serverOptions.action(Keys.STOP);
                 String[] values = line.getOptionValues(Keys.STOP);
                 if(values != null && values.length > 0) {
-                    serverOptions.setSocketNumber(Integer.parseInt(values[0])); 
+                    serverOptions.stopPort(Integer.parseInt(values[0]));
                 }
                 if(values != null && values.length >= 1) {
-                    serverOptions.setStopPassword(values[1].toCharArray()); 
+                    serverOptions.stopPassword(values[1].toCharArray());
                 }
             } else {
-                serverOptions.setAction("start");
+                serverOptions.action("start");
             }
             
-            if (line.hasOption(Keys.CONTEXT)) {
-                serverOptions.setContextPath(line.getOptionValue(Keys.CONTEXT));
+            if (hasOptionValue(line, Keys.CONTEXT)) {
+                serverOptions.contextPath(line.getOptionValue(Keys.CONTEXT));
             }
-            if (line.hasOption(Keys.HOST)) {
-                serverOptions.setHost(line.getOptionValue(Keys.HOST));
+            if (hasOptionValue(line, Keys.HOST)) {
+                serverOptions.host(line.getOptionValue(Keys.HOST));
             }
-            if (line.hasOption("p")) {
-                serverOptions.setPortNumber(((Number)line.getParsedOptionValue("p")).intValue());
+            if (hasOptionValue(line, "p")) {
+                serverOptions.httpPort(((Number)line.getParsedOptionValue("p")).intValue());
             }
-            if (line.hasOption(Keys.AJPENABLE)) {
-                serverOptions.setEnableAJP(Boolean.valueOf(line.getOptionValue(Keys.AJPENABLE)));
+            if (hasOptionValue(line, Keys.AJPENABLE)) {
+                serverOptions.ajpEnable(Boolean.valueOf(line.getOptionValue(Keys.AJPENABLE)));
             }
-            if (line.hasOption(Keys.AJPPORT)) {
+            if (hasOptionValue(line, Keys.AJPPORT)) {
                 // disable http if no http port is specified
-                serverOptions.setEnableHTTP(line.hasOption(Keys.PORT))
-                .setEnableAJP(true).setAJPPort(((Number)line.getParsedOptionValue(Keys.AJPPORT)).intValue());
+                serverOptions.httpEnable(hasOptionValue(line, Keys.PORT))
+                .ajpEnable(true).ajpPort(((Number)line.getParsedOptionValue(Keys.AJPPORT)).intValue());
             }
-            if (line.hasOption(Keys.SSLPORT)) {
-                if(!line.hasOption(Keys.HTTPENABLE)) {
-                    CONF_LOG.trace("SSL enabled and http not explicitly enabled; disabling http");
-                    serverOptions.setEnableHTTP(false);
+            if (hasOptionValue(line, Keys.SSLPORT)) {
+                if(!hasOptionValue(line, Keys.HTTPENABLE)) {
+                    CONF_LOG.trace("SSL enable and http not explicitly enable; disabling http");
+                    serverOptions.httpEnable(false);
                 }
-                if(!line.hasOption(Keys.SECURECOOKIES)) {
-                    CONF_LOG.trace("SSL enabled and secure cookies explicitly disabled; enabling secure cookies");
-                    serverOptions.setSecureCookies(true);
+                if(!hasOptionValue(line, Keys.SECURECOOKIES)) {
+                    CONF_LOG.trace("SSL enable and secure cookies explicitly disabled; enabling secure cookies");
+                    serverOptions.secureCookies(true);
                 }
-                serverOptions.setEnableSSL(true).setSSLPort(((Number)line.getParsedOptionValue(Keys.SSLPORT)).intValue());
+                serverOptions.sslEnable(true).sslPort(((Number)line.getParsedOptionValue(Keys.SSLPORT)).intValue());
             }
-            if (line.hasOption(Keys.SSLCERT)) {
-                serverOptions.setSSLCertificate(getFile(line.getOptionValue(Keys.SSLCERT)));
-                if (!line.hasOption(Keys.SSLKEY) || !line.hasOption(Keys.SSLKEY)) {
-                    throw new RuntimeException("Using a SSL certificate requires -sslkey /path/to/file and -sslkeypass pass**** arguments!");  	
+            if (hasOptionValue(line, Keys.SSLSELFSIGN)) {
+                serverOptions.sslSelfSign(Boolean.valueOf(line.getOptionValue(Keys.SSLSELFSIGN)));
+            }
+            if (hasOptionValue(line, Keys.SSLCERT)) {
+                File certFile = serverOptions.sslSelfSign() ? new File(line.getOptionValue(Keys.SSLCERT)) : getFile(line.getOptionValue(Keys.SSLCERT)) ;
+                serverOptions.sslCertificate(certFile);
+                if (!hasOptionValue(line, Keys.SSLKEY) || !hasOptionValue(line, Keys.SSLKEY)) {
+                    throw new RuntimeException("Using a SSL certificate requires -sslkey /path/to/file and -sslkeypass pass**** arguments!");
+                }
+                if(!hasOptionValue(line, Keys.SSLENABLE)) {
+                    CONF_LOG.trace("SSL not enable and cert specified; enabling SSL");
+                    serverOptions.sslEnable(true);
+                }
+
+            }
+            if (hasOptionValue(line, Keys.SSLKEY)) {
+                File keyFile = serverOptions.sslSelfSign() ? new File(line.getOptionValue(Keys.SSLKEY)) : getFile(line.getOptionValue(Keys.SSLKEY)) ;
+                serverOptions.sslKey(keyFile);
+                if(!hasOptionValue(line, Keys.SSLENABLE)) {
+                    CONF_LOG.trace("https not enable and key specified; enabling SSL");
+                    serverOptions.sslEnable(true);
                 }
             }
-            if (line.hasOption(Keys.SSLKEY)) {
-                serverOptions.setSSLKey(getFile(line.getOptionValue(Keys.SSLKEY)));
+            if (hasOptionValue(line, Keys.SSLKEYPASS)) {
+                serverOptions.sslKeyPass(line.getOptionValue(Keys.SSLKEYPASS).toCharArray());
             }
-            if (line.hasOption(Keys.SSLKEYPASS)) {
-                serverOptions.setSSLKeyPass(line.getOptionValue(Keys.SSLKEYPASS).toCharArray());
-            }
-            if (line.hasOption(Keys.SSLENABLE)) {
-                if(!line.hasOption(Keys.HTTPENABLE)) {
-                    serverOptions.setEnableHTTP(false);
+            if (hasOptionValue(line, Keys.SSLENABLE)) {
+                if(!hasOptionValue(line, Keys.HTTPENABLE)) {
+                    serverOptions.httpEnable(false);
                 }
-                if(!line.hasOption(Keys.SECURECOOKIES)) {
-                    serverOptions.setSecureCookies(true);
+                if(!hasOptionValue(line, Keys.SECURECOOKIES)) {
+                    serverOptions.secureCookies(true);
                 }
-                serverOptions.setEnableSSL(Boolean.valueOf(line.getOptionValue(Keys.SSLENABLE)));
+                serverOptions.sslEnable(Boolean.valueOf(line.getOptionValue(Keys.SSLENABLE)));
             }
             if (line.hasOption(Keys.HTTPENABLE)) {
-                serverOptions.setEnableHTTP(Boolean.valueOf(line.getOptionValue(Keys.HTTPENABLE)));
+                serverOptions.httpEnable(Boolean.valueOf(line.getOptionValue(Keys.HTTPENABLE)));
             }
-            if (line.hasOption(Keys.URLREWRITEFILE)) {
-                serverOptions.setURLRewriteFile(getFile(line.getOptionValue(Keys.URLREWRITEFILE)));
+            if (hasOptionValue(line,Keys.URLREWRITEFILE)) {
+                serverOptions.urlRewriteFile(getFile(line.getOptionValue(Keys.URLREWRITEFILE)));
                 if(!line.hasOption(Keys.URLREWRITEENABLE)) {
-                    serverOptions.setEnableURLRewrite(true);
+                    serverOptions.urlRewriteEnable(true);
+                }
+            }
+            if (hasOptionValue(line, Keys.URLREWRITELOG)) {
+                serverOptions.urlRewriteLog(new File(line.getOptionValue(Keys.URLREWRITELOG)));
+                if(!line.hasOption(Keys.URLREWRITEENABLE)) {
+                    serverOptions.urlRewriteEnable(true);
                 }
             }
             if (line.hasOption(Keys.URLREWRITEENABLE)) {
-                serverOptions.setEnableURLRewrite(Boolean.valueOf(line.getOptionValue(Keys.URLREWRITEENABLE)));
+                serverOptions.urlRewriteEnable(Boolean.valueOf(line.getOptionValue(Keys.URLREWRITEENABLE)));
             }
-            if (line.hasOption(Keys.URLREWRITECHECK) && line.getOptionValue(Keys.URLREWRITECHECK).length() > 0) {
-                serverOptions.setURLRewriteCheckInterval(line.getOptionValue(Keys.URLREWRITECHECK));
+            if (hasOptionValue(line, Keys.URLREWRITECHECK)) {
+                serverOptions.urlRewriteCheckInterval(line.getOptionValue(Keys.URLREWRITECHECK));
             }
-            if (line.hasOption(Keys.URLREWRITESTATUSPATH) && line.getOptionValue(Keys.URLREWRITESTATUSPATH).length() > 0) {
-                serverOptions.setURLRewriteStatusPath(line.getOptionValue(Keys.URLREWRITESTATUSPATH));
+            if (hasOptionValue(line, Keys.URLREWRITESTATUSPATH)) {
+                serverOptions.urlRewriteStatusPath(line.getOptionValue(Keys.URLREWRITESTATUSPATH));
             }
-            if (line.hasOption(Keys.LOGDIR)) {
-                serverOptions.setLogDir(line.getOptionValue(Keys.LOGDIR));
+            if (hasOptionValue(line, Keys.LOGDIR)) {
+                serverOptions.logDir(line.getOptionValue(Keys.LOGDIR));
             }
-            if (line.hasOption(Keys.LOGBASENAME)) {
-                serverOptions.setLogFileName(line.getOptionValue(Keys.LOGBASENAME));
+            if (hasOptionValue(line, Keys.LOGBASENAME)) {
+                serverOptions.logFileName(line.getOptionValue(Keys.LOGBASENAME));
             }
-            if (line.hasOption(Keys.DIRS)) {
-                serverOptions.setCfmlDirs(line.getOptionValue(Keys.DIRS));
+            if (hasOptionValue(line, Keys.DIRS)) {
+                serverOptions.contentDirs(line.getOptionValue(Keys.DIRS));
             }
-            if (line.hasOption(Keys.LOGREQUESTSBASENAME)) {
+            if (hasOptionValue(line, Keys.LOGREQUESTSBASENAME)) {
                 serverOptions.logRequestsEnable(true);
-                serverOptions.setLogRequestsBaseFileName(line.getOptionValue(Keys.LOGREQUESTSBASENAME));
+                serverOptions.logRequestsBaseFileName(line.getOptionValue(Keys.LOGREQUESTSBASENAME));
             }
-            if (line.hasOption(Keys.LOGREQUESTSDIR)) {
+            if (hasOptionValue(line, Keys.LOGREQUESTSDIR)) {
                 serverOptions.logRequestsEnable(true);
-                serverOptions.setLogRequestsDir(getFile(line.getOptionValue(Keys.LOGREQUESTSDIR)));
+                serverOptions.logRequestsDir(getFile(line.getOptionValue(Keys.LOGREQUESTSDIR)));
             }
             if (line.hasOption(Keys.LOGREQUESTS)) {
                 serverOptions.logRequestsEnable(Boolean.valueOf(line.getOptionValue(Keys.LOGREQUESTS)));
             }
-            if (line.hasOption(Keys.LOGACCESSBASENAME)) {
+            if (hasOptionValue(line, Keys.LOGACCESSBASENAME)) {
                 serverOptions.logAccessEnable(true);
-                serverOptions.setLogAccessBaseFileName(line.getOptionValue(Keys.LOGACCESSBASENAME));
+                serverOptions.logAccessBaseFileName(line.getOptionValue(Keys.LOGACCESSBASENAME));
             }
-            if (line.hasOption(Keys.LOGACCESSDIR)) {
+            if (hasOptionValue(line, Keys.LOGACCESSDIR)) {
                 serverOptions.logAccessEnable(true);
-                serverOptions.setLogAccessDir(getFile(line.getOptionValue(Keys.LOGACCESSDIR)));
+                serverOptions.logAccessDir(getFile(line.getOptionValue(Keys.LOGACCESSDIR)));
             }
-            if (line.hasOption(Keys.LOGACCESS)) {
+            if (hasOptionValue(line, Keys.LOGACCESS)) {
                 serverOptions.logAccessEnable(Boolean.valueOf(line.getOptionValue(Keys.LOGACCESS)));
             }
             
-            if (line.hasOption(Keys.OPENBROWSER)) {
-                serverOptions.setOpenbrowser(Boolean.valueOf(line.getOptionValue("open")));
+            if (hasOptionValue(line, Keys.OPENBROWSER)) {
+                serverOptions.openbrowser(Boolean.valueOf(line.getOptionValue("open")));
             }
             if (line.hasOption(Keys.OPENURL)) {
-                serverOptions.setOpenbrowserURL(line.getOptionValue(Keys.OPENURL));
+                serverOptions.openbrowserURL(line.getOptionValue(Keys.OPENURL));
                 if(!line.hasOption(Keys.OPENBROWSER))
-                    serverOptions.setOpenbrowser(true);
+                    serverOptions.openbrowser(true);
             }
             
-            if (line.hasOption(Keys.PIDFILE)) {
-                serverOptions.setPidFile(line.getOptionValue(Keys.PIDFILE));
+            if (hasOptionValue(line, Keys.PIDFILE)) {
+                serverOptions.pidFile(line.getOptionValue(Keys.PIDFILE));
             }
             
-            if (line.hasOption(Keys.PROCESSNAME)) {
-                serverOptions.setProcessName(line.getOptionValue(Keys.PROCESSNAME));
+            if (hasOptionValue(line, Keys.PROCESSNAME)) {
+                serverOptions.processName(line.getOptionValue(Keys.PROCESSNAME));
             }
             
-            if (line.hasOption(Keys.TRAY)) {
-                serverOptions.setTrayEnabled(Boolean.valueOf(line.getOptionValue(Keys.TRAY)));
+            if (hasOptionValue(line, Keys.TRAY)) {
+                serverOptions.trayEnable(Boolean.valueOf(line.getOptionValue(Keys.TRAY)));
             }
-            if (line.hasOption(Keys.ICON)) {
-                serverOptions.setIconImage(line.getOptionValue(Keys.ICON));
+            if (hasOptionValue(line, Keys.ICON)) {
+                serverOptions.iconImage(line.getOptionValue(Keys.ICON));
             }
-            if (line.hasOption(Keys.TRAYCONFIG) && line.getOptionValue(Keys.TRAYCONFIG).length() > 0) {
-                serverOptions.setTrayConfig(getFile(line.getOptionValue(Keys.TRAYCONFIG)));
-            }
-            
-            if (line.hasOption(Keys.STATUSFILE) && line.getOptionValue(Keys.STATUSFILE).length() > 0) {
-                serverOptions.setStatusFile(getFile(line.getOptionValue(Keys.STATUSFILE)));
+            if (hasOptionValue(line, Keys.TRAYCONFIG)) {
+                serverOptions.trayConfig(getFile(line.getOptionValue(Keys.TRAYCONFIG)));
             }
             
-            if (line.hasOption(Keys.CFENGINE)) {
-                serverOptions.setCFEngineName(line.getOptionValue(Keys.CFENGINE));
+            if (hasOptionValue(line, Keys.STATUSFILE)) {
+                serverOptions.statusFile(getFile(line.getOptionValue(Keys.STATUSFILE)));
             }
-            if (line.hasOption(Keys.CFSERVERCONF)) {
-                serverOptions.setCFMLServletConfigServerDir(line.getOptionValue(Keys.CFSERVERCONF));
+            
+            if (hasOptionValue(line, Keys.CFENGINE)) {
+                serverOptions.cfEngineName(line.getOptionValue(Keys.CFENGINE));
             }
-            if (line.hasOption(Keys.CFWEBCONF)) {
-                serverOptions.setCFMLServletConfigWebDir(line.getOptionValue(Keys.CFWEBCONF));
+            if (hasOptionValue(line, Keys.CFSERVERCONF)) {
+                serverOptions.cfmlServletConfigServerDir(line.getOptionValue(Keys.CFSERVERCONF));
             }
-            if (line.hasOption(Keys.DIRECTORYINDEX)) {
-                serverOptions.setDirectoryListingEnabled(Boolean.valueOf(line.getOptionValue(Keys.DIRECTORYINDEX)));
+            if (hasOptionValue(line, Keys.CFWEBCONF)) {
+                serverOptions.cfmlServletConfigWebDir(line.getOptionValue(Keys.CFWEBCONF));
             }
-            if (line.hasOption(Keys.CACHE)) {
-                serverOptions.setCacheEnabled(Boolean.valueOf(line.getOptionValue(Keys.CACHE)));
+            if (hasOptionValue(line, Keys.DIRECTORYINDEX)) {
+                serverOptions.directoryListingEnable(Boolean.valueOf(line.getOptionValue(Keys.DIRECTORYINDEX)));
             }
-            if (line.hasOption(Keys.CUSTOMSTATUS)) {
-                serverOptions.setCustomHTTPStatusEnabled(Boolean.valueOf(line.getOptionValue(Keys.CUSTOMSTATUS)));
+            if (hasOptionValue(line, Keys.CACHE)) {
+                serverOptions.cacheEnable(Boolean.valueOf(line.getOptionValue(Keys.CACHE)));
             }
-            if (line.hasOption(Keys.TRANSFERMINSIZE)) {
-                serverOptions.setTransferMinSize(Long.valueOf(line.getOptionValue(Keys.TRANSFERMINSIZE)));
+            if (hasOptionValue(line, Keys.CUSTOMSTATUS)) {
+                serverOptions.customHTTPStatusEnable(Boolean.valueOf(line.getOptionValue(Keys.CUSTOMSTATUS)));
             }
-            if (line.hasOption(Keys.SENDFILE)) {
-                serverOptions.setSendfileEnabled(Boolean.valueOf(line.getOptionValue(Keys.SENDFILE)));
+            if (hasOptionValue(line, Keys.TRANSFERMINSIZE)) {
+                serverOptions.transferMinSize(Long.valueOf(line.getOptionValue(Keys.TRANSFERMINSIZE)));
             }
-            if (line.hasOption(Keys.GZIP)) {
-                serverOptions.setGzipEnabled(Boolean.valueOf(line.getOptionValue(Keys.GZIP)));
+            if (hasOptionValue(line, Keys.SENDFILE)) {
+                serverOptions.sendfileEnable(Boolean.valueOf(line.getOptionValue(Keys.SENDFILE)));
             }
-            if (line.hasOption(Keys.MARIADB4J)) {
-                serverOptions.setMariaDB4jEnabled(Boolean.valueOf(line.getOptionValue(Keys.MARIADB4J)));
+            if (hasOptionValue(line, Keys.GZIP)) {
+                serverOptions.gzipEnable(Boolean.valueOf(line.getOptionValue(Keys.GZIP)));
             }
-            if (line.hasOption(Keys.MARIADB4JPORT) && line.getOptionValue(Keys.MARIADB4JPORT).length() > 0) {
-                serverOptions.setMariaDB4jPort(Integer.valueOf(line.getOptionValue(Keys.MARIADB4JPORT)));
+            if (hasOptionValue(line, Keys.MARIADB4J)) {
+                serverOptions.mariaDB4jEnable(Boolean.valueOf(line.getOptionValue(Keys.MARIADB4J)));
             }
-            if (line.hasOption(Keys.MARIADB4JBASEDIR) && line.getOptionValue(Keys.MARIADB4JBASEDIR).length() > 0) {
-                serverOptions.setMariaDB4jBaseDir(new File(line.getOptionValue(Keys.MARIADB4JBASEDIR)));
+            if (hasOptionValue(line, Keys.MARIADB4JPORT)) {
+                serverOptions.mariaDB4jPort(Integer.valueOf(line.getOptionValue(Keys.MARIADB4JPORT)));
             }
-            if (line.hasOption(Keys.MARIADB4JDATADIR) && line.getOptionValue(Keys.MARIADB4JDATADIR).length() > 0) {
-                serverOptions.setMariaDB4jDataDir(new File(line.getOptionValue(Keys.MARIADB4JDATADIR)));
+            if (hasOptionValue(line, Keys.MARIADB4JBASEDIR)) {
+                serverOptions.mariaDB4jBaseDir(new File(line.getOptionValue(Keys.MARIADB4JBASEDIR)));
             }
-            if (line.hasOption(Keys.MARIADB4JIMPORT) && line.getOptionValue(Keys.MARIADB4JIMPORT).length() > 0) {
-                serverOptions.setMariaDB4jImportSQLFile(new File(line.getOptionValue(Keys.MARIADB4JIMPORT)));
+            if (hasOptionValue(line, Keys.MARIADB4JDATADIR)) {
+                serverOptions.mariaDB4jDataDir(new File(line.getOptionValue(Keys.MARIADB4JDATADIR)));
             }
-            if (line.hasOption(Keys.JVMARGS) && line.getOptionValue(Keys.JVMARGS).length() > 0) {
+            if (hasOptionValue(line, Keys.MARIADB4JIMPORT)) {
+                serverOptions.mariaDB4jImportSQLFile(new File(line.getOptionValue(Keys.MARIADB4JIMPORT)));
+            }
+            if (hasOptionValue(line, Keys.JVMARGS)) {
                 List<String> jvmArgs = new ArrayList<String>();
                 String[] jvmArgArray = line.getOptionValue(Keys.JVMARGS).split("(?<!\\\\);");
                 for(String arg : jvmArgArray) {
                     jvmArgs.add(arg.replaceAll("\\\\;", ";"));
                 }
-                serverOptions.setJVMArgs(jvmArgs);
+                serverOptions.jvmArgs(jvmArgs);
             }
-            if (line.hasOption(Keys.ERRORPAGES) && line.getOptionValue(Keys.ERRORPAGES).length() > 0) {
-                serverOptions.setErrorPages(line.getOptionValue(Keys.ERRORPAGES));
+            if (hasOptionValue(line, Keys.ERRORPAGES)) {
+                serverOptions.errorPages(line.getOptionValue(Keys.ERRORPAGES));
             }
-            if (line.hasOption(Keys.SERVLETREST) && line.getOptionValue(Keys.SERVLETREST).length() > 0) {
-                serverOptions.setServletRestEnabled(Boolean.valueOf(line.getOptionValue(Keys.SERVLETREST)));
+            if (hasOptionValue(line, Keys.SERVLETREST)) {
+                serverOptions.servletRestEnable(Boolean.valueOf(line.getOptionValue(Keys.SERVLETREST)));
             }
-            if (line.hasOption(Keys.SERVLETRESTMAPPINGS) && line.getOptionValue(Keys.SERVLETRESTMAPPINGS).length() > 0) {
-                serverOptions.setServletRestMappings(line.getOptionValue(Keys.SERVLETRESTMAPPINGS));
-            }
-            if (line.hasOption(Keys.FILTERPATHINFO) && line.getOptionValue(Keys.FILTERPATHINFO).length() > 0) {
-                serverOptions.setFilterPathInfoEnabled(Boolean.valueOf(line.getOptionValue(Keys.FILTERPATHINFO)));
-            }
-            if (line.hasOption(Keys.SSLADDCERTS) && line.getOptionValue(Keys.SSLADDCERTS).length() > 0) {
-                serverOptions.setSSLAddCerts(line.getOptionValue(Keys.SSLADDCERTS));
-            }
-            if (line.hasOption(Keys.BASICAUTHENABLE)) {
-                serverOptions.setEnableBasicAuth(Boolean.valueOf(line.getOptionValue(Keys.BASICAUTHENABLE)));
-            }
-            if (line.hasOption("users") && line.getOptionValue("users").length() > 0) {
-                if(!line.hasOption(Keys.BASICAUTHENABLE) || line.hasOption(Keys.BASICAUTHENABLE) && Boolean.valueOf(line.getOptionValue(Keys.BASICAUTHENABLE))) {
-                    serverOptions.setEnableBasicAuth(true);
+            if (hasOptionValue(line, Keys.SERVLETRESTMAPPINGS)) {
+                serverOptions.servletRestMappings(line.getOptionValue(Keys.SERVLETRESTMAPPINGS));
+                if(!hasOptionValue(line, Keys.SERVLETREST)) {
+                    serverOptions.servletRestEnable(true);
                 }
-                serverOptions.setBasicAuth(line.getOptionValue("users"));
             }
-            if (line.hasOption(Keys.BUFFERSIZE) && line.getOptionValue(Keys.BUFFERSIZE).length() > 0) {
-                serverOptions.setBufferSize(Integer.valueOf(line.getOptionValue(Keys.BUFFERSIZE)));
+            if (hasOptionValue(line, Keys.FILTERPATHINFO)) {
+                serverOptions.filterPathInfoEnable(Boolean.valueOf(line.getOptionValue(Keys.FILTERPATHINFO)));
             }
-            if (line.hasOption(Keys.IOTHREADS) && line.getOptionValue(Keys.IOTHREADS).length() > 0) {
-                serverOptions.setIoThreads(Integer.valueOf(line.getOptionValue(Keys.IOTHREADS)));
+            if (hasOptionValue(line, Keys.SSLADDCERTS)) {
+                serverOptions.sslAddCerts(line.getOptionValue(Keys.SSLADDCERTS));
             }
-            if (line.hasOption(Keys.WORKERTHREADS) && line.getOptionValue(Keys.WORKERTHREADS).length() > 0) {
-                serverOptions.setWorkerThreads(Integer.valueOf(line.getOptionValue(Keys.WORKERTHREADS)));
+            if (hasOptionValue(line, Keys.BASICAUTHENABLE)) {
+                serverOptions.basicAuthEnable(Boolean.valueOf(line.getOptionValue(Keys.BASICAUTHENABLE)));
+            }
+            if (hasOptionValue(line, "users")) {
+                if(!hasOptionValue(line, Keys.BASICAUTHENABLE) || line.hasOption(Keys.BASICAUTHENABLE) && Boolean.valueOf(line.getOptionValue(Keys.BASICAUTHENABLE))) {
+                    serverOptions.basicAuthEnable(true);
+                }
+                serverOptions.basicAuth(line.getOptionValue("users"));
+            }
+            if (hasOptionValue(line, Keys.BUFFERSIZE)) {
+                serverOptions.bufferSize(Integer.valueOf(line.getOptionValue(Keys.BUFFERSIZE)));
+            }
+            if (hasOptionValue(line, Keys.IOTHREADS)) {
+                serverOptions.ioThreads(Integer.valueOf(line.getOptionValue(Keys.IOTHREADS)));
+            }
+            if (hasOptionValue(line, Keys.WORKERTHREADS)) {
+                serverOptions.workerThreads(Integer.valueOf(line.getOptionValue(Keys.WORKERTHREADS)));
             }
             if (line.hasOption(Keys.DIRECTBUFFERS)) {
-                serverOptions.setDirectBuffers(Boolean.valueOf(line.getOptionValue(Keys.DIRECTBUFFERS)));
+                serverOptions.directBuffers(Boolean.valueOf(line.getOptionValue(Keys.DIRECTBUFFERS)));
             }
-            if (line.hasOption(Keys.LOADBALANCE) && line.getOptionValue(Keys.LOADBALANCE).length() > 0) {
-                serverOptions.setLoadBalance(line.getOptionValue(Keys.LOADBALANCE));
+            if (hasOptionValue(line, Keys.LOADBALANCE)) {
+                serverOptions.loadBalance(line.getOptionValue(Keys.LOADBALANCE));
             }
-            if (line.hasOption(Keys.DIRECTORYREFRESH) && line.getOptionValue(Keys.DIRECTORYREFRESH).length() > 0) {
-                serverOptions.setDirectoryListingRefreshEnabled(Boolean.valueOf(line.getOptionValue(Keys.DIRECTORYREFRESH)));
+            if (hasOptionValue(line, Keys.DIRECTORYREFRESH)) {
+                serverOptions.directoryListingRefreshEnable(Boolean.valueOf(line.getOptionValue(Keys.DIRECTORYREFRESH)));
             }
-            if (line.hasOption(Keys.PROXYPEERADDRESS) && line.getOptionValue(Keys.PROXYPEERADDRESS).length() > 0) {
-                serverOptions.setProxyPeerAddressEnabled(Boolean.valueOf(line.getOptionValue(Keys.PROXYPEERADDRESS)));
+            if (hasOptionValue(line, Keys.PROXYPEERADDRESS)) {
+                serverOptions.proxyPeerAddressEnable(Boolean.valueOf(line.getOptionValue(Keys.PROXYPEERADDRESS)));
             }
-            if (line.hasOption(Keys.HTTP2) && line.getOptionValue(Keys.HTTP2).length() > 0) {
-                if(!line.hasOption(Keys.SECURECOOKIES)) {
-                    CONF_LOG.trace("SSL enabled and secure cookies explicitly disabled; enabling secure cookies");
-                    serverOptions.setSecureCookies(true);
+            if (hasOptionValue(line, Keys.HTTP2)) {
+                if(!hasOptionValue(line, Keys.SECURECOOKIES)) {
+                    CONF_LOG.trace("SSL enable and secure cookies explicitly disabled; enabling secure cookies");
+                    serverOptions.secureCookies(true);
                 }
-                serverOptions.setHTTP2Enabled(Boolean.valueOf(line.getOptionValue(Keys.HTTP2)));
+                serverOptions.http2Enable(Boolean.valueOf(line.getOptionValue(Keys.HTTP2)));
             }
             
-            if (line.hasOption(Keys.SECURECOOKIES) && line.getOptionValue(Keys.SECURECOOKIES).length() > 0) {
-                serverOptions.setSecureCookies(Boolean.valueOf(line.getOptionValue(Keys.SECURECOOKIES)));
+            if (hasOptionValue(line, Keys.SECURECOOKIES)) {
+                serverOptions.secureCookies(Boolean.valueOf(line.getOptionValue(Keys.SECURECOOKIES)));
             }
 
-            if (line.hasOption(Keys.COOKIEHTTPONLY) && line.getOptionValue(Keys.COOKIEHTTPONLY).length() > 0) {
-                serverOptions.setCookieHttpOnly(Boolean.valueOf(line.getOptionValue(Keys.COOKIEHTTPONLY)));
+            if (hasOptionValue(line, Keys.COOKIEHTTPONLY)) {
+                serverOptions.cookieHttpOnly(Boolean.valueOf(line.getOptionValue(Keys.COOKIEHTTPONLY)));
             }
 
-            if (line.hasOption(Keys.COOKIESECURE) && line.getOptionValue(Keys.COOKIESECURE).length() > 0) {
-                serverOptions.setCookieSecure(Boolean.valueOf(line.getOptionValue(Keys.COOKIESECURE)));
+            if (hasOptionValue(line, Keys.COOKIESECURE)) {
+                serverOptions.cookieSecure(Boolean.valueOf(line.getOptionValue(Keys.COOKIESECURE)));
             }
 
-            if (line.hasOption(Keys.WEBINF)) {
+            if (hasOptionValue(line, Keys.SSLECCDISABLE)) {
+                serverOptions.sslEccDisable(Boolean.valueOf(line.getOptionValue(Keys.SSLECCDISABLE)));
+            }
+
+            if (hasOptionValue(line, Keys.WEBINF)) {
                 String webInfPath = line.getOptionValue(Keys.WEBINF);
                 File webinfDir = new File(webInfPath);
                 if(webinfDir.exists()) {
-                    serverOptions.setWebInfDir(webinfDir);
+                    serverOptions.webInfDir(webinfDir);
                 } else {
                     throw new RuntimeException("Could not find WEB-INF! " + webInfPath);
                 }
             }
 
-            if(serverOptions.getLoglevel().equals(Keys.TRACE)) {
+            if (hasOptionValue(line, Keys.SERVICE)) {
+                serverOptions.service(Boolean.valueOf(line.getOptionValue(Keys.SERVICE)));
+            }
+
+            if (hasOptionValue(line, Keys.XNIOOPTIONS)) {
+                serverOptions.xnioOptions(line.getOptionValue(Keys.XNIOOPTIONS));
+            }
+
+            if (hasOptionValue(line, Keys.UNDERTOWOPTIONS)) {
+                serverOptions.undertowOptions(line.getOptionValue(Keys.UNDERTOWOPTIONS));
+            }
+
+            if(serverOptions.logLevel().equals(Keys.TRACE)) {
                 for (Option arg : line.getOptions()) {
                     CONF_LOG.debug(arg.toString());
 //                    CONF_LOG.debug(arg.getValue());
@@ -1005,10 +1076,17 @@ public class CommandLineHandler {
         return null;
     }
 
+    private static boolean hasOptionValue(CommandLine line, String key) {
+        if (line.hasOption(key) && line.getOptionValue(key).length() > 0) {
+            return true;
+        }
+        return false;
+    }
+
     static File getFile(String path) {
         File file = new File(path);
         if(!file.exists() || file == null) {
-            throw new RuntimeException("File not found: " + path +" (" + file.getAbsolutePath() + ")");
+            throw new RuntimeException("File not found: " + path + " (" + file.getAbsolutePath() + ")");
         }
       return file;
     }

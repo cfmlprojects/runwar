@@ -1,261 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry output="bin/main" kind="src" path="src/main/java">
+	<classpathentry kind="src" output="bin/main" path="src/main/java">
 		<attributes>
 			<attribute name="gradle_scope" value="main"/>
 			<attribute name="gradle_used_by_scope" value="main,test"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry output="bin/main" kind="src" path="src/main/resources">
+	<classpathentry kind="src" output="bin/main" path="src/main/resources">
 		<attributes>
 			<attribute name="gradle_scope" value="main"/>
 			<attribute name="gradle_used_by_scope" value="main,test"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry output="bin/test" kind="src" path="src/test/java">
+	<classpathentry kind="src" output="bin/test" path="src/test/java">
 		<attributes>
 			<attribute name="gradle_scope" value="test"/>
 			<attribute name="gradle_used_by_scope" value="test"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry output="bin/test" kind="src" path="src/test/resources">
+	<classpathentry kind="src" output="bin/test" path="src/test/resources">
 		<attributes>
 			<attribute name="gradle_scope" value="test"/>
 			<attribute name="gradle_used_by_scope" value="test"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8/"/>
 	<classpathentry kind="con" path="org.eclipse.buildship.core.gradleclasspathcontainer"/>
 	<classpathentry kind="output" path="bin/default"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8/"/>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/io.undertow/undertow-websockets-jsr/1.4.23.Final/6b4c0b883d94c59b3d7907b02b6cee084ae9c28e/undertow-websockets-jsr-1.4.23.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/io.undertow/undertow-jsp/1.0.0.Beta27/8c2b670252307ec6b65286ee36084cc1910632c6/undertow-jsp-1.0.0.Beta27.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/io.undertow/undertow-servlet/1.4.23.Final/3035ba5efbca693d4e29fb771171786d6ed80ef5/undertow-servlet-1.4.23.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/net.minidev/json-smart-mini/1.0.8/d9856d32cf4acac0e7c9a8f2f2f106161f866fde/json-smart-mini-1.0.8.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/net.sf.jopt-simple/jopt-simple/5.0-beta-1/6fb44c1d17cbf9752bf48b6f4c0377c73e4304b5/jopt-simple-5.0-beta-1.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/commons-cli/commons-cli/1.2/2bf96b7aa8b611c177d329452af1dc933e14501c/commons-cli-1.2.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jooq/joox/1.2.0/47cb2a379fa38b2a106f54dbbdfd28480e828b2a/joox-1.2.0-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jooq/joox/1.2.0/8ec83a1625213a606d0844b90a59fef7cfbd0a3e/joox-1.2.0.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/org/slf4j/slf4j-log4j12/1.7.25/slf4j-log4j12-1.7.25.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/io.undertow/undertow-core/1.4.23.Final/c8afc5087c8d1622fdf773108169a618be898067/undertow-core-1.4.23.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.logging/jboss-logging/3.2.1.Final/fedf11b3d4665a434b554a5891fe7f208f029f45/jboss-logging-3.2.1.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.logging/jboss-logging-annotations/2.1.0.Final/58f5332759625c8184cc70f29b3f5d5cd636b47e/jboss-logging-annotations-2.1.0.Final-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.logging/jboss-logging-annotations/2.1.0.Final/58c69c8dd206d92d8bcb1d602ebec0b0f235d341/jboss-logging-annotations-2.1.0.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.cfmlprojects/urlrewritefilter/5.0.0/74ebba3c071308450cb4f75367bc947f5568cffa/urlrewritefilter-5.0.0.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.cfmlprojects/regexpathinfofilter/1.0.1/4184b1f9d676c3e9097fec0cca2762b52473a37/regexpathinfofilter-1.0.1.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/com.dorkbox/Notify/3.7/666b2f381c85260c9043820fb16fee05428ec731/Notify-3.7-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/com.dorkbox/Notify/3.7/e02d76b599723fa4df6e8035ada16bc95e9c4402/Notify-3.7.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/com/dorkbox/SystemTray/3.13-SNAPSHOT/SystemTray-3.13-SNAPSHOT.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/org/bouncycastle/bcpkix-jdk15on/1.57/bcpkix-jdk15on-1.57.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/com.jcabi/jcabi-log/0.18/cc4d8fb6e029c4f2a27acbd64f4797f6b323e4c/jcabi-log-0.18-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/com.jcabi/jcabi-log/0.18/fe7ea0a8c0653e6b83300e9d9e050a1cddc7715e/jcabi-log-0.18.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.spec.javax.websocket/jboss-websocket-api_1.1_spec/1.1.3.Final/9f4b60cb8f2373cd34ef40c43019ed9151df0dc4/jboss-websocket-api_1.1_spec-1.1.3.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.spec.javax.servlet.jsp/jboss-jsp-api_2.3_spec/1.0.0.Beta1/a82f5e51e852901ce18858cbd6353c4eea5a087a/jboss-jsp-api_2.3_spec-1.0.0.Beta1.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.spec.javax.servlet/jboss-servlet-api_3.1_spec/1.0.2.Final/c61fd650e120cec1a0390db9457bb36d1e7121a9/jboss-servlet-api_3.1_spec-1.0.2.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/com.dorkbox/TweenEngine/8.3/50c0a88b6a3c42c5e022b595f4e752a92f4690c6/TweenEngine-8.3-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/com.dorkbox/TweenEngine/8.3/4458c7986e3d54fcf09d73d3f0ef4d4ac51bddc9/TweenEngine-8.3.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/log4j/log4j/1.2.17/5af35056b4d257e4b64b9e8069c0746e8b08629f/log4j-1.2.17.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/com/dorkbox/ShellExecutor/1.1/ShellExecutor-1.1.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/com/dorkbox/Utilities/2.21-SNAPSHOT/Utilities-2.21-SNAPSHOT.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.javassist/javassist/3.21.0-GA/598244f595db5c5fb713731eddbb1c91a58d959b/javassist-3.21.0-GA.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/net/java/dev/jna/jna-platform/4.3.0/jna-platform-4.3.0.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/net.java.dev.jna/jna/4.3.0/f11d386a05132f54a51c99085f016e496f345ea3/jna-4.3.0.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/org/bouncycastle/bcprov-jdk15on/1.57/bcprov-jdk15on-1.57.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.xnio/xnio-nio/3.3.8.Final/8dafaf230666e526c53e544ab6a9d6ecfcbab4ee/xnio-nio-3.3.8.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.xnio/xnio-api/3.3.8.Final/7942ba8330c91a12006c912e040d25a77a58c525/xnio-api-3.3.8.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.spec.javax.annotation/jboss-annotations-api_1.2_spec/1.0.2.Final/d6b20c0e95c5b38f313cc2ab1a55560cedabe1f/jboss-annotations-api_1.2_spec-1.0.2.Final.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.jboss.spec.javax.el/jboss-el-api_3.0_spec/1.0.0.Beta1/7d8726001a6546fc538633f9662b466edfd1bd68/jboss-el-api_3.0_spec-1.0.0.Beta1.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.m2/repository/com/dorkbox/ObjectPool/2.11/ObjectPool-2.11.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpclient/4.2.6/e4ca30a6a3a075053a61c6fc850d2432dc012ba7/httpclient-4.2.6.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpmime/4.2.6/270386011895bc6c7ee6496fd87511d6a98093c1/httpmime-4.2.6.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.platform/junit-platform-launcher/1.0.3/7f959672fed0b3bfd949930749ea5331e9fa881e/junit-platform-launcher-1.0.3-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.platform/junit-platform-launcher/1.0.3/91d799c70c3a597631883b77117046e09d6a4419/junit-platform-launcher-1.0.3.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.jupiter/junit-jupiter-api/5.0.3/61fbfdfc77ddcd708fe1a740d292fed04aec5527/junit-jupiter-api-5.0.3-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.jupiter/junit-jupiter-api/5.0.3/43872be66bab0172073ac698062419755e563353/junit-jupiter-api-5.0.3.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpcore/4.2.5/472f0f5f8dba5d1962cb9d7739feed739a31c30d/httpcore-4.2.5.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/commons-logging/commons-logging/1.1.1/5043bfebc3db072ed80fbd362e7caf00e885d8ae/commons-logging-1.1.1.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/commons-codec/commons-codec/1.6/b7f0fc8f61ecadeb3695f0b9464755eee44374d4/commons-codec-1.6.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.platform/junit-platform-engine/1.0.3/b250bf811bb2bd2160bc6a6d9804453c389f502a/junit-platform-engine-1.0.3-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.platform/junit-platform-engine/1.0.3/7028a17adabd876b6d7530e43523a7f4fd109e18/junit-platform-engine-1.0.3.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.platform/junit-platform-commons/1.0.3/112d0f72ac2aa049c9004e1f76d05ec49a83e283/junit-platform-commons-1.0.3-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.platform/junit-platform-commons/1.0.3/3663f3ddfe47df2a7bf363d5c0196f0c7a09820f/junit-platform-commons-1.0.3.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.apiguardian/apiguardian-api/1.0.0/777508fa9f3e03cafb3c1fb2eba3dca317f4b1ee/apiguardian-api-1.0.0-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.apiguardian/apiguardian-api/1.0.0/3ef5276905e36f4d8055fe3cb0bdcc7503ffc85d/apiguardian-api-1.0.0.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.opentest4j/opentest4j/1.0.0/a67ba0f50d97fa616f2470c5a48eb7f9eb38391c/opentest4j-1.0.0-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.opentest4j/opentest4j/1.0.0/6f09c598e9ff64bf0ce2fa7e7de49a99ba83c0b4/opentest4j-1.0.0.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry sourcepath="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.jupiter/junit-jupiter-engine/5.0.3/e6352b8b5e96031caa21f0d6f799d559a13960f5/junit-jupiter-engine-5.0.3-sources.jar" kind="lib" path="/home/valliant/.gradle/caches/modules-2/files-2.1/org.junit.jupiter/junit-jupiter-engine/5.0.3/52fcc461185c48178608f687e962de6484dfb69e/junit-jupiter-engine-5.0.3.jar">
-		<attributes>
-			<attribute name="gradle_used_by_scope" value="test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/workspace/runwar/dist/generated-resources/main" exported="true"/>
 </classpath>

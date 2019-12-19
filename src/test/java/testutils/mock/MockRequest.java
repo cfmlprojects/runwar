@@ -27,6 +27,7 @@ import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
 
+@SuppressWarnings("depricated")
 public class MockRequest implements HttpServletRequest {
 
     private String requestURI;
@@ -198,9 +199,7 @@ public class MockRequest implements HttpServletRequest {
         return requestedSessionIdFromURL;
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public boolean isRequestedSessionIdFromUrl() {
         return false;
     }
@@ -307,9 +306,7 @@ public class MockRequest implements HttpServletRequest {
         return new MockRequestDispatcher(s);
     }
 
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public String getRealPath(String s) {
         return null;
     }

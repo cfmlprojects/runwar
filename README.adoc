@@ -27,6 +27,7 @@ Runwar is powered under the hood by a project called *Undertow* which actually d
 Undertow is what powers JBoss WildFly and is a very active project with tons of support for stuff like web sockets and HTTP 2.0 and has excellent performance.  
 
 ## Usage
+
 RunWAR can be run from the commandline like so.  This will give you all the available options:
 ```bash
 $> java -jar runwar-${version}.jar
@@ -42,6 +43,18 @@ or
 ```bash
 $> java -jar runwar.jar -war "path/to/war" --port 8787 --dirs "virtualdir=/path/to/dir,virtualdir2=/path/to/dir2" --background false
 ```
+
+## Building
+
+To run the build, execute the `gradlew` or `gradlew.bat` gradle wrapper script:
+
+```
+./gradlew
+```
+
+which will run the `clean` and `shadow` tasks.  Resulting jar is in `./dist/libs/`
+
+To fire up a pre-configured IDE for working on the project, execute the `ide` task (`./gradlew ide`).
 
 ## CommandBox
 Runwar also powers the servers for CommandBox, a CLI, REPL, package manager, and server for CFML developers.  

@@ -46,9 +46,9 @@ public class SecurityManager implements IdentityManager {
     private final Map<String, UserAccount> users = new HashMap<>();
 
     public void configureAuth(DeploymentInfo servletBuilder, ServerOptions serverOptions) {
-        String realm = serverOptions.getServerName() + " Realm";
+        String realm = serverOptions.serverName() + " Realm";
         RunwarLogger.SECURITY_LOGGER.debug("Enabling Basic Auth: " + realm);
-        for(Entry<String,String> userNpass : serverOptions.getBasicAuth().entrySet()) {
+        for(Entry<String,String> userNpass : serverOptions.basicAuth().entrySet()) {
             addUser(userNpass.getKey(), userNpass.getValue(), "role1");
             RunwarLogger.SECURITY_LOGGER.debug(String.format("User:%s password:%s",userNpass.getKey(),userNpass.getValue()));
         }
@@ -64,10 +64,10 @@ public class SecurityManager implements IdentityManager {
     }
 
     public void configureAuth(HttpHandler nextHandler, Builder serverBuilder, ServerOptions serverOptions) {
-        String realm = serverOptions.getServerName() + " Realm";
+        String realm = serverOptions.serverName() + " Realm";
         RunwarLogger.SECURITY_LOGGER.debug("Enabling Basic Auth: " + realm);
         final Map<String, String> users = new HashMap<>(2);
-        for(Entry<String,String> userNpass : serverOptions.getBasicAuth().entrySet()) {
+        for(Entry<String,String> userNpass : serverOptions.basicAuth().entrySet()) {
             users.put(userNpass.getKey(), userNpass.getValue());
             RunwarLogger.SECURITY_LOGGER.debug(String.format("User:%s password:%s",userNpass.getKey(),userNpass.getValue()));
         }

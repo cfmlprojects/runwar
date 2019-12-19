@@ -68,7 +68,7 @@
         },
         "rewrites": {
             "enable": true,
-            "config": "./urlrewrite.xml",
+            "config": "urlrewrite/urlrewrite.xml",
             "statusPath": "/rewriteStatus",
             "configReloadSeconds": 60
         },

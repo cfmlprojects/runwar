@@ -1,25 +1,40 @@
 buildscript {
-  repositories {
-      jcenter()
-  }
-  dependencies {
-    classpath "com.diffplug.gradle:goomph:3.13.0"
-  }
+    repositories.jcenter()
+    dependencies.classpath "com.diffplug.gradle:goomph:3.17.1"
 }
 
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 allprojects {
-    eclipse.project {
-        natures 'org.eclipse.buildship.core.gradleprojectnature'
-    }
+    eclipse.project { natures 'org.eclipse.buildship.core.gradleprojectnature' }
 }
 
 apply plugin: "com.diffplug.gradle.oomph.ide"
 oomphIde {
-	repo 'https://dl.bintray.com/de-jcup/asciidoctoreditor'
-	iu   'de.jcup.asciidoctoreditor'
-    repoEclipseLatest()
+    splash 'src/main/resources/icon.png'
+    name 'IDE'
+
+    repo 'https://dl.bintray.com/de-jcup/asciidoctoreditor'
+    iu 'de.jcup.asciidoctoreditor'
+
+    repo 'http://dist.springsource.org/release/GRECLIPSE/e4.7'
+    feature 'org.codehaus.groovy.eclipse.feature'
+    feature 'org.codehaus.groovy24.feature'
+
+    repo 'http://www.mihai-nita.net/eclipse'
+    feature 'net.mihai-nita.ansicon'
+
+    repo 'http://download.eclipse.org/buildship/updates/e47/milestones/2.x'
+    feature 'org.eclipse.buildship'
+
+    repo 'http://download.eclipse.org/egit/updates'
+    feature 'org.eclipse.egit'
+
+    repo 'http://download.eclipse.org/egit/github/updates/'
+    feature 'org.eclipse.mylyn_feature'
+    repo 'http://download.eclipse.org/mylyn/releases/latest'
+    feature 'org.eclipse.mylyn.github.feature'
+
     jdt {}
     eclipseIni {
         vmargs('-Xmx2g')    // IDE can have up to 2 gigs of RAM
@@ -34,7 +49,7 @@ oomphIde {
     thirdParty {
         minimalistGradleEditor {}   // add syntax highlighting for gradle scripts
         tmTerminal {}               // adds an in-eclipse terminal
-//buildship{}
+        //buildship{}
     }
 }
 
@@ -43,5 +58,5 @@ oomphIde {
 /////////////////////////////////////////////////////////
 apply plugin: 'com.diffplug.gradle.eclipse.resourcefilters'
 eclipseResourceFilters {
-	exclude().folders().name('org.cfmlprojects.*')
+    exclude().folders().name('org.cfmlprojects.*')
 }

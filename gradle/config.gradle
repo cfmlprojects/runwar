@@ -11,7 +11,7 @@ ext {
     config.gpg.cfmlprojects.signkeyid = ''
     config.gpg.cfmlprojects.pass = ''
     config.user.home = System.properties['user.home']
-    def replacedConfigFileText = file("${config.user.home}/.cfdistrorc").text
+    def replacedConfigFileText = file("${config.user.home}/.cfdistrorc").exists() ? file("${config.user.home}/.cfdistrorc").text : ''
     for (key in System.properties.keys()) {
         replacedConfigFileText = replacedConfigFileText.replaceAll('\\$\\{' + key + '+\\}', System.properties.get(key))
     }
@@ -30,7 +30,5 @@ task printConfig() {
     }
 }
 
-task showVersion { doLast { println version } }
-
-apply from: 'gradle/dependencies.gradle'
+apply from: 'dependencies.gradle'
 apply from: 'gradle/ide.gradle'
