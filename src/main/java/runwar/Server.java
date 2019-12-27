@@ -607,7 +607,7 @@ public class Server {
 
         if (serverOptions.gzipEnable()) {
             final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
-                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size[5]")))
+                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size(5)")))
                     .setNext(pathHandler);
             httpHandler = new ErrorHandler(handler);
         } else {
