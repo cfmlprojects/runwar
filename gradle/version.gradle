@@ -32,7 +32,7 @@ ext {
         int min=Integer.parseInt(minor)+1;
         version = version.substring(0,version.lastIndexOf('.'))+"."+min;
         File file = new File("gradle/version")
-        file.write(version+"-"+revision+"-"+rev)
+        file.write(version+"-"+revision+"-"+masterRevision)
         println file.text
         }
         version = version +  (isSnapshot ? "-SNAPSHOT" : "")
