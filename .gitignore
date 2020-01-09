@@ -8,6 +8,7 @@ src/test/resources/war/simple.war/WEB-INF/urlrewrite.xml
 src/test/resources/war/simple.war/WEB-INF/logs/
 src/test/resources/work/
 .gradle
+.travis.yml
 gradle-app.setting
 gradle/jvm
 !gradle-wrapper.jar
