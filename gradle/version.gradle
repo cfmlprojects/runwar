@@ -15,21 +15,24 @@ ext {
         describedCommit = git.describe().toString().trim()
         revision = git.head().id
         masterRevision = git.resolve.toCommit(git.resolve.toBranch('origin/master')).id
+        println "Git Info:"
+        println "Current Revision:"+ revision
+        println "Master Revision:"+ masterRevision
         isSnapshot = masterRevision != revision
+        println "Building SNAPSHOT:"+isSnapshot
         //      isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
         //      version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
-        
         File latest = new File("gradle/version")
         version = latest.getText('UTF-8')
         data = version.split('-')
         version=data[0]
         rev=data[1]
-        if(rev != masterRevision){
+        if(rev != revision){
         String minor=version.substring(version.lastIndexOf('.')+1);
         int min=Integer.parseInt(minor)+1;
         version = version.substring(0,version.lastIndexOf('.'))+"."+min;
         File file = new File("gradle/version")
-        file.write(version+"-"+rev+"-"+revision)
+        file.write(version+"-"+revision+"-"+rev)
         println file.text
         }
         version = version +  (isSnapshot ? "-SNAPSHOT" : "")
