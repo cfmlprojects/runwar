@@ -16,8 +16,22 @@ ext {
         revision = git.head().id
         masterRevision = git.resolve.toCommit(git.resolve.toBranch('origin/master')).id
         isSnapshot = masterRevision != revision
-//      isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
-//      version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
+        //      isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
+        //      version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
+        
+        File latest = new File("gradle/version")
+        version = latest.getText('UTF-8')
+        data = version.split('-')
+        version=data[0]
+        rev=data[1]
+        if(rev != masterRevision){
+        String minor=version.substring(version.lastIndexOf('.')+1);
+        int min=Integer.parseInt(minor)+1;
+        version = version.substring(0,version.lastIndexOf('.'))+"."+min;
+        File file = new File("gradle/version")
+        file.write(version+"-"+rev+"-"+revision)
+        println file.text
+        }
         version = version +  (isSnapshot ? "-SNAPSHOT" : "")
         // + (git.status().isClean() ? "" : "+dirty")
         println "Building Version ${version} - Branch ${git.branch.current().name}"
