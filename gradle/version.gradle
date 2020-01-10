@@ -21,7 +21,7 @@ ext {
         rev=data[1]
         try{
             masterRevision = git.resolve.toCommit(git.resolve.toBranch('origin/master')).id
-        }catch(exception e){
+        } catch (Exception e) {
             println "Unable to get origin/master info:"
             masterRevision = data[2]
             println "Last master revision known:" + masterRevision
