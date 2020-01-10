@@ -7,7 +7,7 @@ script:
 - cd dist/libs/s3
 - ls -l
 - for file in *.jar; do fname=$(echo ${file%.jar} | sed 's/runwar-//'); mkdir -- "${fname}"; mv -- "$file" ${fname}; done
-
+- ls -l
 
 deploy:
   # Upload binaries
