@@ -18,6 +18,6 @@ deploy:
     access_key_id: $AWS_ACCESS_KEY
     secret_access_key: $AWS_ACCESS_SECRET
     bucket: "downloads.ortussolutions.com"
-    local-dir: dist/libs/s3/
-    upload-dir: cfmlprojects/runwar/
+    local-dir: dist/libs/s3
+    upload-dir: cfmlprojects/runwar
     acl: public_read
