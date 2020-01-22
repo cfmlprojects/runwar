@@ -314,8 +314,12 @@ public interface ServerOptions {
     ServerOptions trayConfig(JSONArray trayConfig);
 
     boolean trayEnable();
+    
+    boolean dockEnable();
 
     ServerOptions trayEnable(boolean enable);
+    
+    ServerOptions dockEnable(boolean enable);
 
     File statusFile();
 

@@ -63,7 +63,7 @@ import static runwar.logging.RunwarLogger.LOG;
 
 public class Server {
 
-    public  static String processName = "Starting Server...";
+    public static String processName = "Starting Server...";
     private volatile static ServerOptionsImpl serverOptions;
     private static MariaDB4jManager mariadb4jManager;
     private DeploymentManager manager;
@@ -175,7 +175,7 @@ public class Server {
     }
 
     private synchronized void requisitionPorts() {
-        LOG.debug("HOST to be bound:"+serverOptions.host());
+        LOG.debug("HOST to be bound:" + serverOptions.host());
         ports = new PortRequisitioner(serverOptions.host());
         ports.add("http", serverOptions.httpPort());
         ports.add("stop", serverOptions.stopPort());
@@ -232,22 +232,21 @@ public class Server {
         }*/
 
         LOG.info("Starting RunWAR " + getVersion());
-        LOG.debug("Starting Server: "+options.host());;
+        LOG.debug("Starting Server: " + options.host());;
         LaunchUtil.assertMinimumJavaVersion("1.8");
         requisitionPorts();
 
         Builder serverBuilder = Undertow.builder();
         setUndertowOptions(serverBuilder);
 
-        LOG.debug("SERVER BUILDER:"+serverOptions.httpEnable());
+        LOG.debug("SERVER BUILDER:" + serverOptions.httpEnable());
         if (serverOptions.httpEnable()) {
-            LOG.debug("Server Builder - PORT:"+ports.get("http").socket+" HOST:"+host);
+            LOG.debug("Server Builder - PORT:" + ports.get("http").socket + " HOST:" + host);
             serverBuilder.addHttpListener(ports.get("http").socket, host);
-        }else{
-        LOG.info("HTTP Enabled:"+serverOptions.httpEnable());
+        } else {
+            LOG.info("HTTP Enabled:" + serverOptions.httpEnable());
         }
 
-        
         if (serverOptions.http2Enable()) {
             LOG.info("Enabling HTTP2 protocol");
             if (!serverOptions.sslEnable()) {
@@ -256,8 +255,8 @@ public class Server {
             }
             serverBuilder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
             //serverBuilder.setSocketOption(Options.REUSE_ADDRESSES, true);
-        }else{
-            LOG.info("HTTP2 Enabled:"+serverOptions.http2Enable());
+        } else {
+            LOG.info("HTTP2 Enabled:" + serverOptions.http2Enable());
         }
 
         if (serverOptions.sslEnable()) {
@@ -276,7 +275,7 @@ public class Server {
                     File keyFile = serverOptions.sslKey();
                     char[] keypass = serverOptions.sslKeyPass();
                     String[] sslAddCerts = serverOptions.sslAddCerts();
-                    
+
                     sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{serverOptions.host()});
                     if (keypass != null) {
                         Arrays.fill(keypass, '*');
@@ -290,8 +289,8 @@ public class Server {
                 e.printStackTrace();
                 System.exit(1);
             }
-        }else{
-            LOG.info("HTTP sslEnable:"+serverOptions.sslEnable());
+        } else {
+            LOG.info("HTTP sslEnable:" + serverOptions.sslEnable());
         }
 
         if (serverOptions.ajpEnable()) {
@@ -301,8 +300,8 @@ public class Server {
                 // if no options is set, default to the large packet size
                 serverBuilder.setServerOption(UndertowOptions.MAX_AJP_PACKET_SIZE, 65536);
             }
-        }else{
-            LOG.info("HTTP ajpEnable:"+serverOptions.ajpEnable());
+        } else {
+            LOG.info("HTTP ajpEnable:" + serverOptions.ajpEnable());
         }
 
         securityManager = new SecurityManager();
@@ -327,9 +326,9 @@ public class Server {
                 serverOptions.contentDirs(warFile.getAbsolutePath());
             }
             serverOptions.warFile(warFile);
-        }else{
-            LOG.info("HTTP warFile exists:"+warFile.exists());
-            LOG.info("HTTP warFile isDirectory:"+warFile.isDirectory());
+        } else {
+            LOG.info("HTTP warFile exists:" + warFile.exists());
+            LOG.info("HTTP warFile isDirectory:" + warFile.isDirectory());
         }
         if (!warFile.exists()) {
             throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
@@ -343,8 +342,8 @@ public class Server {
             // just in case
             Thread.sleep(200);
             System.exit(0);
-        }else{
-            LOG.info("HTTP background:"+serverOptions.background());
+        } else {
+            LOG.info("HTTP background:" + serverOptions.background());
         }
 
         File webinf = serverOptions.webInfDir();
@@ -408,7 +407,7 @@ public class Server {
             dockIconPath = serverOptions.iconImage();
         }
 
-        if (osName != null && osName.startsWith("Mac OS X")) {
+        if (osName != null && osName.startsWith("Mac OS X") && serverOptions.dockEnable()) {
             Image dockIcon = Tray.getIconImage(dockIconPath);
             System.setProperty("com.apple.mrj.application.apple.menu.about.name", processName);
             System.setProperty("com.apple.mrj.application.growbox.intrudes", "false");
@@ -594,7 +593,7 @@ public class Server {
                     });
                 }
 
-                if (serverOptions.debug() && serverOptions.testing() &&exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
+                if (serverOptions.debug() && serverOptions.testing() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
                     new RequestDumper().handleRequest(exchange);
                 } else {
                     super.handleRequest(exchange);
@@ -795,27 +794,27 @@ public class Server {
     }
 
     private void addShutDownHook() {
-        if(shutDownThread == null) {
+        if (shutDownThread == null) {
             shutDownThread = new Thread() {
                 public void run() {
-                LOG.debug("Running shutdown hook");
-                try {
-                    if (!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
-                        LOG.debug("shutdown hook:stopServer()");
-                        stopServer();
-                    }
+                    LOG.debug("Running shutdown hook");
+                    try {
+                        if (!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
+                            LOG.debug("shutdown hook:stopServer()");
+                            stopServer();
+                        }
 //                    if(tempWarDir != null) {
 //                        LaunchUtil.deleteRecursive(tempWarDir);
 //                    }
-                    if (mainThread.isAlive()) {
-                        LOG.debug("shutdown hook joining main thread");
-                        mainThread.interrupt();
-                        mainThread.join();
+                        if (mainThread.isAlive()) {
+                            LOG.debug("shutdown hook joining main thread");
+                            mainThread.interrupt();
+                            mainThread.join();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                LOG.debug("Shutdown hook finished");
+                    LOG.debug("Shutdown hook finished");
                 }
             };
             Runtime.getRuntime().addShutdownHook(shutDownThread);
@@ -1112,13 +1111,14 @@ public class Server {
                     sock.close();
                 } catch (IOException e) {
                     // don't care
-        }
+                }
             }
         }
         return false;
     }
 
     class OpenBrowserTask extends TimerTask {
+
         public void run() {
             int portNumber = ports.get("http").socket;
             String protocol = "http";
@@ -1163,8 +1163,8 @@ public class Server {
             URL address = new URL(openbrowserURL);
             String host = address.getHost();
             if (host.equalsIgnoreCase(oldHost)) {
-                    URL ob=new URL(address.getProtocol(), newHost, address.getPort() , address.getFile());
-                    openbrowserURL=ob.toString();
+                URL ob = new URL(address.getProtocol(), newHost, address.getPort(), address.getFile());
+                openbrowserURL = ob.toString();
             }
         } catch (MalformedURLException ex) {
             ex.printStackTrace();
@@ -1204,6 +1204,7 @@ public class Server {
     }
 
     public static class ServerState {
+
         public static final String STARTING = "STARTING";
         public static final String STARTED = "STARTED";
         public static final String STARTING_BACKGROUND = "STARTING_BACKGROUND";
@@ -1214,11 +1215,12 @@ public class Server {
     }
 
     public static class Mode {
+
         public static final String WAR = "war";
         public static final String SERVLET = "servlet";
         public static final String DEFAULT = "default";
     }
-    
+
     private class MonitorThread extends Thread {
 
         private char[] stoppassword;
@@ -1246,7 +1248,7 @@ public class Server {
                 LOG.info(bar);
                 while (listening) {
                     LOG.debug("StopMonitor listening for password");
-                    if(serverState == ServerState.STOPPED || serverState == ServerState.STOPPING){
+                    if (serverState == ServerState.STOPPED || serverState == ServerState.STOPPING) {
                         listening = false;
                     }
                     final Socket clientSocket = serverSocket.accept();
@@ -1264,12 +1266,12 @@ public class Server {
                         if (i == stoppassword.length) {
                             listening = false;
                         } else {
-                            if(listening) {
+                            if (listening) {
                                 LOG.warn("Incorrect password used when trying to stop server.");
                             } else {
                                 LOG.debug("stopped listening for stop password.");
                             }
-                                
+
                         }
                     } catch (java.net.SocketException e) {
                         // reset
@@ -1297,9 +1299,9 @@ public class Server {
                     if (mainThread.isAlive()) {
                         LOG.debug("monitor joining main thread");
                         mainThread.interrupt();
-                        try{
+                        try {
                             mainThread.join();
-                        } catch (InterruptedException ie){
+                        } catch (InterruptedException ie) {
                             // expected
                         }
                     }
@@ -1308,12 +1310,12 @@ public class Server {
                     e.printStackTrace();
                 }
             }
-            if(systemExitOnStop)
+            if (systemExitOnStop) {
                 System.exit(exitCode); // this will call our shutdown hook
-//            Thread.currentThread().interrupt();
+            }//            Thread.currentThread().interrupt();
             return;
         }
-        
+
         public void stopListening(boolean systemExitOnStop) {
             this.systemExitOnStop = systemExitOnStop;
             listening = false;
@@ -1331,7 +1333,7 @@ public class Server {
             }
 
         }
-        
+
     }
 
 }
