@@ -291,7 +291,13 @@ public class CommandLineHandler {
                 .withLongOpt( "tray-enable" )
                 .withDescription( "Enable/Disable system tray integration (true)" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
-                .create(Keys.TRAY) );
+                .create(Keys.TRAY)); 
+                
+        options.addOption( OptionBuilder
+                .withLongOpt( "dock-enable" )
+                .withDescription( "Enable/Disable dock icon for Mac OS X Users (true)" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.DOCK) );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "tray-icon" )
@@ -896,6 +902,9 @@ public class CommandLineHandler {
             
             if (hasOptionValue(line, Keys.TRAY)) {
                 serverOptions.trayEnable(Boolean.valueOf(line.getOptionValue(Keys.TRAY)));
+            }
+            if (hasOptionValue(line, Keys.DOCK)) {
+                serverOptions.dockEnable(Boolean.valueOf(line.getOptionValue(Keys.DOCK)));
             }
             if (hasOptionValue(line, Keys.ICON)) {
                 serverOptions.iconImage(line.getOptionValue(Keys.ICON));
