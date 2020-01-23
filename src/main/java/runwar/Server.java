@@ -407,23 +407,25 @@ public class Server {
             dockIconPath = serverOptions.iconImage();
         }
 
-        if (osName != null && osName.startsWith("Mac OS X") && serverOptions.dockEnable()) {
-            Image dockIcon = Tray.getIconImage(dockIconPath);
-            System.setProperty("com.apple.mrj.application.apple.menu.about.name", processName);
-            System.setProperty("com.apple.mrj.application.growbox.intrudes", "false");
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
-            System.setProperty("-Xdock:name", processName);
-            try {
-                Class<?> appClass = Class.forName("com.apple.eawt.Application");
-                Method getAppMethod = appClass.getMethod("getApplication");
-                Object appInstance = getAppMethod.invoke(null);
-                Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
-                dockMethod.invoke(appInstance, dockIcon);
-            } catch (Exception e) {
-                LOG.warn("error setting dock icon image", e);
+        if (osName != null && osName.startsWith("Mac OS X")) {
+            if (serverOptions.dockEnable()) {
+                Image dockIcon = Tray.getIconImage(dockIconPath);
+                System.setProperty("com.apple.mrj.application.apple.menu.about.name", processName);
+                System.setProperty("com.apple.mrj.application.growbox.intrudes", "false");
+                System.setProperty("apple.laf.useScreenMenuBar", "true");
+                System.setProperty("-Xdock:name", processName);
+                try {
+                    Class<?> appClass = Class.forName("com.apple.eawt.Application");
+                    Method getAppMethod = appClass.getMethod("getApplication");
+                    Object appInstance = getAppMethod.invoke(null);
+                    Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
+                    dockMethod.invoke(appInstance, dockIcon);
+                } catch (Exception e) {
+                    LOG.warn("error setting dock icon image", e);
+                }
+            } else {
+                System.setProperty("apple.awt.UIElement", "true");
             }
-        }else{
-            System.setProperty("apple.awt.UIElement", "true");
         }
         LOG.info(bar);
         LOG.info("Starting - port:" + ports.get("http") + " stop-port:" + ports.get("stop") + " warpath:" + warPath);
