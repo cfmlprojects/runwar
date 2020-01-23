@@ -25,7 +25,7 @@ ext {
 
 repositories {
     mavenLocal()
-    maven { url "http://repo.maven.apache.org/maven2" }
+    maven { url "https://repo.maven.apache.org/maven2" }
     maven { url "http://repository.jboss.org/nexus/content/repositories/releases" }
     maven { url "http://cfmlprojects.org/artifacts" }
 }
