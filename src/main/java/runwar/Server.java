@@ -422,6 +422,8 @@ public class Server {
             } catch (Exception e) {
                 LOG.warn("error setting dock icon image", e);
             }
+        }else{
+            System.setProperty("apple.awt.UIElement", "true");
         }
         LOG.info(bar);
         LOG.info("Starting - port:" + ports.get("http") + " stop-port:" + ports.get("stop") + " warpath:" + warPath);
