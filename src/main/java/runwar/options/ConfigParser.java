@@ -406,7 +406,11 @@ public class ConfigParser {
             if (serverConfig.hasOption(Keys.TRAY)) {
                 serverOptions.trayEnable(Boolean.valueOf(serverConfig.getOptionValue(Keys.TRAY)));
             }
-
+            
+            if (serverConfig.hasOption(Keys.DOCK)) {
+                serverOptions.dockEnable(Boolean.valueOf(serverConfig.getOptionValue(Keys.DOCK)));
+            }
+            
             if (serverConfig.hasOption("trayicon")) {
                 serverConfig.put(Keys.ICON, serverConfig.getOptionValue("trayicon"));
             }

@@ -63,6 +63,7 @@ public interface ServerOptions {
         final static String SSLKEYPASS = "sslkeypass";
         final static String SSLENABLE = "sslenable";
         final static String TRAY = "tray";
+        final static String DOCK = "dock";
         final static String TRAYCONFIG = "trayconfig";
         final static String ICON = "icon";
         final static String URLREWRITEFILE = "urlrewritefile";
@@ -314,8 +315,12 @@ public interface ServerOptions {
     ServerOptions trayConfig(JSONArray trayConfig);
 
     boolean trayEnable();
+    
+    boolean dockEnable();
 
     ServerOptions trayEnable(boolean enable);
+    
+    ServerOptions dockEnable(boolean enable);
 
     File statusFile();
 

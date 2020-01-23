@@ -3,17 +3,12 @@ package runwar.options;
 import io.undertow.UndertowOptions;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
-import org.xnio.Option;
 import org.xnio.OptionMap;
 import org.xnio.Options;
 import runwar.Server;
 import runwar.Server.Mode;
-import runwar.logging.RunwarLogger;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -37,6 +32,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     private boolean trayEnable = true;
+    private boolean dockEnable = true; // for mac users
     private boolean directoryListingEnable = true;
     private boolean directoryListingRefreshEnable = false;
     private boolean cacheEnable = false;
@@ -1096,6 +1092,23 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public ServerOptions trayEnable(boolean enable) {
         this.trayEnable = enable;
+        return this;
+    }
+    
+     /** 
+     * @see runwar.options.ServerOptions#dockEnable()
+     */
+    @Override
+    public boolean dockEnable() {
+        return dockEnable;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#dockEnable(boolean)
+     */
+    @Override
+    public ServerOptions dockEnable(boolean enable) {
+        this.dockEnable = enable;
         return this;
     }
 
