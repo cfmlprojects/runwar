@@ -452,10 +452,7 @@ public class Server {
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
         OptionMap.Builder serverXnioOptions = serverOptions.xnioOptions();
         
-        OptionMap serverXnioOptionsMap = serverOptions.xnioOptions().getMap();
-        for (Option option : serverXnioOptionsMap) {
-            LOG.info("XNIO-Option " + option.getName() + ':' + serverXnioOptionsMap.get(option));
-        }
+        logXnioOptions(serverXnioOptions);
         
         if (serverOptions.ioThreads() != 0) {
             LOG.info("IO Threads: " + serverOptions.ioThreads());
@@ -770,6 +767,14 @@ public class Server {
         for (Option option : undertowOptionsMap) {
             LOG.info("UndertowOption " + option.getName() + ':' + undertowOptionsMap.get(option));
             serverBuilder.setServerOption(option, undertowOptionsMap.get(option));
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void logXnioOptions(OptionMap.Builder xnioOptions) {
+        OptionMap serverXnioOptionsMap = xnioOptions.getMap();
+        for (Option option : serverXnioOptionsMap) {
+            LOG.info("XNIO-Option " + option.getName() + ':' + serverXnioOptionsMap.get(option));
         }
     }
 
