@@ -455,7 +455,6 @@ public class Server {
         OptionMap serverXnioOptionsMap = serverOptions.xnioOptions().getMap();
         for (Option option : serverXnioOptionsMap) {
             LOG.info("XNIO-Option " + option.getName() + ':' + serverXnioOptionsMap.get(option));
-            serverBuilder.setServerOption(option, serverXnioOptionsMap.get(option));
         }
         
         if (serverOptions.ioThreads() != 0) {
