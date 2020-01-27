@@ -451,6 +451,13 @@ public class Server {
         // configure NIO options and worker
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
         OptionMap.Builder serverXnioOptions = serverOptions.xnioOptions();
+        
+        OptionMap serverXnioOptionsMap = serverOptions.xnioOptions().getMap();
+        for (Option option : serverXnioOptionsMap) {
+            LOG.info("XNIO-Option " + option.getName() + ':' + serverXnioOptionsMap.get(option));
+            serverBuilder.setServerOption(option, serverXnioOptionsMap.get(option));
+        }
+        
         if (serverOptions.ioThreads() != 0) {
             LOG.info("IO Threads: " + serverOptions.ioThreads());
             serverBuilder.setIoThreads(serverOptions.ioThreads()); // posterity: ignored when managing worker
