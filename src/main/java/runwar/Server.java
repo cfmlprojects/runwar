@@ -60,6 +60,7 @@ import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
+import runwar.util.Utils;
 
 public class Server {
 
@@ -451,6 +452,9 @@ public class Server {
         // configure NIO options and worker
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
         OptionMap.Builder serverXnioOptions = serverOptions.xnioOptions();
+        
+        logXnioOptions(serverXnioOptions);
+        
         if (serverOptions.ioThreads() != 0) {
             LOG.info("IO Threads: " + serverOptions.ioThreads());
             serverBuilder.setIoThreads(serverOptions.ioThreads()); // posterity: ignored when managing worker
@@ -764,6 +768,14 @@ public class Server {
         for (Option option : undertowOptionsMap) {
             LOG.info("UndertowOption " + option.getName() + ':' + undertowOptionsMap.get(option));
             serverBuilder.setServerOption(option, undertowOptionsMap.get(option));
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void logXnioOptions(OptionMap.Builder xnioOptions) {
+        OptionMap serverXnioOptionsMap = xnioOptions.getMap();
+        for (Option option : serverXnioOptionsMap) {
+            LOG.info("XNIO-Option " + option.getName() + ':' + serverXnioOptionsMap.get(option));
         }
     }
 
@@ -1144,7 +1156,7 @@ public class Server {
                 openbrowserURL = protocol + "://" + host + ":" + portNumber + openbrowserURL;
             }
             // if binding to all IPs, swap out with localhost.
-            openbrowserURL = replaceHost(openbrowserURL, "0.0.0.0", "127.0.0.1");
+            openbrowserURL = Utils.replaceHost(openbrowserURL, "0.0.0.0", "127.0.0.1");
 
             LOG.info("Waiting up to " + (timeout / 1000) + " seconds for " + host + ":" + portNumber + "...");
             try {
@@ -1161,21 +1173,6 @@ public class Server {
         }
     }
 
-    public static String replaceHost(String openbrowserURL, String oldHost, String newHost) {
-        String url = openbrowserURL;
-        try {
-            URL address = new URL(openbrowserURL);
-            String host = address.getHost();
-            if (host.equalsIgnoreCase(oldHost)) {
-                URL ob = new URL(address.getProtocol(), newHost, address.getPort(), address.getFile());
-                openbrowserURL = ob.toString();
-            }
-        } catch (MalformedURLException ex) {
-            ex.printStackTrace();
-            openbrowserURL = url;
-        }
-        return openbrowserURL;
-    }
 
     public ServerOptions getServerOptions() {
         return serverOptions;

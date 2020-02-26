@@ -28,6 +28,7 @@ import runwar.Server;
 import runwar.Start;
 import runwar.logging.RunwarLogger;
 import runwar.options.ServerOptions;
+import runwar.util.Utils;
 
 public class Tray {
 
@@ -598,6 +599,8 @@ public class Tray {
 
         @Override
         public void actionPerformed(ActionEvent e) {
+            // if binding to all IPs, swap out with localhost.
+            url = Utils.replaceHost(url, "0.0.0.0", "127.0.0.1");
             displayMessage(variableMap.get("processName"), "Info", "Opening browser to " + url);
             openURL(url);
         }
