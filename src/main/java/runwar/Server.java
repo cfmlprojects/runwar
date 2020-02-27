@@ -176,7 +176,7 @@ public class Server {
     }
 
     private synchronized void requisitionPorts() {
-        LOG.debug("HOST to be bound:" + serverOptions.host());
+        LOG.debug("HOST to be bound:"+serverOptions.host());
         ports = new PortRequisitioner(serverOptions.host());
         ports.add("http", serverOptions.httpPort());
         ports.add("stop", serverOptions.stopPort());
@@ -240,12 +240,12 @@ public class Server {
         Builder serverBuilder = Undertow.builder();
         setUndertowOptions(serverBuilder);
 
-        LOG.debug("SERVER BUILDER:" + serverOptions.httpEnable());
+        LOG.debug("SERVER BUILDER:"+serverOptions.httpEnable());
         if (serverOptions.httpEnable()) {
-            LOG.debug("Server Builder - PORT:" + ports.get("http").socket + " HOST:" + host);
+            LOG.debug("Server Builder - PORT:"+ports.get("http").socket+" HOST:"+host);
             serverBuilder.addHttpListener(ports.get("http").socket, host);
-        } else {
-            LOG.info("HTTP Enabled:" + serverOptions.httpEnable());
+        }else{
+        LOG.info("HTTP Enabled:"+serverOptions.httpEnable());
         }
 
         
@@ -257,8 +257,8 @@ public class Server {
             }
             serverBuilder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
             //serverBuilder.setSocketOption(Options.REUSE_ADDRESSES, true);
-        } else {
-            LOG.info("HTTP2 Enabled:" + serverOptions.http2Enable());
+        }else{
+            LOG.info("HTTP2 Enabled:"+serverOptions.http2Enable());
         }
 
         if (serverOptions.sslEnable()) {
@@ -291,8 +291,8 @@ public class Server {
                 e.printStackTrace();
                 System.exit(1);
             }
-        } else {
-            LOG.info("HTTP sslEnable:" + serverOptions.sslEnable());
+        }else{
+            LOG.info("HTTP sslEnable:"+serverOptions.sslEnable());
         }
 
         if (serverOptions.ajpEnable()) {
@@ -302,8 +302,8 @@ public class Server {
                 // if no options is set, default to the large packet size
                 serverBuilder.setServerOption(UndertowOptions.MAX_AJP_PACKET_SIZE, 65536);
             }
-        } else {
-            LOG.info("HTTP ajpEnable:" + serverOptions.ajpEnable());
+        }else{
+            LOG.info("HTTP ajpEnable:"+serverOptions.ajpEnable());
         }
 
         securityManager = new SecurityManager();
@@ -328,9 +328,9 @@ public class Server {
                 serverOptions.contentDirs(warFile.getAbsolutePath());
             }
             serverOptions.warFile(warFile);
-        } else {
-            LOG.info("HTTP warFile exists:" + warFile.exists());
-            LOG.info("HTTP warFile isDirectory:" + warFile.isDirectory());
+        }else{
+            LOG.info("HTTP warFile exists:"+warFile.exists());
+            LOG.info("HTTP warFile isDirectory:"+warFile.isDirectory());
         }
         if (!warFile.exists()) {
             throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
@@ -344,8 +344,8 @@ public class Server {
             // just in case
             Thread.sleep(200);
             System.exit(0);
-        } else {
-            LOG.info("HTTP background:" + serverOptions.background());
+        }else{
+            LOG.info("HTTP background:"+serverOptions.background());
         }
 
         File webinf = serverOptions.webInfDir();

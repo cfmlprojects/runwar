@@ -22,7 +22,7 @@ public class Utils {
             if (host.equalsIgnoreCase(oldHost)) {
                 URL ob = new URL(address.getProtocol(), newHost, address.getPort(), address.getFile());
                 openbrowserURL = ob.toString();
-            }
+}
         } catch (MalformedURLException ex) {
             ex.printStackTrace();
             openbrowserURL = url;
