@@ -450,7 +450,7 @@ public class Tray {
         }
         return null;
     }
-/*
+
     private static void showDialog(String content){
         final JTextArea jta = new JTextArea(content);
         jta.setEditable(false);
@@ -589,7 +589,7 @@ public class Tray {
             //showDialog(serverOptions.toJson());
         }
     }
-*/
+
     private static class OpenBrowserAction implements ActionListener {
         private String url;
 
