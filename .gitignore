@@ -25,3 +25,4 @@ testwars
 *.iml
 *.ipr
 *.iws
+/settings.xml
