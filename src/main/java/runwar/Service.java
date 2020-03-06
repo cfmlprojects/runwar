@@ -1,8 +1,6 @@
 package runwar;
 
-//import daevil.Daevil;
-//import daevil.OSType;
-import runwar.options.ServerOptions;
+import daevil.OSType;
 import runwar.options.ServerOptionsImpl;
 
 import java.io.File;
@@ -14,26 +12,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
-
 import static runwar.LaunchUtil.displayMessage;
 
 public class Service {
 
     private ServerOptionsImpl serverOptions;
     private Path serverJsonFile;
-    //private List<Command> commands;
+    private List<Command> commands;
     //private Daevil daevil;
 
     public Service(ServerOptionsImpl serverOptions) {
        // this(serverOptions, defaultServerJsonFile());
     }
 
-    /*public List<Command> commands(){
+    public List<Command> commands(){
         return commands;
-    }*/
+    }
 
-   /* public Service(ServerOptionsImpl serverOptions, Path serverJsonFile) {
+    public Service(ServerOptionsImpl serverOptions, Path serverJsonFile) {
         this.serverOptions = serverOptions;
         this.serverJsonFile = serverJsonFile;
         String name = serverOptions.serverName();
@@ -57,7 +53,7 @@ public class Service {
 //        stopCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
 //        stopCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
         commands.add(stopCommand);
-    }*/
+    }
 
     public static String jarPath() {
         URL url;
@@ -154,7 +150,7 @@ public class Service {
         return path;
     }*/
 
-   /* public class Command {
+    public class Command {
         public String name;
         public String description;
         public Map<OSType, String> osCommand;
@@ -173,5 +169,5 @@ public class Service {
         public String osCommand(OSType osType) {
             return osCommand.get(osType.typeOf(OSType.NIX)? OSType.NIX : OSType.WINDOWS);
         }
-    }*/
+    }
 }

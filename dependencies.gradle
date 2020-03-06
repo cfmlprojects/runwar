@@ -85,7 +85,10 @@ dependencies {
     compile 'com.sun.activation:javax.activation:1.2.0'
     //compile 'org.cfmlprojects:javashim:1.0.1'
     // daemon scripts
-    //compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
+    compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
+
 
     // configuration
 //    compile group: 'net.minidev', name: 'json-smart', version: '2.3'
