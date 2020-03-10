@@ -1,6 +1,5 @@
 package runwar;
 
-import daevil.OSType;
 import runwar.options.ServerOptionsImpl;
 
 import java.io.File;
@@ -13,13 +12,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import static runwar.LaunchUtil.displayMessage;
-
+import runwar.util.dae.OSType;
 public class Service {
 
     private ServerOptionsImpl serverOptions;
     private Path serverJsonFile;
     private List<Command> commands;
-    //private Daevil daevil;
 
     public Service(ServerOptionsImpl serverOptions) {
        // this(serverOptions, defaultServerJsonFile());
@@ -79,17 +77,6 @@ public class Service {
         return Paths.get(path.toString() + "/server.json").toFile().toPath();
     }
 
-    /*public Path serviceControlScriptPath() {
-        return Paths.get("./" + daevil.controlScript(OSType.host()).fileName);
-    }*/
-
-    /*public List<Command> serviceScriptCommands(Path serviceControlScriptPath) {
-        String controlScript = LaunchUtil.readFile(serviceControlScriptPath().toFile());
-        List<Command> commands = new ArrayList<>();
-        Pattern commandPattern = Pattern.compile("^.*function.*");
-        return commands;
-    }*/
-
     public Path serverJsonFile() {
         if (serverJsonFile == null) {
             Path path = Paths.get(".");
@@ -106,49 +93,6 @@ public class Service {
         serverOptions = options;
         return this;
     }
-
-    /*public Path generateServiceScripts() throws IOException {
-        return generateServiceScripts(serverJsonFile.getParent());
-    }*/
-
-    /*public Path generateServiceScripts(Path path) throws IOException {
-        String jarPath = jarPath();
-//        String war = Paths.get(".").relativize(serverOptions.warFile().toPath()).toFile().getCanonicalPath();
-
-        serverOptions.pidFile(daevil.pidFile.get());
-        if (!serverJsonFile.toFile().exists()) {
-            serverOptions.toJson(serverJsonFile);
-        } else {
-            displayMessage("info","Not overwriting " + serverJsonFile);
-        }
-
-        String war = serverOptions.warFile().getCanonicalPath();
-        //Daevil.log.info("Jar: " + jarPath);
-        //Daevil.log.info("war: " + war);
-        String name = serverOptions.serverName();
-
-        daevil.javaResolver();
-        daevil.description.set("Service control for " + name);
-        daevil.controlScript().fileName.set(daevil.ctlScript.get());
-        daevil.logFileOut.set("/var/log/" + name + ".log");
-        daevil.pidFile.set("/var/run/@{name}/@{name}.pid".replace("@{name}", name));
-
-        commands.forEach(command -> {
-            daevil.addOption(command.name, command.description)
-                    .command(OSType.WINDOWS, command.osCommand(OSType.WINDOWS))
-                    .command(OSType.NIX, command.osCommand(OSType.NIX));
-
-        });
-
-
-        daevil.serviceImg.set("/icon.png");
-
-        daevil.generateScripts(OSType.host(), path);
-        Daevil.log.info("Generated service control script: " + path.toAbsolutePath().toString() + '/' + daevil.ctlScript.get());
-        Daevil.log.info(daevil.controlScript(OSType.host()).displayCommands(OSType.host()));
-        
-        return path;
-    }*/
 
     public class Command {
         public String name;

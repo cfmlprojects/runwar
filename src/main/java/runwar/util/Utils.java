@@ -14,7 +14,9 @@ import java.net.URL;
  */
 public class Utils {
     
-        public static String replaceHost(String openbrowserURL, String oldHost, String newHost) {
+    private static String OS = System.getProperty("os.name").toLowerCase();
+
+    public static String replaceHost(String openbrowserURL, String oldHost, String newHost) {
         String url = openbrowserURL;
         try {
             URL address = new URL(openbrowserURL);
@@ -22,12 +24,30 @@ public class Utils {
             if (host.equalsIgnoreCase(oldHost)) {
                 URL ob = new URL(address.getProtocol(), newHost, address.getPort(), address.getFile());
                 openbrowserURL = ob.toString();
-}
+            }
         } catch (MalformedURLException ex) {
             ex.printStackTrace();
             openbrowserURL = url;
         }
         return openbrowserURL;
     }
-    
+
+    public static boolean isWindows() {
+
+        return (OS.indexOf("win") >= 0);
+
+    }
+
+    public static boolean isMac() {
+
+        return (OS.indexOf("mac") >= 0);
+
+    }
+
+    public static boolean isUnix() {
+
+        return (OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0);
+
+    }
+
 }

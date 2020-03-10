@@ -40,9 +40,9 @@ import runwar.logging.RunwarLogger;
 import runwar.options.ServerOptions;
 import runwar.options.ServerOptionsImpl;
 import runwar.util.Utils;
-import daevil.OSType;
 import javax.swing.JFileChooser;
 import runwar.gui.SubmitActionlistioner;
+import runwar.util.dae.OSType;
 
 public class Tray {
 
@@ -187,16 +187,16 @@ public class Tray {
                     File path = new File(getString(itemInfo, "path", server.getServerOptions().warUriString()));
                     menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
-                } else if (action.equalsIgnoreCase("serverOptionsJson")) {//
-                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
-                    menuItem.setShortcut('d');
-                } else if (action.equalsIgnoreCase("openTerminal")) {//not working
-                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
-                    menuItem.setShortcut('d');
-                } else if (action.equalsIgnoreCase("serverOptionsSave")) { //working
-                    menuItem = new MenuItem(label, is, new ServerOptionsSaveAction(server.getServerOptions()));
-                    menuItem.setShortcut('d');
-                } else if (action.equalsIgnoreCase("run")) {//working
+//                } else if (action.equalsIgnoreCase("serverOptionsJson")) {//
+//                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
+//                    menuItem.setShortcut('d');
+//                } else if (action.equalsIgnoreCase("openTerminal")) {//not working
+//                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
+//                    menuItem.setShortcut('d');
+//                } else if (action.equalsIgnoreCase("serverOptionsSave")) { //working
+//                    menuItem = new MenuItem(label, is, new ServerOptionsSaveAction(server.getServerOptions()));
+//                    menuItem.setShortcut('d');
+                } else if (action.equalsIgnoreCase("run")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
                     String output = getString(itemInfo, "output", "dialog");
@@ -209,17 +209,30 @@ public class Tray {
                     }
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, 1, waitResponse));
                     menuItem.setShortcut('c');
-                } else if (action.equalsIgnoreCase("runAsync")) {//working
+                } else if (action.equalsIgnoreCase("runAsync")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
                     String output = getString(itemInfo, "output", "dialog");
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, 2, false));
                     menuItem.setShortcut('c');
-                } else if (action.equalsIgnoreCase("runTerminal")) {//working
+                } else if (action.equalsIgnoreCase("runTerminal")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
                     String output = getString(itemInfo, "output", "dialog");
                     String waitResponse = getString(itemInfo, "waitResponse", "true");
+                    RunwarLogger.LOG.warn("This action (runTerminal) cannot wait for response, ignoring -> waitResponse:" + waitResponse);
+
+                    if (Utils.isMac()) {
+                        RunwarLogger.LOG.info("Executing on Mac OS X");
+                        command = "osascript -e 'tell app \"Terminal\" to do script \"" + command + "\"'";
+                    } else if (Utils.isWindows()) {
+                        command = "start cmd.exe /k \"" + command + "\"";
+                    } else if (Utils.isUnix()) {
+
+                    } else {
+                        RunwarLogger.LOG.error("Your OS is not currently supported to perform this action");
+                    }
+
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, 3, false));
                     menuItem.setShortcut('c');
                 } else {
@@ -565,17 +578,17 @@ public class Tray {
                     }
 
                 }
-            }else{
+            } else {
                 Notify.create()
-                            .title("Run Output")
-                            .text("Running " + shellProcessBuilder.getCommand())
-                            .position(Pos.TOP_RIGHT)
-                            // .setScreen(0)
-                            .darkStyle()
-                            //.shake(1300, 10)
-                            // .hideCloseButton()
-                            .hideAfter(5000)
-                            .showConfirm();
+                        .title("Run Output")
+                        .text("Running " + shellProcessBuilder.getCommand())
+                        .position(Pos.TOP_RIGHT)
+                        // .setScreen(0)
+                        .darkStyle()
+                        //.shake(1300, 10)
+                        // .hideCloseButton()
+                        .hideAfter(5000)
+                        .showConfirm();
                 RunwarLogger.LOG.warn("Not waiting for response when running -->>" + command);
             }
         }
