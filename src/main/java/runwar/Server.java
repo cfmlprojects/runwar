@@ -799,7 +799,7 @@ public class Server {
         }
     }
 
-    private synchronized void unhookSystemStreams() {
+    private void unhookSystemStreams() {
         LOG.trace("Unhooking system streams logger");
         if (originalSystemOut != null) {
             System.setOut(originalSystemOut);
@@ -825,7 +825,7 @@ public class Server {
                         if (mainThread.isAlive()) {
                             LOG.debug("shutdown hook joining main thread");
                             mainThread.interrupt();
-                            mainThread.join();
+                            mainThread.join( 3000 );
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -838,7 +838,7 @@ public class Server {
         }
     }
 
-    public synchronized void stopServer() {
+    public void stopServer() {
         int exitCode = 0;
         if (shutDownThread != null && Thread.currentThread() != shutDownThread) {
             LOG.debug("Removed shutdown hook");
@@ -877,7 +877,9 @@ public class Server {
                             if (http2proxy != null) {
                                 http2proxy.stop();
                             }
+                            if (undertow != null) {
                             undertow.stop();
+                            }
                             if (worker != null) {
                                 worker.shutdown();
                                 logWorker.shutdown();
@@ -908,14 +910,12 @@ public class Server {
                     LoggerFactory.listLoggers();
                 }
 
-                LOG.debug("Stopping server monitor");
                 if (monitor != null) {
+                LOG.debug("Stopping server monitor");
                     MonitorThread monitorThread = monitor;
                     monitor = null;
                     monitorThread.stopListening(false);
                     monitorThread.interrupt();
-                } else {
-                    LOG.error("server monitor was null!");
                 }
 
                 if (exitCode != 0) {
@@ -1178,9 +1178,9 @@ public class Server {
         return serverOptions;
     }
 
-    private synchronized void setServerState(String state) {
+    private void setServerState(String state) {
         serverState = state;
-        if (statusFile != null) {
+        /*if (statusFile != null) {
             try {
                 PrintWriter writer;
                 writer = new PrintWriter(statusFile);
@@ -1189,7 +1189,7 @@ public class Server {
             } catch (FileNotFoundException e) {
                 LOG.error(e.getMessage());
             }
-        }
+        }*/
     }
 
     public static String getProcessName() {
