@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.InvalidPathException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -56,49 +57,54 @@ public class MappedResourceManager extends FileResourceManager {
             return null;
         }
         MAPPER_LOG.debug("* requested: '" + path + "'");
-        Path reqFile = null;
-        final Matcher webInfMatcher = WEBINF_REGEX_PATTERN.matcher(path);
-        final Matcher cfideMatcher = CFIDE_REGEX_PATTERN.matcher(path);
-        if (WEBINF != null && webInfMatcher.matches()) {
-            if(webInfMatcher.group(1) == null) {
-                reqFile = Paths.get(WEBINF.toURI());
-            } else {
-                reqFile = Paths.get(WEBINF.getAbsolutePath(), webInfMatcher.group(1).replace("WEB-INF", ""));
-            }
-            MAPPER_LOG.trace("** matched WEB-INF : " + reqFile.toAbsolutePath().toString());
-        } else if (cfideMatcher.matches()) {
-            if(cfideMatcher.group(1) == null) {
-                reqFile = Paths.get(CFIDE.toURI());
-            } else {
-                reqFile = Paths.get(CFIDE.getAbsolutePath(), cfideMatcher.group(1).replace("CFIDE", ""));
-            }
-            MAPPER_LOG.trace("** matched /CFIDE : " + reqFile.toAbsolutePath().toString());
-        } else if (!webInfMatcher.matches()) {
-            reqFile = Paths.get(getBase().getAbsolutePath(), path);
-            MAPPER_LOG.trace("* checking with base path: '" + reqFile.toAbsolutePath().toString() + "'");
-            if (!Files.exists(reqFile)) {
-                reqFile = getAliasedFile(aliases, path);
-            }
-            if (reqFile == null) {
-                for (Path cfmlDirsFile : contentDirs) {
-                    reqFile = Paths.get(cfmlDirsFile.toString(), path.replace(cfmlDirsFile.toAbsolutePath().toString(), ""));
-                    MAPPER_LOG.tracef("checking: '%s' = '%s'", cfmlDirsFile.toAbsolutePath().toString(), reqFile.toAbsolutePath());
-                    if (Files.exists(reqFile)) {
-                        MAPPER_LOG.tracef("Exists: '%s'", reqFile.toAbsolutePath().toString());
-                        break;
-                    }
-                }
-            }
-        }
-        if (reqFile != null && Files.exists(reqFile)) {
-            if(reqFile.toString().indexOf('\\') > 0) {
-                reqFile = Paths.get(reqFile.toString().replace('/', '\\'));
-            }
-            MAPPER_LOG.debugf("** path mapped to: '%s'", reqFile);
-            return new FileResource(reqFile.toFile(), this, path);
-        } else {
-            MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.toString() : "null");
-            return super.getResource(path);
+        try {
+	        Path reqFile = null;
+	        final Matcher webInfMatcher = WEBINF_REGEX_PATTERN.matcher(path);
+	        final Matcher cfideMatcher = CFIDE_REGEX_PATTERN.matcher(path);
+	        if (WEBINF != null && webInfMatcher.matches()) {
+	            if(webInfMatcher.group(1) == null) {
+	                reqFile = Paths.get(WEBINF.toURI());
+	            } else {
+	                reqFile = Paths.get(WEBINF.getAbsolutePath(), webInfMatcher.group(1).replace("WEB-INF", ""));
+	            }
+	            MAPPER_LOG.trace("** matched WEB-INF : " + reqFile.toAbsolutePath().toString());
+	        } else if (cfideMatcher.matches()) {
+	            if(cfideMatcher.group(1) == null) {
+	                reqFile = Paths.get(CFIDE.toURI());
+	            } else {
+	                reqFile = Paths.get(CFIDE.getAbsolutePath(), cfideMatcher.group(1).replace("CFIDE", ""));
+	            }
+	            MAPPER_LOG.trace("** matched /CFIDE : " + reqFile.toAbsolutePath().toString());
+	        } else if (!webInfMatcher.matches()) {
+	            reqFile = Paths.get(getBase().getAbsolutePath(), path);
+	            MAPPER_LOG.trace("* checking with base path: '" + reqFile.toAbsolutePath().toString() + "'");
+	            if (!Files.exists(reqFile)) {
+	                reqFile = getAliasedFile(aliases, path);
+	            }
+	            if (reqFile == null) {
+	                for (Path cfmlDirsFile : contentDirs) {
+	                    reqFile = Paths.get(cfmlDirsFile.toString(), path.replace(cfmlDirsFile.toAbsolutePath().toString(), ""));
+	                    MAPPER_LOG.tracef("checking: '%s' = '%s'", cfmlDirsFile.toAbsolutePath().toString(), reqFile.toAbsolutePath());
+	                    if (Files.exists(reqFile)) {
+	                        MAPPER_LOG.tracef("Exists: '%s'", reqFile.toAbsolutePath().toString());
+	                        break;
+	                    }
+	                }
+	            }
+	        }
+	        if (reqFile != null && Files.exists(reqFile)) {
+	            if(reqFile.toString().indexOf('\\') > 0) {
+	                reqFile = Paths.get(reqFile.toString().replace('/', '\\'));
+	            }
+	            MAPPER_LOG.debugf("** path mapped to: '%s'", reqFile);
+	            return new FileResource(reqFile.toFile(), this, path);
+	        } else {
+	            MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.toString() : "null");
+	            return super.getResource(path);
+	        }
+        } catch( InvalidPathException e ){
+            MAPPER_LOG.debugf("** InvalidPathException for: '%s'",path != null ? path : "null");
+            return null;
         }
     }
 

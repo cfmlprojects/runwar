@@ -903,4 +903,10 @@ public class Tray {
             }
         }
     }
+
+    public static String getDefaultMenu() {
+        return defaultMenu;
+    }
+    
+    
 }

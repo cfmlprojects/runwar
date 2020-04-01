@@ -51,6 +51,8 @@ public class ServerOptionsImpl implements ServerOptions {
     @Expose
     private boolean trayEnable = true;
     @Expose
+    private boolean dockEnable = true; // for mac users
+    @Expose
     private boolean directoryListingEnable = true;
     @Expose
     private boolean directoryListingRefreshEnable = false;
@@ -1150,6 +1152,23 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public ServerOptions trayEnable(boolean enable) {
         this.trayEnable = enable;
+        return this;
+    }
+    
+     /** 
+     * @see runwar.options.ServerOptions#dockEnable()
+     */
+    @Override
+    public boolean dockEnable() {
+        return dockEnable;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#dockEnable(boolean)
+     */
+    @Override
+    public ServerOptions dockEnable(boolean enable) {
+        this.dockEnable = enable;
         return this;
     }
 
