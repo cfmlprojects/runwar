@@ -1,6 +1,5 @@
 package runwar.tray;
 
-import dorkbox.executor.ShellExecutor;
 import static runwar.LaunchUtil.displayMessage;
 import static runwar.LaunchUtil.getResourceAsString;
 import static runwar.LaunchUtil.openURL;
@@ -26,7 +25,13 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
-import dorkbox.util.ActionHandler;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JButton;
 import javax.swing.JPanel;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -146,6 +151,7 @@ public class Tray {
     }
 
     public static void addMenuItems(JSONArray items, Menu menu, Server server) {
+        System.setProperty("os.name", System.getProperty("os.name").toLowerCase());
         for (Object ob : items) {
             JSONObject itemInfo = (JSONObject) ob;
             InputStream is = null;
@@ -207,33 +213,34 @@ public class Tray {
                         RunwarLogger.LOG.error("Invalid waitResponse value");
                         waitResponse = true;
                     }
-                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, 1, waitResponse));
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, waitResponse));
                     menuItem.setShortcut('c');
                 } else if (action.equalsIgnoreCase("runAsync")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
                     String output = getString(itemInfo, "output", "dialog");
-                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, 2, false));
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, false));
                     menuItem.setShortcut('c');
                 } else if (action.equalsIgnoreCase("runTerminal")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
                     String output = getString(itemInfo, "output", "dialog");
                     String waitResponse = getString(itemInfo, "waitResponse", "true");
-                    RunwarLogger.LOG.warn("This action (runTerminal) cannot wait for response, ignoring -> waitResponse:" + waitResponse);
+                    RunwarLogger.LOG.info("This action (runTerminal) cannot wait for response, ignoring -> waitResponse:" + waitResponse);
 
                     if (Utils.isMac()) {
                         RunwarLogger.LOG.info("Executing on Mac OS X");
                         command = "osascript -e 'tell app \"Terminal\" to do script \"" + command + "\"'";
                     } else if (Utils.isWindows()) {
+                        RunwarLogger.LOG.info("Executing on Windows");
                         command = "start cmd.exe /k \"" + command + "\"";
                     } else if (Utils.isUnix()) {
-
+                        RunwarLogger.LOG.info("Executing on *NIX");
                     } else {
                         RunwarLogger.LOG.error("Your OS is not currently supported to perform this action");
                     }
 
-                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, 3, false));
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, false));
                     menuItem.setShortcut('c');
                 } else {
                     RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
@@ -508,6 +515,40 @@ public class Tray {
         JOptionPane.showMessageDialog(null, jsp, "Output", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    private static class StreamGobbler implements Runnable {
+
+        private InputStream inputStream;
+        private Consumer<String> consumer;
+
+        public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
+            this.inputStream = inputStream;
+            this.consumer = consumer;
+        }
+
+        @Override
+        public void run() {
+            new BufferedReader(new InputStreamReader(inputStream)).lines()
+                    .forEach(consumer);
+
+        }
+    }
+
+    public static class ConsumerClass {
+
+        JTextArea jta;
+        final static String newline = "\n";
+
+        public ConsumerClass(JTextArea jta) {
+            this.jta = jta;
+        }
+
+        public void printString(String text) {
+            System.out.println("[Custom command output]:" + text);
+            jta.append(newline);
+            jta.append(text);
+        }
+    }
+
     private static class RunShellCommandAction implements ActionListener {
 
         private String command;
@@ -517,79 +558,146 @@ public class Tray {
         private int type;
         private boolean waitResponse;
 
-        RunShellCommandAction(String command, String workingDirectory, String output, int type, Boolean waitResponse) {
+        RunShellCommandAction(String command, String workingDirectory, String output, Boolean waitResponse) {
             this.command = command;
             this.workingDirectory = workingDirectory;
             this.output = output.toLowerCase();
-            this.type = type;
             this.waitResponse = waitResponse;
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            System.out.println("RunShellCommandAction ------");
-            ByteArrayOutputStream bs = new ByteArrayOutputStream();
-            PrintStream ps = new PrintStream(bs);
-            ShellExecutor shellProcessBuilder = new ShellExecutor(ps);
-            shellProcessBuilder.addArgument(command);
-            shellProcessBuilder.setExecutable(executable);
-            shellProcessBuilder.executeAsShellCommand();
-            int exitCode = -1;
-            if (workingDirectory != "") {
-                shellProcessBuilder.setWorkingDirectory(workingDirectory);
-            }
+            try {
+                System.out.println("RunShellCommandAction ------");
+                ByteArrayOutputStream bs = new ByteArrayOutputStream();
 
-            switch (type) {
-                case 1:
-                    exitCode = shellProcessBuilder.start(waitResponse);
-                    break;
-                case 2:
-                    shellProcessBuilder.start(waitResponse);
-                    exitCode = 0;
-                    break;
-                case 3:
-                    shellProcessBuilder.start(waitResponse);
-                    exitCode = 0;
-                    break;
-            }
+                //Test new implemmentation
+                boolean isWindows = System.getProperty("os.name")
+                        .toLowerCase().startsWith("windows");
 
-            //show result
-            if (waitResponse) {
-                String content = bs.toString();
-                System.out.println("Content:" + content + exitCode);
-                if (!output.equals("none")) {
+                ProcessBuilder builder = new ProcessBuilder();
+                if (isWindows) {
+                    builder.command("cmd.exe", "/c", command);
+                } else {
+                    builder.command("sh", "-c", command);
+                }
+                if (workingDirectory != "") {
+                    builder.directory(new File(workingDirectory));
+                }
+
+                Process process = builder.start();
+
+                int exitCode = 99;
+                if (waitResponse) {
+                    JTextArea jta = new JTextArea("output:\n");
+                    ConsumerClass cc = new ConsumerClass(jta);
+                    StreamGobbler streamGobbler
+                            = new StreamGobbler(process.getInputStream(), cc::printString);
+                    ExecutorService service = Executors.newSingleThreadExecutor();
+                    Future tsk = service.submit(streamGobbler);
+                    JScrollPane jsp = new JScrollPane(jta) {
+                        @Override
+                        public Dimension getPreferredSize() {
+                            return new Dimension(680, 420);
+                        }
+                    };
+
+                    Runnable r = new MyRunnable(process, jsp, service, tsk);
+                    new Thread(r).start();
+
+                } else {
+                    System.out.println("Not waiting for response:" + exitCode);
+                }
+
+                //show result
+                if (waitResponse) {
+                    String content = bs.toString();
+                    System.out.println("Content:" + content + exitCode);
+                    if (!output.equals("none")) {
+                        Notify.create()
+                                .title("Run Output")
+                                .text("Executed " + builder.command())
+                                .position(Pos.TOP_RIGHT)
+                                .darkStyle()
+                                .showConfirm();
+
+                        if (!output.equals("dialog")) {
+                            showDialog(content);
+                        }
+
+                    }
+                } else {
                     Notify.create()
                             .title("Run Output")
-                            .text("Running " + shellProcessBuilder.getCommand())
+                            .text("Executed " + builder.command())
                             .position(Pos.TOP_RIGHT)
-                            // .setScreen(0)
                             .darkStyle()
-                            //.shake(1300, 10)
-                            // .hideCloseButton()
-                            .onAction(new ActionHandler<Notify>() {
-                                @Override
-                                public void handle(final Notify arg0) {
-                                    showDialog(content);
-                                }
-                            }).showConfirm();
-
-                    if (!output.equals("dialog")) {
-                        showDialog(content);
-                    }
-
+                            .hideAfter(5000)
+                            .showConfirm();
+                    RunwarLogger.LOG.warn("Not waiting for response when running -->>" + command);
                 }
-            } else {
-                Notify.create()
-                        .title("Run Output")
-                        .text("Running " + shellProcessBuilder.getCommand())
-                        .position(Pos.TOP_RIGHT)
-                        // .setScreen(0)
-                        .darkStyle()
-                        //.shake(1300, 10)
-                        // .hideCloseButton()
-                        .hideAfter(5000)
-                        .showConfirm();
-                RunwarLogger.LOG.warn("Not waiting for response when running -->>" + command);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public static class MyRunnable implements Runnable {
+
+        Process process;
+        JScrollPane jsp;
+        ExecutorService service;
+        Future tsk;
+
+        public MyRunnable(Process process, JScrollPane jsp, ExecutorService service, Future tsk) {
+            this.process = process;
+            this.jsp = jsp;
+            this.service = service;
+            this.tsk = tsk;
+        }
+
+        public void run() {
+            try {
+                JOptionPane optionPane = new JOptionPane();
+                Object[] options1 = {"Ok", "Stop command"};
+                int result = optionPane.showOptionDialog(null, jsp, "Command Output",
+                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null,
+                        options1, null);
+                switch (result) {
+                    case JOptionPane.OK_OPTION:
+                        System.out.println("Closing Output Dialog");
+                        break;
+                    case JOptionPane.NO_OPTION:
+                        System.out.println("Stopping Command...");
+                        tsk.cancel(true);
+                        service.shutdownNow();
+                        process.destroyForcibly();
+                        int timeout = 0;
+                        while (process.isAlive() && service.isTerminated()) {
+                            timeout = timeout + 1;
+                            if (timeout > 6) {
+                                try {
+                                    System.out.println("[Waiting] Stopping Command...");
+                                    Thread.sleep(5000);
+                                } catch (InterruptedException ex) {
+                                    System.out.println(ex.getMessage());
+                                }
+                            } else {
+                                System.out.println("Unable to stop process...");
+                                break;
+                            }
+                        }
+                        if (!process.isAlive()) {
+                            System.out.println("Command Stopped");
+                        }
+                        break;
+                }
+                //int exitCode = process.waitFor();
+                service.shutdown();
+                //System.out.println("Exit code:" + exitCode);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.err.println(e);
             }
         }
     }
