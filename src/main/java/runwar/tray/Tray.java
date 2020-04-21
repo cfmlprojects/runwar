@@ -28,6 +28,7 @@ import dorkbox.notify.Pos;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,6 +47,7 @@ import runwar.options.ServerOptions;
 import runwar.options.ServerOptionsImpl;
 import runwar.util.Utils;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import runwar.gui.SubmitActionlistioner;
 import runwar.util.dae.OSType;
 
@@ -543,7 +545,7 @@ public class Tray {
         }
 
         public void printString(String text) {
-            System.out.println("[Custom command output]:" + text);
+            //RunwarLogger.LOG.info("[Custom command output]:" + text);
             jta.append(newline);
             jta.append(text);
         }
@@ -568,10 +570,7 @@ public class Tray {
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
-                System.out.println("RunShellCommandAction ------");
-                ByteArrayOutputStream bs = new ByteArrayOutputStream();
-
-                //Test new implemmentation
+                RunwarLogger.LOG.info("RunShellCommandAction ------");                
                 boolean isWindows = System.getProperty("os.name")
                         .toLowerCase().startsWith("windows");
 
@@ -589,7 +588,7 @@ public class Tray {
 
                 int exitCode = 99;
                 if (waitResponse) {
-                    JTextArea jta = new JTextArea("output:\n");
+                    JTextArea jta = new JTextArea("");
                     ConsumerClass cc = new ConsumerClass(jta);
                     StreamGobbler streamGobbler
                             = new StreamGobbler(process.getInputStream(), cc::printString);
@@ -602,31 +601,27 @@ public class Tray {
                         }
                     };
 
-                    Runnable r = new MyRunnable(process, jsp, service, tsk);
+                    Runnable r = new MyRunnable(process, jsp, service, tsk, jta);
                     new Thread(r).start();
 
-                } else {
-                    System.out.println("Not waiting for response:" + exitCode);
-                }
-
-                //show result
-                if (waitResponse) {
-                    String content = bs.toString();
-                    System.out.println("Content:" + content + exitCode);
+                    
+                    RunwarLogger.LOG.info("Content:" + exitCode);
                     if (!output.equals("none")) {
                         Notify.create()
                                 .title("Run Output")
                                 .text("Executed " + builder.command())
                                 .position(Pos.TOP_RIGHT)
+                                .hideAfter(5000)
                                 .darkStyle()
                                 .showConfirm();
 
                         if (!output.equals("dialog")) {
-                            showDialog(content);
+                            showDialog("");
                         }
 
                     }
                 } else {
+                    RunwarLogger.LOG.info("Not waiting for response:" + exitCode);
                     Notify.create()
                             .title("Run Output")
                             .text("Executed " + builder.command())
@@ -648,53 +643,80 @@ public class Tray {
         JScrollPane jsp;
         ExecutorService service;
         Future tsk;
+        JTextArea jta;
 
-        public MyRunnable(Process process, JScrollPane jsp, ExecutorService service, Future tsk) {
+        public MyRunnable(Process process, JScrollPane jsp, ExecutorService service, Future tsk, JTextArea jta) {
             this.process = process;
             this.jsp = jsp;
             this.service = service;
             this.tsk = tsk;
+            this.jta = jta;
+        }
+
+        public void showFrame(JScrollPane jsp, JTextArea jta) {
+            try {
+                JFrame frame = new JFrame("Command Output");
+                jsp = new JScrollPane(jta) {
+                    @Override
+                    public Dimension getPreferredSize() {
+                        return new Dimension(680, 420);
+                    }
+                };
+                frame.getContentPane().add(jsp, BorderLayout.CENTER);
+                frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+                frame.setSize(new Dimension(880, 620));
+                JButton b1 = new JButton("Stop Command");
+                b1.setSize(20, 100);
+                b1.setLocation(500, 350);
+                b1.addActionListener(new java.awt.event.ActionListener() {
+                    public void actionPerformed(java.awt.event.ActionEvent evt) {
+                        b1.setEnabled(false);
+                        stopCommandAttempt(evt);
+                        //b1.setEnabled(true);
+                    }
+                });
+                frame.getContentPane().add(b1, BorderLayout.SOUTH);
+                frame.setLocationRelativeTo(null);
+                frame.setVisible(true);
+                int exitCode=process.waitFor();
+                this.jta.append("\n"+"Exit Code:"+exitCode);
+            } catch (InterruptedException ex) {
+                RunwarLogger.LOG.info("An Error Occurred:" + ex.getMessage());
+            }
+        }
+
+        private void stopCommandAttempt(java.awt.event.ActionEvent evt) {
+            try {
+                RunwarLogger.LOG.info("Attempting to stop Command...");
+                process.destroy();
+                process.waitFor(5000, TimeUnit.MILLISECONDS);
+                if (process.isAlive()) {
+                    RunwarLogger.LOG.warn("Attemting to destroy process forcibly");
+                    process.destroyForcibly();
+                }
+
+                if (!process.isAlive()) {
+                    RunwarLogger.LOG.info("Process Stopped");
+                } else {
+                    RunwarLogger.LOG.info("Process cannot be Stopped");
+                }
+                if (service != null) {
+                    service.shutdown();
+                }
+                if (tsk != null) {
+                    tsk.cancel(true);
+                };
+            } catch (InterruptedException ex) {
+                RunwarLogger.LOG.info("An Error Occurred:" + ex.getMessage());
+            }
         }
 
         public void run() {
             try {
-                JOptionPane optionPane = new JOptionPane();
-                Object[] options1 = {"Ok", "Stop command"};
-                int result = optionPane.showOptionDialog(null, jsp, "Command Output",
-                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null,
-                        options1, null);
-                switch (result) {
-                    case JOptionPane.OK_OPTION:
-                        System.out.println("Closing Output Dialog");
-                        break;
-                    case JOptionPane.NO_OPTION:
-                        System.out.println("Stopping Command...");
-                        tsk.cancel(true);
-                        service.shutdownNow();
-                        process.destroyForcibly();
-                        int timeout = 0;
-                        while (process.isAlive() && service.isTerminated()) {
-                            timeout = timeout + 1;
-                            if (timeout > 6) {
-                                try {
-                                    System.out.println("[Waiting] Stopping Command...");
-                                    Thread.sleep(5000);
-                                } catch (InterruptedException ex) {
-                                    System.out.println(ex.getMessage());
-                                }
-                            } else {
-                                System.out.println("Unable to stop process...");
-                                break;
-                            }
-                        }
-                        if (!process.isAlive()) {
-                            System.out.println("Command Stopped");
-                        }
-                        break;
-                }
-                //int exitCode = process.waitFor();
-                service.shutdown();
-                //System.out.println("Exit code:" + exitCode);
+                showFrame(jsp, jta);
+
+                //int exitCode = process.waitFor();                
+                //RunwarLogger.LOG.info("Exit code:" + exitCode);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println(e);
@@ -712,7 +734,7 @@ public class Tray {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            System.out.println("ServerOptionsJsonAction ------");
+            RunwarLogger.LOG.info("ServerOptionsJsonAction ------");
             showDialog(serverOptions.toJson());
         }
     }
@@ -727,7 +749,7 @@ public class Tray {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            System.out.println("ToggleOnBootAction ------");
+            RunwarLogger.LOG.info("ToggleOnBootAction ------");
             Service service = new Service(serverOptions);
             HashMap<String, String> values = new HashMap<>();
             service.commands().forEach(command
@@ -735,9 +757,9 @@ public class Tray {
             );
             SubmitActionlistioner onSubmit = new SubmitActionlistioner() {
                 public void actionPerformed(ActionEvent e) {
-                    System.out.println(getForm().getFieldValue("start"));
-                    System.out.println(getForm().getFieldValue("startForeground"));
-                    System.out.println(getForm().getFieldValue("stop"));
+                    RunwarLogger.LOG.info(getForm().getFieldValue("start"));
+                    RunwarLogger.LOG.info(getForm().getFieldValue("startForeground"));
+                    RunwarLogger.LOG.info(getForm().getFieldValue("stop"));
                     try {
                         //service.generateServiceScripts();
                     } catch (Exception e1) {
@@ -759,7 +781,7 @@ public class Tray {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            System.out.println("ServerOptionsSaveAction ------");
+            RunwarLogger.LOG.info("ServerOptionsSaveAction ------");
             File path = new File(serverOptions.workingDir(), "server.json");
             final JFileChooser fc = new JFileChooser(path);
             JPanel jPanel = new JPanel(new BorderLayout());
@@ -854,7 +876,7 @@ public class Tray {
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
-                System.out.println("Restarting...");
+                RunwarLogger.LOG.info("Restarting...");
                 server.restartServer();
             } catch (Exception e1) {
                 displayMessage("Error", e1.getMessage());
@@ -907,6 +929,5 @@ public class Tray {
     public static String getDefaultMenu() {
         return defaultMenu;
     }
-    
-    
+
 }
