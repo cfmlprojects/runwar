@@ -89,8 +89,6 @@ dependencies {
 
     // java 9+ compat
     compile 'com.sun.activation:javax.activation:1.2.0'
-    //compile 'org.cfmlprojects:javashim:1.0.1'
-    //compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
     compile group: 'org.graylog.repackaged', name: 'os-platform-finder', version: '1.2.3'
     compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
 
@@ -105,45 +103,45 @@ dependencies {
     // logging
 //    compile("log4j:log4j:1.2.17")
 //    compile("org.slf4j:slf4j-log4j12:1.8.0-beta2")
-    compile("org.slf4j:slf4j-log4j12:1.7.25")
+    compile("org.slf4j:slf4j-log4j12:1.7.30")
     //    compile("org.jboss.logmanager:jboss-logmanager:2.1.0.Final")
-    compile("org.jboss.logging:jboss-logging:3.2.1.Final")
-    compile("org.jboss.logging:jboss-logging-annotations:2.1.0.Final")
+    compile("org.jboss.logging:jboss-logging:3.4.1.Final")
+    compile("org.jboss.logging:jboss-logging-annotations:2.2.1.Final")
     //    compile("org.apache.logging.log4j:log4j-core:2.10.0")
     //    compile("org.apache.logging.log4j:log4j-slf4j-impl:2.10.0")
 
     // forked version of tuckey for now
-    compile("org.cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}")
+    compile("org.cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}") ///missing version of forked project
     // regexpathinfofilter lets us handle *.cfm/* paths
-    compile("org.cfmlprojects:regexpathinfofilter:1.0.1")
+    compile("org.cfmlprojects:regexpathinfofilter:1.0.1") //finding the way to compile it
 
-    compile("net.java.dev.jna:jna:4.3.0")
-    compile("net.java.dev.jna:jna-platform:4.3.0")
+    compile("net.java.dev.jna:jna:5.5.0")
+    compile("net.java.dev.jna:jna-platform:5.5.0")
 
     // ssl
-    compile("org.bouncycastle:bcpkix-jdk15on:1.57")
+    compile("org.bouncycastle:bcpkix-jdk15on:1.65")
     // version compare
-    compile("com.vdurmont:semver4j:2.2.0") { transitive = false }
+    compile("com.vdurmont:semver4j:3.1.0") { transitive = false }
     // ansi colors for logging system output
-    compile("com.jcabi:jcabi-log:0.18") { transitive = false }
+    compile("com.jcabi:jcabi-log:0.18.1") { transitive = false }
 
     if( org.gradle.util.VersionNumber.parse( System.getProperty( 'java.version' ) ) > org.gradle.util.VersionNumber.parse( '1.8' ) ) {
         // needed for hibernate annotations since not included in later JDKs
         // the javax packages that are removed in Java 11+
 //        implementation( 'org.jboss.spec.javax.xml.ws:jboss-jaxws-api_2.3_spec:1.0.0.Final')
 //        implementation( 'org.jboss.spec.javax.xml.soap:jboss-saaj-api_1.3_spec:1.0.6.Final')
-        implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
+        implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:2.0.0.Final'
 //        implementation 'javax.jws:jsr181-api:1.0-MR1'
     }
     runtimeOnly 'cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
-    implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
+    implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:2.0.0.Final'
 
     //
 //    compile 'net.bytebuddy:byte-buddy:1.9.2'
 //    compile 'net.bytebuddy:byte-buddy-agent:1.9.2'
     // tests
-    testCompile("org.apache.httpcomponents:httpclient:4.2.6")
-    testCompile("org.apache.httpcomponents:httpmime:4.2.6")
+    testCompile("org.apache.httpcomponents:httpclient:4.5.12")
+    testCompile("org.apache.httpcomponents:httpmime:4.5.12")
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.2.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
     testCompile group: 'org.junit.platform', name: 'junit-platform-launcher', version: "1.2.0"
