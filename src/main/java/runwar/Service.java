@@ -1,8 +1,5 @@
 package runwar;
 
-//import daevil.Daevil;
-//import daevil.OSType;
-import runwar.options.ServerOptions;
 import runwar.options.ServerOptionsImpl;
 
 import java.io.File;
@@ -14,26 +11,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
-
 import static runwar.LaunchUtil.displayMessage;
-
+import runwar.util.dae.OSType;
 public class Service {
 
     private ServerOptionsImpl serverOptions;
     private Path serverJsonFile;
-    //private List<Command> commands;
-    //private Daevil daevil;
+    private List<Command> commands;
 
     public Service(ServerOptionsImpl serverOptions) {
        // this(serverOptions, defaultServerJsonFile());
     }
 
-    /*public List<Command> commands(){
+    public List<Command> commands(){
         return commands;
-    }*/
+    }
 
-   /* public Service(ServerOptionsImpl serverOptions, Path serverJsonFile) {
+    public Service(ServerOptionsImpl serverOptions, Path serverJsonFile) {
         this.serverOptions = serverOptions;
         this.serverJsonFile = serverJsonFile;
         String name = serverOptions.serverName();
@@ -57,7 +51,7 @@ public class Service {
 //        stopCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
 //        stopCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
         commands.add(stopCommand);
-    }*/
+    }
 
     public static String jarPath() {
         URL url;
@@ -83,17 +77,6 @@ public class Service {
         return Paths.get(path.toString() + "/server.json").toFile().toPath();
     }
 
-    /*public Path serviceControlScriptPath() {
-        return Paths.get("./" + daevil.controlScript(OSType.host()).fileName);
-    }*/
-
-    /*public List<Command> serviceScriptCommands(Path serviceControlScriptPath) {
-        String controlScript = LaunchUtil.readFile(serviceControlScriptPath().toFile());
-        List<Command> commands = new ArrayList<>();
-        Pattern commandPattern = Pattern.compile("^.*function.*");
-        return commands;
-    }*/
-
     public Path serverJsonFile() {
         if (serverJsonFile == null) {
             Path path = Paths.get(".");
@@ -111,50 +94,7 @@ public class Service {
         return this;
     }
 
-    /*public Path generateServiceScripts() throws IOException {
-        return generateServiceScripts(serverJsonFile.getParent());
-    }*/
-
-    /*public Path generateServiceScripts(Path path) throws IOException {
-        String jarPath = jarPath();
-//        String war = Paths.get(".").relativize(serverOptions.warFile().toPath()).toFile().getCanonicalPath();
-
-        serverOptions.pidFile(daevil.pidFile.get());
-        if (!serverJsonFile.toFile().exists()) {
-            serverOptions.toJson(serverJsonFile);
-        } else {
-            displayMessage("info","Not overwriting " + serverJsonFile);
-        }
-
-        String war = serverOptions.warFile().getCanonicalPath();
-        //Daevil.log.info("Jar: " + jarPath);
-        //Daevil.log.info("war: " + war);
-        String name = serverOptions.serverName();
-
-        daevil.javaResolver();
-        daevil.description.set("Service control for " + name);
-        daevil.controlScript().fileName.set(daevil.ctlScript.get());
-        daevil.logFileOut.set("/var/log/" + name + ".log");
-        daevil.pidFile.set("/var/run/@{name}/@{name}.pid".replace("@{name}", name));
-
-        commands.forEach(command -> {
-            daevil.addOption(command.name, command.description)
-                    .command(OSType.WINDOWS, command.osCommand(OSType.WINDOWS))
-                    .command(OSType.NIX, command.osCommand(OSType.NIX));
-
-        });
-
-
-        daevil.serviceImg.set("/icon.png");
-
-        daevil.generateScripts(OSType.host(), path);
-        Daevil.log.info("Generated service control script: " + path.toAbsolutePath().toString() + '/' + daevil.ctlScript.get());
-        Daevil.log.info(daevil.controlScript(OSType.host()).displayCommands(OSType.host()));
-        
-        return path;
-    }*/
-
-   /* public class Command {
+    public class Command {
         public String name;
         public String description;
         public Map<OSType, String> osCommand;
@@ -173,5 +113,5 @@ public class Service {
         public String osCommand(OSType osType) {
             return osCommand.get(osType.typeOf(OSType.NIX)? OSType.NIX : OSType.WINDOWS);
         }
-    }*/
+    }
 }
