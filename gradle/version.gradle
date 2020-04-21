@@ -34,9 +34,16 @@ ext {
         //      isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
         //      version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
         
+        String minor=version.substring(version.lastIndexOf('.')+1);
+        int min=0;
+        
+        if(!minor.equalsIgnoreCase("x")){
+            min=Integer.parseInt(minor)+1;
+        }else{
+            
+        }
+        
         if(rev != revision){
-            String minor=version.substring(version.lastIndexOf('.')+1);
-            int min=Integer.parseInt(minor)+1;
             version = version.substring(0,version.lastIndexOf('.'))+"."+min;
             File file = new File("gradle/version")
             file.write(version+"-"+revision+"-"+masterRevision)
