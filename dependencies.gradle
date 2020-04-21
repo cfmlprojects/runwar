@@ -11,8 +11,8 @@ configurations {
 
 ext {
 //    undertowVersion = '1.4.24.Final'
-    undertowVersion = '2.0.27.Final'
-    urlRewriteVersion = '5.0.2'
+    undertowVersion = '2.1.0.Final'
+    urlRewriteVersion = '5.0.3'
     proguardVersion = '6.0.2'
     goomphVersion = '3.17.1'
     bndVersion = '1.5.0'
@@ -28,6 +28,7 @@ repositories {
     maven { url "https://repo.maven.apache.org/maven2" }
     maven { url "http://repository.jboss.org/nexus/content/repositories/releases" }
     maven { url "http://cfmlprojects.org/artifacts" }
+    maven { url "http://downloads.ortussolutions.com/" }
 }
 
 task dorkboxUberJar(type: ShadowJar) {
@@ -63,9 +64,14 @@ dependencies {
 */
 //    compile('javax.servlet:jsp-api:2.0')
     // squish the jsp stuff together for java 9+
-    jbossJspDependency('org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.3_spec:1.0.2.Final') { transitive = false }
-    compile("org.cfmlprojects:jboss-jsp-api:${jbossJspApiVersion}")
-    compile(files(jbossJspJar.archivePath){ builtBy jbossJspJar })
+ 
+    //jbossJspDependency('org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.3_spec:1.0.2.Final') { transitive = false }
+    //compile("org.jboss.spec.javax.servlet.jsp:${jbossJspApiVersion}")
+    //compile(files(jbossJspJar.archivePath){ builtBy jbossJspJar })
+    
+    // https://mvnrepository.com/artifact/org.jboss.spec.javax.servlet.jsp/jboss-jsp-api_2.3_spec
+    compile group: 'org.jboss.spec.javax.servlet.jsp', name: 'jboss-jsp-api_2.3_spec', version: '2.0.0.Final'
+
 
     compile("org.jboss.spec.javax.el:jboss-el-api_3.0_spec:1.0.2.Final")
 
@@ -84,10 +90,8 @@ dependencies {
     // java 9+ compat
     compile 'com.sun.activation:javax.activation:1.2.0'
     //compile 'org.cfmlprojects:javashim:1.0.1'
+    // daemon scripts
     //compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
-    compile group: 'org.graylog.repackaged', name: 'os-platform-finder', version: '1.2.3'
-    compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
-
 
     // configuration
 //    compile group: 'net.minidev', name: 'json-smart', version: '2.3'
@@ -129,7 +133,7 @@ dependencies {
         implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
 //        implementation 'javax.jws:jsr181-api:1.0-MR1'
     }
-    runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
+    runtimeOnly 'cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
     implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
 
     //
