@@ -14,9 +14,9 @@ ext {
     undertowVersion = '2.1.0.Final'
     urlRewriteVersion = '5.0.3'
     proguardVersion = '6.0.2'
-    goomphVersion = '3.17.1'
-    bndVersion = '1.5.0'
-    spotlessVersion = '3.5.1'
+    //goomphVersion = '3.17.1'
+    //bndVersion = '1.5.0'
+    //spotlessVersion = '3.5.1'
 //    systemTrayVersion = '3.14'
     systemTrayVersion = '3.17'
     jbossJspApiVersion = '1.0.3'
@@ -88,15 +88,15 @@ dependencies {
     compile(files(dorkboxUberJar.archivePath){ builtBy dorkboxUberJar })
 
     // java 9+ compat
-    compile 'com.sun.activation:javax.activation:1.2.0'
+    //compile 'com.sun.activation:javax.activation:1.2.0'
     compile group: 'org.graylog.repackaged', name: 'os-platform-finder', version: '1.2.3'
-    compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
+    //compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
 
 
     // configuration
 //    compile group: 'net.minidev', name: 'json-smart', version: '2.3'
     compile group: 'net.minidev', name: 'json-smart-mini', version: '1.0.8'
-    compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '5.0-beta-1'
+    //compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '5.0-beta-1'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile group: 'org.jooq', name: 'joox', version: '1.2.0'
 

@@ -735,7 +735,7 @@ public class Tray {
         @Override
         public void actionPerformed(ActionEvent e) {
             RunwarLogger.LOG.info("ServerOptionsJsonAction ------");
-            showDialog(serverOptions.toJson());
+//            showDialog(serverOptions.toJson());
         }
     }
 
