@@ -4,6 +4,9 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
+import io.undertow.attribute.ExchangeAttribute;
+import io.undertow.attribute.ExchangeAttributes;
+import io.undertow.attribute.ReadOnlyAttributeException;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HttpHandler;
@@ -507,7 +510,7 @@ public class Server {
 
         configurer.configureServerResourceHandler(servletBuilder);
         if (serverOptions.basicAuthEnable()) {
-            securityManager.configureAuth(servletBuilder, serverOptions);
+            securityManager.configureAuth(servletBuilder, serverOptions);//SECURITY_MANAGER
         }
 
         configurer.configureServlet(servletBuilder);
@@ -530,7 +533,7 @@ public class Server {
         }
 
         manager.deploy();
-        HttpHandler servletHandler = manager.start();
+        HttpHandler servletHandler = manager.start();        
         LOG.debug("started servlet deployment manager");
 
         if (!System.getProperty("java.version", "").equalsIgnoreCase(originalJavaVersion)) {
@@ -657,7 +660,7 @@ public class Server {
         }
 
         if (serverOptions.basicAuthEnable()) {
-            securityManager.configureAuth(httpHandler, serverBuilder, options);
+            securityManager.configureAuth(httpHandler, serverBuilder, options); //SECURITY_MANAGER
         } else {
             serverBuilder.setHandler(httpHandler);
         }

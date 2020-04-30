@@ -64,6 +64,7 @@ public interface ServerOptions {
         final static String SSLENABLE = "sslenable";
         final static String TRAY = "tray";
         final static String DOCK = "dock";
+        final static String SHELL = "shell";
         final static String TRAYCONFIG = "trayconfig";
         final static String ICON = "icon";
         final static String URLREWRITEFILE = "urlrewritefile";
@@ -111,6 +112,8 @@ public interface ServerOptions {
         final static String UNDERTOWOPTIONS = "undertowOptions";
         final static String XNIOOPTIONS = "xnioOptions";
     }
+    
+    String defaultShell();
 
     ServerOptions commandLineArgs(String[] args);
 

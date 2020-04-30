@@ -300,6 +300,12 @@ public class CommandLineHandler {
                 .create(Keys.DOCK) );
         
         options.addOption( OptionBuilder
+                .withLongOpt( "default-shell" )
+                .withDescription( "Set the default Shell for arbitrary actions from tray menu" )
+                .hasArg().withArgName(Keys.SHELL).withType(Boolean.class)
+                .create(Keys.SHELL) );
+        
+        options.addOption( OptionBuilder
                 .withLongOpt( "tray-icon" )
                 .withDescription( "tray icon and OS X dock icon png image" )
                 .hasArg().withArgName("path")

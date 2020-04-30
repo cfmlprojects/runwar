@@ -49,6 +49,8 @@ public class ServerOptionsImpl implements ServerOptions {
     @Expose
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
     @Expose
+    private String defaultShell = "";
+    @Expose
     private boolean trayEnable = true;
     @Expose
     private boolean dockEnable = true; // for mac users
@@ -1154,6 +1156,19 @@ public class ServerOptionsImpl implements ServerOptions {
         this.trayEnable = enable;
         return this;
     }
+
+    
+    @Override
+    public String defaultShell() {
+        return defaultShell;
+    }
+
+    public ServerOptions defaultShell(String defaultShell) {
+        this.defaultShell = defaultShell;
+        return this;
+    }
+    
+    
     
      /** 
      * @see runwar.options.ServerOptions#dockEnable()
