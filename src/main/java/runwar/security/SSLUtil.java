@@ -205,7 +205,6 @@ public class SSLUtil
         }
         for (Certificate certificate: certs) {
             X500Name x500name = new JcaX509CertificateHolder((X509Certificate) certificate).getSubject();
-//            String CN =  IETFUtils.valueToString(x500name.getRDNs(BCStyle.CN)[0].getFirst().getValue());
             RunwarLogger.SECURITY_LOGGER.debugf("   %s  certificate, public key [ %s ] %s", certificate.getType(), certificate.getPublicKey().getAlgorithm(), x500name.toString());
         }
         final char[] copy = Arrays.copyOf(passphrase, passphrase.length);

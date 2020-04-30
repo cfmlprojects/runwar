@@ -1,9 +1,7 @@
 package runwar.gui;
 
-import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
-import runwar.Server;
 import runwar.logging.RunwarLogger;
 
 import javax.swing.*;
@@ -27,7 +25,6 @@ public class Form {
         }catch(Exception ex) {
             ex.printStackTrace();
         }
-//        UIManager.put("swing.boldMetal", Boolean.FALSE);
         String json = getResourceAsString(path);
         schema = (JSONObject) JSONValue.parse(json);
         JSONObject properties = (JSONObject) schema.get("properties");
@@ -38,11 +35,6 @@ public class Form {
                 return new Dimension(580, 420);
             }
         };
-/*
-        final JTextArea jta = new JTextArea(json);
-        jta.setEditable(false);
-        jPanel.add(jta);
-*/
 
         properties.keySet().forEach(s -> {
 

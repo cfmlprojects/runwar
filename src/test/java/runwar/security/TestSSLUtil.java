@@ -81,15 +81,6 @@ public class TestSSLUtil {
         SSLUtil.createSSLContext(certfile, keyfile, keypass, null, hostNames);
     }
 
-/*
-    @Test
-    public void testLoadChain() throws IOException {
-        File certfile = new File("src/test/resources/ssl/chain.crt").getAbsoluteFile();
-        File keyfile = new File("src/test/resources/ssl/chain.key").getAbsoluteFile();
-        char[] keypass = "notpassword".toCharArray();
-        SSLUtil.createSSLContext(certfile, keyfile, keypass, null);
-    }
-*/
     @Test
     public void testLoadPKS12() throws IOException {
         File certfile = new File("src/test/resources/ssl/server.crt").getAbsoluteFile();

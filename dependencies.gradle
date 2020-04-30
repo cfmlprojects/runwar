@@ -133,8 +133,8 @@ dependencies {
         implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:2.0.0.Final'
 //        implementation 'javax.jws:jsr181-api:1.0-MR1'
     }
-    runtimeOnly 'cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
-    implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:2.0.0.Final'
+    //runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
+    implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
 
     //
 //    compile 'net.bytebuddy:byte-buddy:1.9.2'

@@ -382,16 +382,6 @@ class RunwarConfigurer {
 
     void configureServlet(final DeploymentInfo servletBuilder) throws ClassNotFoundException {
         File webInfDir = serverOptions.webInfDir();
-        /*
-        servletBuilder.addInitialHandlerChainWrapper(new HandlerWrapper() {
-            @Override
-            public HttpHandler wrap(final HttpHandler handler) {
-                return resource(new FileResourceManager(new File(libDir,"server/WEB-INF"), transferMinSize))
-                        .directoryListingEnable(true);
-            }
-        });
-        */
-
         configureURLRewrite(servletBuilder, webInfDir);
         configurePathInfoFilter(servletBuilder);
 

@@ -2,7 +2,6 @@ package testutils.mock;
 
 import org.tuckey.web.filters.urlrewrite.utils.Log;
 
-import runwar.undertow.UrlRewriteFilterTest;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
