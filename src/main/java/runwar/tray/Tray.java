@@ -217,15 +217,6 @@ public class Tray {
                     File path = new File(getString(itemInfo, "path", server.getServerOptions().warUriString()));
                     menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
-//                } else if (action.equalsIgnoreCase("serverOptionsJson")) {//
-//                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
-//                    menuItem.setShortcut('d');
-//                } else if (action.equalsIgnoreCase("openTerminal")) {//not working
-//                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
-//                    menuItem.setShortcut('d');
-//                } else if (action.equalsIgnoreCase("serverOptionsSave")) { //working
-//                    menuItem = new MenuItem(label, is, new ServerOptionsSaveAction(server.getServerOptions()));
-//                    menuItem.setShortcut('d');
                 } else if (action.equalsIgnoreCase("run")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
@@ -286,34 +277,6 @@ public class Tray {
         }
     }
 
-    /*  public static JSONArray loadItems(JSONArray loadItems) {
-        JSONArray items = new JSONArray();
-        if (loadItems == null) {
-            loadItems = (JSONArray) JSONValue.parse("[]");
-        }
-
-        for (Object ob : loadItems) {
-            JSONObject itemInfo = (JSONObject) ob;
-            if(itemInfo.get("label") == null) {
-                RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
-                continue;
-            }
-            String label = getString(itemInfo, "label", "");
-            itemInfo.put("label",label);
-            if(itemInfo.get("action") != null) {
-//                String action = itemInfo.get("action").toString();
-            }
-            if(itemInfo.get("url") != null) {
-                itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
-                itemInfo.put("url", getString(itemInfo, "url", ""));
-            } else if(itemInfo.get("items") != null) {
-                itemInfo.put("items", loadItems((JSONArray)itemInfo.get("items")));
-            }
-
-            items.add(itemInfo);
-        }
-        return items;
-    }*/
     public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {
         JSONObject config;
         JSONArray loadItems;
@@ -564,7 +527,6 @@ public class Tray {
         }
 
         public void printString(String text) {
-            //RunwarLogger.LOG.info("[Custom command output]:" + text);
             jta.append(newline);
             jta.append(text);
         }

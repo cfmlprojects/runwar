@@ -17,8 +17,6 @@ import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import runwar.options.ServerOptions;
 import testutils.DefaultServer;
 import testutils.HttpClientUtils;
@@ -26,7 +24,6 @@ import testutils.HttpClientUtils;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 public class BasicAuthTest extends AbstractServerTest {
 

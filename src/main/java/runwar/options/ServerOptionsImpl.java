@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
-import org.omg.CORBA.TRANSIENT;
 
 import static runwar.util.Reflection.setOptionMapValue;
 
@@ -160,14 +159,6 @@ public class ServerOptionsImpl implements ServerOptions {
         jsonArray.addAll(set);
         return jsonArray.toJSONString();
     }
-
-    /*public void toJson(Path path){
-        try(FileWriter fw = new FileWriter(path.toFile())){
-            fw.write(toJson());
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-    }*/
 
     public String toJson(Map<?,?> map){
         final Map<String,String> finalMap = new HashMap<>();

@@ -32,7 +32,6 @@ public final class RunEmbeddedWar {
         System.out.println(props.toString());
         System.out.println("Starting...");
 
-        // File warFile = File.createTempFile(WAR_NAME + "-", WAR_POSTFIX);
         File currentDir = new File(RunEmbeddedWar.class.getProtectionDomain().getCodeSource().getLocation().toURI())
                 .getParentFile();
         File warFile = new File(currentDir.getCanonicalPath() + "/" + WAR_FILENAME);
@@ -62,6 +61,5 @@ public final class RunEmbeddedWar {
             new Server(3);
         }
         Start.main(argsList.toArray(new String[argsList.size()]));
-//        System.exit(0);
     }
 }
