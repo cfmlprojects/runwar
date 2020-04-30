@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
-import org.omg.CORBA.TRANSIENT;
 
 import static runwar.util.Reflection.setOptionMapValue;
 
@@ -48,6 +47,8 @@ public class ServerOptionsImpl implements ServerOptions {
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     @Expose
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
+    @Expose
+    private String defaultShell = "";
     @Expose
     private boolean trayEnable = true;
     @Expose
@@ -158,14 +159,6 @@ public class ServerOptionsImpl implements ServerOptions {
         jsonArray.addAll(set);
         return jsonArray.toJSONString();
     }
-
-    /*public void toJson(Path path){
-        try(FileWriter fw = new FileWriter(path.toFile())){
-            fw.write(toJson());
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-    }*/
 
     public String toJson(Map<?,?> map){
         final Map<String,String> finalMap = new HashMap<>();
@@ -1154,6 +1147,19 @@ public class ServerOptionsImpl implements ServerOptions {
         this.trayEnable = enable;
         return this;
     }
+
+    
+    @Override
+    public String defaultShell() {
+        return defaultShell;
+    }
+
+    public ServerOptions defaultShell(String defaultShell) {
+        this.defaultShell = defaultShell;
+        return this;
+    }
+    
+    
     
      /** 
      * @see runwar.options.ServerOptions#dockEnable()

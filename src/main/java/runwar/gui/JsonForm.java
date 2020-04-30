@@ -2,13 +2,10 @@ package runwar.gui;
 
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
-import runwar.logging.RunwarLogger;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -104,7 +101,6 @@ public class JsonForm extends JPanel {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-//        UIManager.put("swing.boldMetal", Boolean.FALSE);
         String json = getResourceAsString(path);
         schema = (JSONObject) JSONValue.parse(json);
         JSONObject properties = (JSONObject) schema.get("properties");

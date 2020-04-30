@@ -106,17 +106,6 @@ public class TestHttpClient extends DefaultHttpClient {
             e.printStackTrace();
         }
 
-/*
-        if (DefaultServer.getHostAddress(DefaultServer.DEFAULT).equals("localhost") || DefaultServer.getHostAddress(DefaultServer.DEFAULT).equals("127.0.0.1")) {
-            registry.register(new Scheme("https", 443, new SSLSocketFactory(sslContext)));
-            registry.register(
-                    new Scheme("https", DefaultServer.getHostSSLPort("default"), new SSLSocketFactory(sslContext)));
-        } else {
-            registry.register(new Scheme("https", 443, new SSLSocketFactory(sslContext, NO_OP_VERIFIER)));
-            registry.register(new Scheme("https", DefaultServer.getHostSSLPort("default"),
-                    new SSLSocketFactory(sslContext, NO_OP_VERIFIER)));
-        }
-*/
     }
 
     public static void afterTest() {

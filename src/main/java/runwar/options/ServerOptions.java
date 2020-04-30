@@ -3,14 +3,12 @@ package runwar.options;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import net.minidev.json.JSONArray;
 import org.xnio.OptionMap;
-import runwar.Server.Mode;
 
 public interface ServerOptions {
     
@@ -64,6 +62,7 @@ public interface ServerOptions {
         final static String SSLENABLE = "sslenable";
         final static String TRAY = "tray";
         final static String DOCK = "dock";
+        final static String SHELL = "shell";
         final static String TRAYCONFIG = "trayconfig";
         final static String ICON = "icon";
         final static String URLREWRITEFILE = "urlrewritefile";
@@ -111,6 +110,8 @@ public interface ServerOptions {
         final static String UNDERTOWOPTIONS = "undertowOptions";
         final static String XNIOOPTIONS = "xnioOptions";
     }
+    
+    String defaultShell();
 
     ServerOptions commandLineArgs(String[] args);
 

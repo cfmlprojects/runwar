@@ -74,7 +74,6 @@ public class LaunchUtil {
         if (!exe.isFile()) {
             throw new FileNotFoundException(exe.toString());
         }
-        // if(debug)System.out.println("Java: "+javaPath);
         return exe;
     }
 
@@ -111,7 +110,6 @@ public class LaunchUtil {
     }
 
     public static void launch(List<String> cmdarray, int timeout, boolean andExit) throws IOException, InterruptedException {
-        // byte[] buffer = new byte[1024];
         LoggerFactory.initialize();
         boolean serverIsUp = false;
         ProcessBuilder processBuilder = new ProcessBuilder(cmdarray);
@@ -166,7 +164,6 @@ public class LaunchUtil {
                         System.exit(1);
                     }
                 } catch (IllegalThreadStateException t) {
-                    //t.printStackTrace();
                     // This exceptions means the process has not yet finished.
                     // decide to continue, exit(0), or exit(1)
                     serverIsUp = processOutout(line, process, andExit);
@@ -353,7 +350,6 @@ public class LaunchUtil {
     }
 
     public static void displayMessage(String title, String text, MessageType type, int hideAfter) {
-//        boolean trayEnable = Server.getServerOptions() != null ? Server.getServerOptions().trayEnable() : false;
         if(GraphicsEnvironment.isHeadless()) {
             printMessage(title, text, type);
             return;
@@ -365,14 +361,10 @@ public class LaunchUtil {
                     .text(text)
                     .hideAfter(hideAfter)
                     .position(position)
-                    // .setScreen(0)
                     .darkStyle()
-                    //.shake(1300, 10)
-                    // .hideCloseButton()
                     .onAction(new ActionHandler<Notify>() {
                         @Override
                         public void handle(final Notify arg0) {
-//                        System.out.println("Notification clicked on!");
                         }
                     });
 

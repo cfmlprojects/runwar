@@ -144,9 +144,6 @@ class MonitorThreadD extends Thread {
                         MONITOR_LOG.debug("shutdown hook:stopServer()");
                         server.stopServer();
                     }
-//                    if(tempWarDir != null) {
-//                        LaunchUtil.deleteRecursive(tempWarDir);
-//                    }
                     if(mainThread.isAlive()) {
                         MONITOR_LOG.debug("shutdown hook joining main thread from shutdown hook");
                         mainThread.interrupt();

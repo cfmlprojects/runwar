@@ -226,10 +226,6 @@ public class Server {
         if (serverOptions.sslSelfSign()) {
             configurer.generateSelfSignedCertificate();
         }
-        /*if(serverOptions.service()){
-            new Service(serverOptions).generateServiceScripts();
-            System.exit(0);
-        }*/
 
         LOG.info("Starting RunWAR " + getVersion());
         LOG.debug("Starting Server: " + options.host());;
@@ -507,7 +503,7 @@ public class Server {
 
         configurer.configureServerResourceHandler(servletBuilder);
         if (serverOptions.basicAuthEnable()) {
-            securityManager.configureAuth(servletBuilder, serverOptions);
+            securityManager.configureAuth(servletBuilder, serverOptions);//SECURITY_MANAGER
         }
 
         configurer.configureServlet(servletBuilder);
@@ -530,22 +526,13 @@ public class Server {
         }
 
         manager.deploy();
-        HttpHandler servletHandler = manager.start();
+        HttpHandler servletHandler = manager.start();        
         LOG.debug("started servlet deployment manager");
 
         if (!System.getProperty("java.version", "").equalsIgnoreCase(originalJavaVersion)) {
             System.setProperty("java.version", originalJavaVersion);
         }
 
-        /*
-        List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
-        CFMLResourceHandler resourceHandler = new CFMLResourceHandler(servletBuilder.getResourceManager(), servletHandler, welcomePages);
-        resourceHandler.directoryListingEnable(directoryListingEnable);
-        PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
-                .addPrefixPath(contextPath, resourceHandler);
-        HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
-        Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, host).setHandler(errPageHandler);
-         */
         if (serverOptions.bufferSize() != 0) {
             LOG.info("Buffer Size: " + serverOptions.bufferSize());
             serverBuilder.setBufferSize(serverOptions.bufferSize());
@@ -561,15 +548,6 @@ public class Server {
 
             @Override
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
-                /*
-                final SessionManager sessionManager = exchange.getAttachment(SessionManager.ATTACHMENT_KEY);
-                final SessionConfig sessionconfig = exchange.getAttachment(SessionConfig.ATTACHMENT_KEY);
-                Session session = sessionManager.getSession(exchange, sessionconfig);
-                if (session == null) {
-                    LOG.error("SESSION WAS NULL");
-                    session = sessionManager.createSession(exchange, sessionconfig);
-                }
-                 */
                 if (!exchange.getResponseHeaders().contains(HTTPONLY) && addHttpOnlyHeader) {
                     exchange.getResponseHeaders().add(HTTPONLY, "true");
                 }
@@ -577,11 +555,7 @@ public class Server {
                     exchange.getResponseHeaders().add(SECURE, "true");
                 }
 
-                /*   if (fusionReactor.hasFusionReactor()) {
-                    fusionReactor.setFusionReactorInfo("myTransaction", "myTransacitonApplication");
-                }*/
                 CONTEXT_LOG.debug("requested: '" + fullExchangePath(exchange) + "'");
-                // sessionConfig.setSessionId(exchange, ""); // TODO: see if this suppresses jsessionid
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
                 }
@@ -657,7 +631,7 @@ public class Server {
         }
 
         if (serverOptions.basicAuthEnable()) {
-            securityManager.configureAuth(httpHandler, serverBuilder, options);
+            securityManager.configureAuth(httpHandler, serverBuilder, options); //SECURITY_MANAGER
         } else {
             serverBuilder.setHandler(httpHandler);
         }
@@ -714,17 +688,6 @@ public class Server {
             LaunchUtil.displayMessage(serverOptions.processName(), "info", msg);
         }
         setServerState(ServerState.STARTED);
-//        ConfigWebAdmin admin = new ConfigWebAdmin(lucee.runtime.engine.ThreadLocalPageContext.getConfig(), null);
-//        admin._updateMapping(virtual, physical, archive, primary, inspect, toplevel);
-//        admin._store();
-
-//        Class<?> appClass = _classLoader.loadClass("lucee.loader.engine.CFMLEngineFactory");
-//        Method getAppMethod = appClass.getMethod("getInstance");
-//        Object appInstance = getAppMethod.invoke(null);
-//        Object webs = appInstance.getClass().getMethod("getCFMLEngineFactory").invoke(appInstance, null);
-//        Object ef = webs.getClass().getMethod("getInstance").invoke(webs, null);
-//
-//        System.out.println(appInstance.toString());
         if (serverOptions.mariaDB4jEnable()) {
             LOG.info("MariaDB support enable");
             mariadb4jManager = new MariaDB4jManager(_classLoader);
@@ -843,9 +806,6 @@ public class Server {
             LOG.debug("Removed shutdown hook");
             Runtime.getRuntime().removeShutdownHook(shutDownThread);
         }
-//        if (monitor != null) {
-//            monitor.removeShutDownHook();
-//        }
         switch (getServerState()) {
             case ServerState.STOPPING:
                 LOG.warn("Stop server called, however the server is already stopping.");
@@ -1179,16 +1139,6 @@ public class Server {
 
     private void setServerState(String state) {
         serverState = state;
-        /*if (statusFile != null) {
-            try {
-                PrintWriter writer;
-                writer = new PrintWriter(statusFile);
-                writer.print(state);
-                writer.close();
-            } catch (FileNotFoundException e) {
-                LOG.error(e.getMessage());
-            }
-        }*/
     }
 
     public static String getProcessName() {
@@ -1312,7 +1262,7 @@ public class Server {
             }
             if (systemExitOnStop) {
                 System.exit(exitCode); // this will call our shutdown hook
-            }//            Thread.currentThread().interrupt();
+            }
             return;
         }
 

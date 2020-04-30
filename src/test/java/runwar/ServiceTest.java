@@ -1,9 +1,6 @@
 package runwar;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import runwar.options.ServerOptionsImpl;
-import testutils.DefaultServer;
 
 import java.io.File;
 import java.io.IOException;

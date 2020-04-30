@@ -20,7 +20,7 @@ public class Service {
     private List<Command> commands;
 
     public Service(ServerOptionsImpl serverOptions) {
-       // this(serverOptions, defaultServerJsonFile());
+       
     }
 
     public List<Command> commands(){
@@ -31,25 +31,18 @@ public class Service {
         this.serverOptions = serverOptions;
         this.serverJsonFile = serverJsonFile;
         String name = serverOptions.serverName();
-        //daevil = new Daevil(name);
         if (serverJsonFile.toFile().exists()) {
             displayMessage("info", serverJsonFile.toAbsolutePath() + " exists",0);
         }
 
         commands = new ArrayList<>();
         Command startCommand = new Command("start", "Starts the server");
-        //startCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -b true -c \"" + serverJsonFile().toString() + "\"");
-        //startCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -b true -c \"" + serverJsonFile().toString() + "\"");
         commands.add(startCommand);
 
-        Command startForegroundCommand = new Command("startForeground", "Starts the server in the foreground");
-        //startForegroundCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -c \"" + serverJsonFile.toString() + "\" -b false");
-        //startForegroundCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -c \"" + serverJsonFile.toString() + "\" -b false");
+        Command startForegroundCommand = new Command("startForeground", "Starts the server in the foreground");        
         commands.add(startForegroundCommand);
 
         Command stopCommand = new Command("stop", "Stops the server");
-//        stopCommand.osCommand(OSType.WINDOWS, "CALL \"%javacmd%\" -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
-//        stopCommand.osCommand(OSType.NIX, "$javacmd -jar \"" + jarPath() + "\" -stop -c \"" + serverJsonFile.toString() + "\"");
         commands.add(stopCommand);
     }
 

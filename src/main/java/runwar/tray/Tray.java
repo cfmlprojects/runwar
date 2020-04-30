@@ -30,8 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import net.minidev.json.JSONArray;
@@ -135,7 +133,7 @@ public class Tray {
         trayIsHooked = true;
     }
 
-    private static void instantiateMenu(String trayConfigJSON, String statusText, String iconImage, HashMap<String, String> variableMap, Server server) {
+    private void instantiateMenu(String trayConfigJSON, String statusText, String iconImage, HashMap<String, String> variableMap, Server server) {
         JSONObject menu;
         setVariableMap(variableMap);
         menu = getTrayConfig(trayConfigJSON, statusText, variableMap);
@@ -152,7 +150,7 @@ public class Tray {
 
     }
 
-    public static void addMenuItems(JSONArray items, Menu menu, Server server) {
+    public void addMenuItems(JSONArray items, Menu menu, Server server) {
         System.setProperty("os.name", System.getProperty("os.name").toLowerCase());
         for (Object ob : items) {
             JSONObject itemInfo = (JSONObject) ob;
@@ -162,6 +160,30 @@ public class Tray {
             boolean isDisabled = Boolean.parseBoolean(getString(itemInfo, "disabled", "false"));
             if (itemInfo.get("image") != null) {
                 is = getImageInputStream(itemInfo.get("image").toString());
+            } else {
+                //check if property action is used
+                if (itemInfo.get("action") != null) {
+                    //set Defaults
+                    try {
+                        if (itemInfo.get("command") != null && itemInfo.get("command").toString().startsWith("box ")) {
+                            is = getClass().getResourceAsStream("/box.png");
+                        } else {
+                            switch ((String) itemInfo.get("action")) {
+                                case "run":
+                                    is = getClass().getResourceAsStream("/run.png");
+                                    break;
+                                case "runAsync":
+                                    is = getClass().getResourceAsStream("/run_async.png");
+                                    break;
+                                case "runTerminal":
+                                    is = getClass().getResourceAsStream("/icon_terminal.png");
+                                    break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        RunwarLogger.LOG.error("Can't get icon for tray option " + e.getMessage());
+                    }
+                }
             }
             MenuItem menuItem = null;
             if (itemInfo.get("items") != null) {
@@ -195,19 +217,10 @@ public class Tray {
                     File path = new File(getString(itemInfo, "path", server.getServerOptions().warUriString()));
                     menuItem = new MenuItem(label, is, new BrowseFilesystemAction(path.getAbsolutePath()));
                     menuItem.setShortcut('b');
-//                } else if (action.equalsIgnoreCase("serverOptionsJson")) {//
-//                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
-//                    menuItem.setShortcut('d');
-//                } else if (action.equalsIgnoreCase("openTerminal")) {//not working
-//                    menuItem = new MenuItem(label, is, new ServerOptionsJsonAction(server.getServerOptions()));
-//                    menuItem.setShortcut('d');
-//                } else if (action.equalsIgnoreCase("serverOptionsSave")) { //working
-//                    menuItem = new MenuItem(label, is, new ServerOptionsSaveAction(server.getServerOptions()));
-//                    menuItem.setShortcut('d');
                 } else if (action.equalsIgnoreCase("run")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String output = getString(itemInfo, "output", "dialog");
+                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
                     Boolean waitResponse = true;
                     try {
                         waitResponse = Boolean.parseBoolean(getString(itemInfo, "waitResponse", "true"));
@@ -215,18 +228,16 @@ public class Tray {
                         RunwarLogger.LOG.error("Invalid waitResponse value");
                         waitResponse = true;
                     }
-                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, waitResponse));
-                    menuItem.setShortcut('c');
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, waitResponse, shell));
                 } else if (action.equalsIgnoreCase("runAsync")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String output = getString(itemInfo, "output", "dialog");
-                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, false));
-                    menuItem.setShortcut('c');
+                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                 } else if (action.equalsIgnoreCase("runTerminal")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String output = getString(itemInfo, "output", "dialog");
+                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
                     String waitResponse = getString(itemInfo, "waitResponse", "true");
                     RunwarLogger.LOG.info("This action (runTerminal) cannot wait for response, ignoring -> waitResponse:" + waitResponse);
 
@@ -242,8 +253,7 @@ public class Tray {
                         RunwarLogger.LOG.error("Your OS is not currently supported to perform this action");
                     }
 
-                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, output, false));
-                    menuItem.setShortcut('c');
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                 } else {
                     RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                 }
@@ -267,34 +277,6 @@ public class Tray {
         }
     }
 
-    /*  public static JSONArray loadItems(JSONArray loadItems) {
-        JSONArray items = new JSONArray();
-        if (loadItems == null) {
-            loadItems = (JSONArray) JSONValue.parse("[]");
-        }
-
-        for (Object ob : loadItems) {
-            JSONObject itemInfo = (JSONObject) ob;
-            if(itemInfo.get("label") == null) {
-                RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
-                continue;
-            }
-            String label = getString(itemInfo, "label", "");
-            itemInfo.put("label",label);
-            if(itemInfo.get("action") != null) {
-//                String action = itemInfo.get("action").toString();
-            }
-            if(itemInfo.get("url") != null) {
-                itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
-                itemInfo.put("url", getString(itemInfo, "url", ""));
-            } else if(itemInfo.get("items") != null) {
-                itemInfo.put("items", loadItems((JSONArray)itemInfo.get("items")));
-            }
-
-            items.add(itemInfo);
-        }
-        return items;
-    }*/
     public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {
         JSONObject config;
         JSONArray loadItems;
@@ -545,7 +527,6 @@ public class Tray {
         }
 
         public void printString(String text) {
-            //RunwarLogger.LOG.info("[Custom command output]:" + text);
             jta.append(newline);
             jta.append(text);
         }
@@ -554,23 +535,48 @@ public class Tray {
     private static class RunShellCommandAction implements ActionListener {
 
         private String command;
-        private String executable = "";
+        private String shell;
         private String workingDirectory;
-        private String output;
-        private int type;
         private boolean waitResponse;
 
-        RunShellCommandAction(String command, String workingDirectory, String output, Boolean waitResponse) {
+        String[] shells = new String[]{"/bin/bash", "/usr/bin/bash",
+            "/bin/pfbash", "/usr/bin/pfbash",
+            "/bin/csh", "/usr/bin/csh",
+            "/bin/pfcsh", "/usr/bin/pfcsh",
+            "/bin/jsh", "/usr/bin/jsh",
+            "/bin/ksh", "/usr/bin/ksh",
+            "/bin/pfksh", "/usr/bin/pfksh",
+            "/bin/ksh93", "/usr/bin/ksh93",
+            "/bin/pfksh93", "/usr/bin/pfksh93",
+            "/bin/pfsh", "/usr/bin/pfsh",
+            "/bin/tcsh", "/usr/bin/tcsh",
+            "/bin/pftcsh", "/usr/bin/pftcsh",
+            "/usr/xpg4/bin/sh", "/usr/xp4/bin/pfsh",
+            "/bin/zsh", "/usr/bin/zsh",
+            "/bin/pfzsh", "/usr/bin/pfzsh",
+            "/bin/sh", "/usr/bin/sh",};
+
+        RunShellCommandAction(String command, String workingDirectory, Boolean waitResponse, String shell) {
             this.command = command;
             this.workingDirectory = workingDirectory;
-            this.output = output.toLowerCase();
             this.waitResponse = waitResponse;
+            this.shell = shell;
+        }
+
+        public String AvailableShellPick(String[] shells) {
+            for (String curShell : shells) {
+                if (new File(curShell).canExecute()) {
+                    shell = curShell;
+                    break;
+                }
+            }
+            return shell;
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
-                RunwarLogger.LOG.info("RunShellCommandAction ------");                
+                RunwarLogger.LOG.info("RunShellCommandAction ------");
                 boolean isWindows = System.getProperty("os.name")
                         .toLowerCase().startsWith("windows");
 
@@ -578,7 +584,19 @@ public class Tray {
                 if (isWindows) {
                     builder.command("cmd.exe", "/c", command);
                 } else {
-                    builder.command("sh", "-c", command);
+                    if (shell != null && shell.isEmpty()) {
+                        shell = AvailableShellPick(shells);
+                        builder.command(shell, "-c", command);
+                    } else {
+                        try {
+                            if (new File(shell).canExecute()) {
+                                shell = AvailableShellPick(shells);
+                            }
+                        } catch (Exception ex) {
+                            RunwarLogger.LOG.error("Selected shell " + shell + " is not executable" + ex.getMessage());
+                        }
+                        builder.command(shell, "-c", command);
+                    }
                 }
                 if (workingDirectory != "") {
                     builder.directory(new File(workingDirectory));
@@ -601,25 +619,23 @@ public class Tray {
                         }
                     };
 
-                    Runnable r = new MyRunnable(process, jsp, service, tsk, jta);
+                    String cmd = null;
+                    for (String bc : builder.command()) {
+                        cmd = bc;
+                        break;
+                    }
+
+                    Runnable r = new MyRunnable(process, jsp, service, tsk, jta, cmd);
                     new Thread(r).start();
 
-                    
                     RunwarLogger.LOG.info("Content:" + exitCode);
-                    if (!output.equals("none")) {
-                        Notify.create()
-                                .title("Run Output")
-                                .text("Executed " + builder.command())
-                                .position(Pos.TOP_RIGHT)
-                                .hideAfter(5000)
-                                .darkStyle()
-                                .showConfirm();
-
-                        if (!output.equals("dialog")) {
-                            showDialog("");
-                        }
-
-                    }
+                    Notify.create()
+                            .title("Run Output")
+                            .text("Executed " + builder.command())
+                            .position(Pos.TOP_RIGHT)
+                            .hideAfter(5000)
+                            .darkStyle()
+                            .showConfirm();
                 } else {
                     RunwarLogger.LOG.info("Not waiting for response:" + exitCode);
                     Notify.create()
@@ -644,13 +660,15 @@ public class Tray {
         ExecutorService service;
         Future tsk;
         JTextArea jta;
+        String title;
 
-        public MyRunnable(Process process, JScrollPane jsp, ExecutorService service, Future tsk, JTextArea jta) {
+        public MyRunnable(Process process, JScrollPane jsp, ExecutorService service, Future tsk, JTextArea jta, String title) {
             this.process = process;
             this.jsp = jsp;
             this.service = service;
             this.tsk = tsk;
             this.jta = jta;
+            this.title = title;
         }
 
         public void showFrame(JScrollPane jsp, JTextArea jta) {
@@ -662,6 +680,7 @@ public class Tray {
                         return new Dimension(680, 420);
                     }
                 };
+                frame.setTitle(title);
                 frame.getContentPane().add(jsp, BorderLayout.CENTER);
                 frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
                 frame.setSize(new Dimension(880, 620));
@@ -678,8 +697,8 @@ public class Tray {
                 frame.getContentPane().add(b1, BorderLayout.SOUTH);
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
-                int exitCode=process.waitFor();
-                this.jta.append("\n"+"Exit Code:"+exitCode);
+                int exitCode = process.waitFor();
+                this.jta.append("\n" + "Exit Code:" + exitCode);
             } catch (InterruptedException ex) {
                 RunwarLogger.LOG.info("An Error Occurred:" + ex.getMessage());
             }
