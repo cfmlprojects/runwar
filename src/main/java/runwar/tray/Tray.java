@@ -25,6 +25,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
+import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -158,25 +159,25 @@ public class Tray {
             String label = getString(itemInfo, "label", "");
             String hotkey = getString(itemInfo, "hotkey", "");
             boolean isDisabled = Boolean.parseBoolean(getString(itemInfo, "disabled", "false"));
-            if (itemInfo.get("image") != null) {
-                is = getImageInputStream(itemInfo.get("image").toString());
+            if (Utils.getIgnoreCase(itemInfo, "image") != null) {
+                is = getImageInputStream(Utils.getIgnoreCase(itemInfo, "image").toString());
             } else {
                 //check if property action is used
-                if (itemInfo.get("action") != null) {
+                if (Utils.getIgnoreCase(itemInfo, "action") != null) {
                     //set Defaults
                     try {
-                        if (itemInfo.get("command") != null && itemInfo.get("command").toString().startsWith("box ")) {
+                        if (Utils.getIgnoreCase(itemInfo, "command") != null && Utils.getIgnoreCase(itemInfo, "command").toString().toLowerCase().startsWith("box ")) {
                             is = getClass().getResourceAsStream("/box.png");
                         } else {
-                            switch ((String) itemInfo.get("action")) {
+                            switch ((String) Utils.getIgnoreCase(itemInfo, "action")) {
                                 case "run":
                                     is = getClass().getResourceAsStream("/run.png");
                                     break;
                                 case "runAsync":
-                                    is = getClass().getResourceAsStream("/run_async.png");
+                                    is = getClass().getResourceAsStream("/runAsync.png");
                                     break;
                                 case "runTerminal":
-                                    is = getClass().getResourceAsStream("/icon_terminal.png");
+                                    is = getClass().getResourceAsStream("/runTerminal.png");
                                     break;
                             }
                         }
@@ -198,7 +199,7 @@ public class Tray {
                 checkbox.setShortcut(label.charAt(0));
                 checkbox.setEnabled(!isDisabled);
                 menu.add(checkbox);
-            } else if (itemInfo.get("action") != null) {
+            } else if (Utils.getIgnoreCase(itemInfo, "action") != null) {
                 String action = getString(itemInfo, "action", "");
                 if (action.equalsIgnoreCase("stopserver")) {
                     menuItem = new MenuItem(label, is, new ExitAction(server));
@@ -220,7 +221,7 @@ public class Tray {
                 } else if (action.equalsIgnoreCase("run")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
+                    String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     Boolean waitResponse = true;
                     try {
                         waitResponse = Boolean.parseBoolean(getString(itemInfo, "waitResponse", "true"));
@@ -232,12 +233,12 @@ public class Tray {
                 } else if (action.equalsIgnoreCase("runAsync")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
+                    String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                 } else if (action.equalsIgnoreCase("runTerminal")) {
                     String command = getString(itemInfo, "command", "");
                     String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
+                    String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     String waitResponse = getString(itemInfo, "waitResponse", "true");
                     RunwarLogger.LOG.info("This action (runTerminal) cannot wait for response, ignoring -> waitResponse:" + waitResponse);
 
@@ -334,7 +335,7 @@ public class Tray {
     }
 
     private static String getString(JSONObject menu, String key, String defaultValue) {
-        String value = menu.get(key) != null ? menu.get(key).toString() : defaultValue;
+        String value = Utils.getIgnoreCase(menu, key) != null ? Utils.getIgnoreCase(menu, key).toString() : defaultValue;
         return replaceMenuTokens(value);
     }
 
@@ -539,38 +540,11 @@ public class Tray {
         private String workingDirectory;
         private boolean waitResponse;
 
-        String[] shells = new String[]{"/bin/bash", "/usr/bin/bash",
-            "/bin/pfbash", "/usr/bin/pfbash",
-            "/bin/csh", "/usr/bin/csh",
-            "/bin/pfcsh", "/usr/bin/pfcsh",
-            "/bin/jsh", "/usr/bin/jsh",
-            "/bin/ksh", "/usr/bin/ksh",
-            "/bin/pfksh", "/usr/bin/pfksh",
-            "/bin/ksh93", "/usr/bin/ksh93",
-            "/bin/pfksh93", "/usr/bin/pfksh93",
-            "/bin/pfsh", "/usr/bin/pfsh",
-            "/bin/tcsh", "/usr/bin/tcsh",
-            "/bin/pftcsh", "/usr/bin/pftcsh",
-            "/usr/xpg4/bin/sh", "/usr/xp4/bin/pfsh",
-            "/bin/zsh", "/usr/bin/zsh",
-            "/bin/pfzsh", "/usr/bin/pfzsh",
-            "/bin/sh", "/usr/bin/sh",};
-
         RunShellCommandAction(String command, String workingDirectory, Boolean waitResponse, String shell) {
             this.command = command;
             this.workingDirectory = workingDirectory;
             this.waitResponse = waitResponse;
             this.shell = shell;
-        }
-
-        public String AvailableShellPick(String[] shells) {
-            for (String curShell : shells) {
-                if (new File(curShell).canExecute()) {
-                    shell = curShell;
-                    break;
-                }
-            }
-            return shell;
         }
 
         @Override
@@ -585,12 +559,15 @@ public class Tray {
                     builder.command("cmd.exe", "/c", command);
                 } else {
                     if (shell != null && shell.isEmpty()) {
-                        shell = AvailableShellPick(shells);
-                        builder.command(shell, "-c", command);
+                        if (new File(shell).canExecute()) {
+                            builder.command(shell, "-c", command);
+                        } else {
+                            RunwarLogger.LOG.error("Selected shell " + shell + " is not executable");
+                        }
                     } else {
                         try {
                             if (new File(shell).canExecute()) {
-                                shell = AvailableShellPick(shells);
+                                shell = Utils.availableShellPick();
                             }
                         } catch (Exception ex) {
                             RunwarLogger.LOG.error("Selected shell " + shell + " is not executable" + ex.getMessage());

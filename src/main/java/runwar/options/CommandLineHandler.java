@@ -294,7 +294,7 @@ public class CommandLineHandler {
         options.addOption( OptionBuilder
                 .withLongOpt( "default-shell" )
                 .withDescription( "Set the default Shell for arbitrary actions from tray menu" )
-                .hasArg().withArgName(Keys.SHELL).withType(Boolean.class)
+                .hasArg().withArgName(Keys.SHELL)
                 .create(Keys.SHELL) );
         
         options.addOption( OptionBuilder
