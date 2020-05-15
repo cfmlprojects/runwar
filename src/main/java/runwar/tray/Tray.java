@@ -248,17 +248,17 @@ public class Tray {
                     String waitResponse = getString(itemInfo, "waitResponse", "true");
                     RunwarLogger.LOG.info("This action (runTerminal) cannot wait for response, ignoring -> waitResponse:" + waitResponse);
 
-                    if (Utils.isMac()) {
-                        RunwarLogger.LOG.info("Executing on Mac OS X");
-                        command = "osascript -e 'tell app \"Terminal\" to do script \"" + command + "\"'";
-                    } else if (Utils.isWindows()) {
-                        RunwarLogger.LOG.info("Executing on Windows");
-                        command = "start cmd.exe /k \"" + command + "\"";
-                    } else if (Utils.isUnix()) {
-                        RunwarLogger.LOG.info("Executing on *NIX");
-                    } else {
-                        RunwarLogger.LOG.error("Your OS is not currently supported to perform this action");
-                    }
+//                    if (Utils.isMac()) {
+//                        RunwarLogger.LOG.info("Executing on Mac OS X");
+//                        command = "osascript -e 'tell app \"Terminal\" to do script \"" + command + "\"'";
+//                    } else if (Utils.isWindows()) {
+//                        RunwarLogger.LOG.info("Executing on Windows");
+//                        command = "start cmd.exe /k \"" + command + "\"";
+//                    } else if (Utils.isUnix()) {
+//                        RunwarLogger.LOG.info("Executing on *NIX");
+//                    } else {
+//                        RunwarLogger.LOG.error("Your OS is not currently supported to perform this action");
+//                    }
 
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                 } else {
