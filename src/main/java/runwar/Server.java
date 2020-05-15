@@ -4,15 +4,22 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
+import io.undertow.attribute.ExchangeAttribute;
+import io.undertow.predicate.Predicate;
 import io.undertow.predicate.Predicates;
+import io.undertow.predicate.PredicatesHandler;
 import io.undertow.server.DefaultByteBufferPool;
+import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.AccessControlListHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ProxyPeerAddressHandler;
 import io.undertow.server.handlers.SSLHeaderHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
+import io.undertow.server.handlers.builder.PredicatedHandler;
+import io.undertow.server.handlers.builder.PredicatedHandlersParser;
 import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
@@ -57,8 +64,10 @@ import javax.servlet.Servlet;
 
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
+import io.undertow.servlet.attribute.ServletRequestAttribute;
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
+import runwar.undertow.CustomPredicatedHandlersParser;
 import runwar.util.Utils;
 
 public class Server {
@@ -447,9 +456,9 @@ public class Server {
         // configure NIO options and worker
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
         OptionMap.Builder serverXnioOptions = serverOptions.xnioOptions();
-        
+
         logXnioOptions(serverXnioOptions);
-        
+
         if (serverOptions.ioThreads() != 0) {
             LOG.info("IO Threads: " + serverOptions.ioThreads());
             serverBuilder.setIoThreads(serverOptions.ioThreads()); // posterity: ignored when managing worker
@@ -526,7 +535,7 @@ public class Server {
         }
 
         manager.deploy();
-        HttpHandler servletHandler = manager.start();        
+        HttpHandler servletHandler = manager.start();
         LOG.debug("started servlet deployment manager");
 
         if (!System.getProperty("java.version", "").equalsIgnoreCase(originalJavaVersion)) {
@@ -633,6 +642,14 @@ public class Server {
         if (serverOptions.basicAuthEnable()) {
             securityManager.configureAuth(httpHandler, serverBuilder, options); //SECURITY_MANAGER
         } else {
+            String test_predicate="path('/healthcheck') -> rewrite('/tests/runner.cfm')";
+            //PredicatedHandler ph = CustomPredicatedHandlersParser.parseAndGetHandler(test_predicate, _classLoader);
+            List<PredicatedHandler> ph = PredicatedHandlersParser.parse(test_predicate, _classLoader);
+            //here it needs to make a decission, since que only have the predicated
+            //our ph variable has 
+            //ph.getHandler();
+            //ph.getElseHandler();
+            httpHandler = Handlers.predicates(ph, httpHandler);
             serverBuilder.setHandler(httpHandler);
         }
 
@@ -732,7 +749,7 @@ public class Server {
             serverBuilder.setServerOption(option, undertowOptionsMap.get(option));
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     private void logXnioOptions(OptionMap.Builder xnioOptions) {
         OptionMap serverXnioOptionsMap = xnioOptions.getMap();
@@ -787,7 +804,7 @@ public class Server {
                         if (mainThread.isAlive()) {
                             LOG.debug("shutdown hook joining main thread");
                             mainThread.interrupt();
-                            mainThread.join( 3000 );
+                            mainThread.join(3000);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -837,7 +854,7 @@ public class Server {
                                 http2proxy.stop();
                             }
                             if (undertow != null) {
-                            undertow.stop();
+                                undertow.stop();
                             }
                             if (worker != null) {
                                 worker.shutdown();
@@ -870,7 +887,7 @@ public class Server {
                 }
 
                 if (monitor != null) {
-                LOG.debug("Stopping server monitor");
+                    LOG.debug("Stopping server monitor");
                     MonitorThread monitorThread = monitor;
                     monitor = null;
                     monitorThread.stopListening(false);
@@ -1131,7 +1148,6 @@ public class Server {
             return;
         }
     }
-
 
     public ServerOptions getServerOptions() {
         return serverOptions;
