@@ -277,7 +277,7 @@ public class Tray {
             loadItems = (JSONArray) menuObject;
         } else {
             config = (JSONObject) JSONValue.parse(jsonText);
-            loadItems = (JSONArray) config.get("items");
+            loadItems = (JSONArray) Utils.getIgnoreCase(config, "items");
         }
         String title = getString(config, "title", defaultTitle);
         config.put("title", title);
@@ -294,20 +294,20 @@ public class Tray {
 
         for (Object ob : loadItems) {
             JSONObject itemInfo = (JSONObject) ob;
-            if (itemInfo.get("label") == null) {
+            if (Utils.getIgnoreCase(itemInfo, "label") == null) {
                 RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
                 continue;
             }
             String label = getString(itemInfo, "label", "");
             itemInfo.put("label", label);
             if (itemInfo.get("action") != null) {
-                String action = itemInfo.get("action").toString();
+                String action = Utils.getIgnoreCase(itemInfo, "action").toString();
                 if (action.toLowerCase().equals("stopserver") && action.toLowerCase().equals("openbrowser")) {
                     RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                     itemInfo.put("action", null);
                 }
             }
-            if (itemInfo.get("url") != null) {
+            if (Utils.getIgnoreCase(itemInfo, "url") != null) {
                 itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
                 itemInfo.put("url", getString(itemInfo, "url", ""));
             }
