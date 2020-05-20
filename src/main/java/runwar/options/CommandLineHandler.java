@@ -6,13 +6,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-
-//import static java.io.File.*;
-//import static java.util.Arrays.*;
-//
-//import joptsimple.OptionParser;
-//import joptsimple.OptionSet;
-
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -23,7 +16,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 
 import runwar.Server;
-import runwar.logging.RunwarLogger;
 
 import static runwar.options.ServerOptions.Keys;
 import static runwar.logging.RunwarLogger.CONF_LOG;
@@ -291,7 +283,19 @@ public class CommandLineHandler {
                 .withLongOpt( "tray-enable" )
                 .withDescription( "Enable/Disable system tray integration (true)" )
                 .hasArg().withArgName("true|false").withType(Boolean.class)
-                .create(Keys.TRAY) );
+                .create(Keys.TRAY)); 
+                
+        options.addOption( OptionBuilder
+                .withLongOpt( "dock-enable" )
+                .withDescription( "Enable/Disable dock icon for Mac OS X Users (true)" )
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.DOCK) );
+        
+        options.addOption( OptionBuilder
+                .withLongOpt( "default-shell" )
+                .withDescription( "Set the default Shell for arbitrary actions from tray menu" )
+                .hasArg().withArgName(Keys.SHELL)
+                .create(Keys.SHELL) );
         
         options.addOption( OptionBuilder
                 .withLongOpt( "tray-icon" )
@@ -622,40 +626,8 @@ public class CommandLineHandler {
 
     @SuppressWarnings("static-access")
     public static ServerOptions parseArguments(String[] args, ServerOptions serverOptions) {
-//        parser = new OptionParser();
-//        parser.acceptsAll(asList("c",ServerOptions.CONFIG)).withRequiredArg()
-//        .describedAs( "config file" )
-//        .ofType( File.class );
         serverOptions.commandLineArgs(args);
         parser = new PosixParser();
-
-        /*
-        String json = "";
-        Object[] opts2 = options.getOptions().toArray();
-        Option[] opts = new Option[opts2.length];
-        for (int i = 0; i < opts2.length; i++) {
-            opts[i] = (Option) opts2[i];
-        }
-        
-        Arrays.sort(opts, new Comparator<Option>() {
-            public int compare(Option o1, Option o2) {
-                String name = o2.getLongOpt() != null ? o2.getLongOpt() : "";
-                String name2 = o1.getLongOpt() != null ? o1.getLongOpt() : "";
-                return name2.compareTo(name);
-            }
-        });
-        for (int i = 0; i < opts.length; i++) {
-            Option op = (Option) opts[i];
-            String argName, name, description, type, alias = "";
-            name = op.getLongOpt() != null ? op.getLongOpt() : "";
-            description = op.getDescription() != null ? op.getDescription().trim() : "";
-            type = op.getType() != null ? op.getType().toString() : "";
-            alias = op.getOpt() != null ? op.getOpt() : "";
-            argName = op.getArgName() != null ? op.getArgName() : "";
-            json += String.format("\"%s\": { \"description\": \"%s\", \"type\": \"%s\", \"alias\": \"%s\", \"arg\":\"%s\" },\n",name,description,type,alias,argName);
-        }
-        System.out.println("{" + json + "}");
-         */
         try {
             CommandLine line = parser.parse( getOptions(), args );
             // parse the command line arguments
@@ -897,6 +869,9 @@ public class CommandLineHandler {
             if (hasOptionValue(line, Keys.TRAY)) {
                 serverOptions.trayEnable(Boolean.valueOf(line.getOptionValue(Keys.TRAY)));
             }
+            if (hasOptionValue(line, Keys.DOCK)) {
+                serverOptions.dockEnable(Boolean.valueOf(line.getOptionValue(Keys.DOCK)));
+            }
             if (hasOptionValue(line, Keys.ICON)) {
                 serverOptions.iconImage(line.getOptionValue(Keys.ICON));
             }
@@ -1094,7 +1069,6 @@ public class CommandLineHandler {
     static void printUsage(String message, int exitCode) {
         PrintWriter pw = new PrintWriter(System.out);
         HelpFormatter formatter = new HelpFormatter();
-        //formatter.printHelp( SYNTAX, options,false);
         if(exitCode == 0) {
             pw.println("USAGE   " + SYNTAX);
             pw.println(HEADER + '\n');
@@ -1143,7 +1117,6 @@ public class CommandLineHandler {
             }
             pw.println(FOOTER);
             pw.flush();
-//            formatter.printHelp(80, SYNTAX, message + '\n' + HEADER, options, FOOTER, false);
         } else {
             System.out.println("USAGE:  " + SYNTAX + '\n' + message);
         }

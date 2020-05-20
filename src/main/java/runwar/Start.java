@@ -102,7 +102,6 @@ public class Start {
                                 balanceHosts.remove(balanceHost);
                             }
                             String response = "";
-//                            response += URLDecoder.decode(exchange.getQueryString(),"UTF-8");
                             for(String balanceHost : balanceHosts) {
                                 String[] schemeHostAndPort = balanceHost.split(":");
                                 String host = schemeHostAndPort[1].replaceAll("^//", "");

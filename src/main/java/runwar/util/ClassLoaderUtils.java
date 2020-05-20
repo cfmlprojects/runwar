@@ -1,17 +1,12 @@
 package runwar.util;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 /*
  * Copyright 2002-2005 the original author or authors.

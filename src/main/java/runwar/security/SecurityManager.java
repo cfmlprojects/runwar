@@ -44,7 +44,7 @@ public class SecurityManager implements IdentityManager {
 
     private static final Charset UTF_8 = StandardCharsets.UTF_8;
     private final Map<String, UserAccount> users = new HashMap<>();
-
+    
     public void configureAuth(DeploymentInfo servletBuilder, ServerOptions serverOptions) {
         String realm = serverOptions.serverName() + " Realm";
         RunwarLogger.SECURITY_LOGGER.debug("Enabling Basic Auth: " + realm);

@@ -37,7 +37,6 @@ public class RequestDebugHandler implements HttpHandler {
         sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING)).append("\n");
         sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
         sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE)).append("\n");
-        // sb.append(" contextPath=" + exchange.contextPath());
         isAuthenticatedAppend(sb, sc);
 
         Map<String, Cookie> cookies = exchange.getRequestCookies();
@@ -69,16 +68,13 @@ public class RequestDebugHandler implements HttpHandler {
             }
             sb.append("\n");
         }
-        // sb.append(" pathInfo=" + exchange.getPathInfo());
         sb.append("          protocol=").append(exchange.getProtocol()).append("\n");
         sb.append("       queryString=").append(exchange.getQueryString()).append("\n");
         sb.append("        remoteAddr=").append(exchange.getSourceAddress()).append("\n");
         sb.append("        remoteHost=").append(exchange.getSourceAddress().getHostName()).append("\n");
-        // sb.append("requestedSessionId=" + exchange.getRequestedSessionId());
         sb.append("            scheme=").append(exchange.getRequestScheme()).append("\n");
         sb.append("              host=").append(exchange.getRequestHeaders().getFirst(Headers.HOST)).append("\n");
         sb.append("        serverPort=").append(exchange.getDestinationAddress().getPort()).append("\n");
-        // sb.append(" servletPath=" + exchange.getServletPath());
         sb.append("          isSecure=").append(exchange.isSecure()).append("\n");
 
         exchange.addExchangeCompleteListener((exchange1, nextListener) -> {

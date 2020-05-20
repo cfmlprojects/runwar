@@ -15,10 +15,6 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 import com.jcabi.log.MulticolorLayout;
 
-//import org.jboss.logmanager.LogContext;
-//import org.jboss.logmanager.LogManager;
-//import org.jboss.logmanager.PropertyConfigurator;
-
 public class LoggerFactory {
 
     private static volatile boolean initialized = false;
@@ -91,13 +87,9 @@ public class LoggerFactory {
         RUNWAR_BACKGROUND.setAdditivity(false);
         
         if (serverOptions.urlRewriteLog() != null) {
-            // errLogFile = serverOptions.logDir().getPath() + '/' +
-            // serverOptions.logFileName() + ".err.txt";
             rewriteLogAppender = new RollingFileAppender();
             rewriteLogAppender.setName("URLRewriteFileLogger");
             rewriteLogAppender.setFile(serverOptions.urlRewriteLog().getAbsolutePath());
-            // rewriteLogAppender.setLayout(new
-            // PatternLayout(serverOptions.logPattern()));
             rewriteLogAppender.setLayout(new PatternLayout("[%-5p] %c{2}: %m%n"));
             rewriteLogAppender.setThreshold(Level.toLevel(logLevel));
             rewriteLogAppender.setAppend(true);
@@ -142,8 +134,6 @@ public class LoggerFactory {
         }
 
         if (serverOptions.hasLogDir()) {
-            // errLogFile = serverOptions.logDir().getPath() + '/' +
-            // serverOptions.logFileName() + ".err.txt";
             logFile = serverOptions.logDir().getPath() + '/' + serverOptions.logFileName() + ".out.txt";
             RollingFileAppender fa = new RollingFileAppender();
             fa.setName("FileLogger");

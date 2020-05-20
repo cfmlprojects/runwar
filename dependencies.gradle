@@ -84,8 +84,10 @@ dependencies {
     // java 9+ compat
     compile 'com.sun.activation:javax.activation:1.2.0'
     //compile 'org.cfmlprojects:javashim:1.0.1'
-    // daemon scripts
     //compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
+    compile group: 'org.graylog.repackaged', name: 'os-platform-finder', version: '1.2.3'
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
+
 
     // configuration
 //    compile group: 'net.minidev', name: 'json-smart', version: '2.3'
@@ -127,7 +129,7 @@ dependencies {
         implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
 //        implementation 'javax.jws:jsr181-api:1.0-MR1'
     }
-    runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
+    //runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
     implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
 
     //

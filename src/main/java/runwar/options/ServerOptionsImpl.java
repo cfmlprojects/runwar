@@ -1,18 +1,17 @@
 package runwar.options;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
 import io.undertow.UndertowOptions;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
-import org.xnio.Option;
 import org.xnio.OptionMap;
 import org.xnio.Options;
 import runwar.Server;
 import runwar.Server.Mode;
-import runwar.logging.RunwarLogger;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -24,56 +23,111 @@ import java.util.stream.Stream;
 import static runwar.util.Reflection.setOptionMapValue;
 
 public class ServerOptionsImpl implements ServerOptions {
+    @Expose
     private String serverName = null, processName = "RunWAR", logLevel = "INFO";
+    @Expose
     private String host = "127.0.0.1", contextPath = "/";
+    @Expose
     private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779, http2ProxySSLPort = 1444;
+    @Expose
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
+    @Expose
     private boolean debug = false, isBackground = true, logAccessEnable = false, logRequestsEnable = false, openbrowser = false, startedFromCommandline = false;
+    @Expose
     private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server", logRequestBaseFileName="requests", logAccessBaseFileName="access", logSuffix="txt", libDirs = null;
+    @Expose
     private int launchTimeout = 50 * 1000; // 50 secs
+    @Expose
     private URL jarURL = null;
+    @Expose
     private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null;
+    @Expose
     private String iconImage = null;
+    @Expose
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
+    @Expose
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
+    @Expose
+    private String defaultShell = "";
+    @Expose
     private boolean trayEnable = true;
+    @Expose
+    private boolean dockEnable = true; // for mac users
+    @Expose
     private boolean directoryListingEnable = true;
+    @Expose
     private boolean directoryListingRefreshEnable = false;
+    @Expose
     private boolean cacheEnable = false;
+    @Expose
     private String[] welcomeFiles;
+    @Expose
     private File sslCertificate, sslKey, configFile;
+    @Expose
     private char[] sslKeyPass = null;
+    @Expose
     private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
+    @Expose
     private String action = "start";
+    @Expose
     private String cfengineName = "";
+    @Expose
     private boolean customHTTPStatusEnable = true;
+    @Expose
     private boolean gzipEnable = false;
+    @Expose
     private Long transferMinSize = (long) 100;
+    @Expose
     private boolean mariadb4jEnable = false;
+    @Expose
     private int mariadb4jPort = 13306;
+    @Expose
     private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
+    @Expose
     private List<String> jvmArgs = null;
+    @Expose
     private Map<Integer, String> errorPages = null;
+    @Expose
     private boolean servletRestEnable = false;
+    @Expose
     private String[] servletRestMappings = { "/rest" };
+    @Expose
     private boolean filterPathInfoEnable = true;
+    @Expose
     private String[] sslAddCerts = null;
+    @Expose
     private String[] cmdlineArgs = null;
+    @Expose
     private String[] loadBalance = null;
+    @Expose
     private static Map<String, String> userPasswordList;
+    @Expose
     private boolean enableBasicAuth = false;
+    @Expose
     private boolean directBuffers = true;
+    @Expose
     int bufferSize, ioThreads, workerThreads = 0;
+    @Expose
     private boolean proxyPeerAddressEnable = false;
+    @Expose
     private boolean http2enable = false;
+    @Expose
     private boolean secureCookies = false, cookieHttpOnly = false, cookieSecure = false;
+    @Expose
     private JSONArray trayConfigJSON;
+    @Expose
     private boolean bufferEnable = false;
+    @Expose
     private boolean sslEccDisable = true;
+    @Expose
     private boolean sslSelfSign = false;
+    @Expose
     private boolean service = false;
+    @Expose
     private static String logPattern = "[%-5p] %c: %m%n";
+    @Expose
     private final Map<String, String> aliases = new HashMap<>();
+    @Expose
     private Set<String> contentDirectories = new HashSet<>();
     private OptionMap.Builder serverXnioOptions = OptionMap.builder()
             .set(Options.WORKER_IO_THREADS, 8)
@@ -83,6 +137,7 @@ public class ServerOptionsImpl implements ServerOptions {
             .set(Options.WORKER_TASK_MAX_THREADS, 30)
             .set(Options.TCP_NODELAY, true)
             .set(Options.CORK, true);
+    @Expose
     private boolean testing = false;
     private OptionMap.Builder undertowOptions = OptionMap.builder();
 
@@ -93,23 +148,17 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
 
-    /*public String toJson(){
-        return runwar.rock.json.ServerOptionsJSON.template(this).render().toString();
-    }*/
+    public String toJson(){
+        final Gson gson=new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
+            .excludeFieldsWithModifiers(Modifier.TRANSIENT).create();
+        return gson.toJson(this);
+    }
 
     public String toJson(Set<String> set){
         JSONArray jsonArray = new JSONArray();
         jsonArray.addAll(set);
         return jsonArray.toJSONString();
     }
-
-    /*public void toJson(Path path){
-        try(FileWriter fw = new FileWriter(path.toFile())){
-            fw.write(toJson());
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-    }*/
 
     public String toJson(Map<?,?> map){
         final Map<String,String> finalMap = new HashMap<>();
@@ -1096,6 +1145,36 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public ServerOptions trayEnable(boolean enable) {
         this.trayEnable = enable;
+        return this;
+    }
+
+    
+    @Override
+    public String defaultShell() {
+        return defaultShell;
+    }
+
+    public ServerOptions defaultShell(String defaultShell) {
+        this.defaultShell = defaultShell;
+        return this;
+    }
+    
+    
+    
+     /** 
+     * @see runwar.options.ServerOptions#dockEnable()
+     */
+    @Override
+    public boolean dockEnable() {
+        return dockEnable;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#dockEnable(boolean)
+     */
+    @Override
+    public ServerOptions dockEnable(boolean enable) {
+        this.dockEnable = enable;
         return this;
     }
 

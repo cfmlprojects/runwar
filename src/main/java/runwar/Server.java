@@ -25,7 +25,6 @@ import io.undertow.servlet.api.ServletSessionConfig;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
-//import javashim.JavaShimClassLoader;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import org.xnio.*;
@@ -64,7 +63,7 @@ import runwar.util.Utils;
 
 public class Server {
 
-    public  static String processName = "Starting Server...";
+    public static String processName = "Starting Server...";
     private volatile static ServerOptionsImpl serverOptions;
     private static MariaDB4jManager mariadb4jManager;
     private DeploymentManager manager;
@@ -176,7 +175,7 @@ public class Server {
     }
 
     private synchronized void requisitionPorts() {
-        LOG.debug("HOST to be bound:"+serverOptions.host());
+        LOG.debug("HOST to be bound:" + serverOptions.host());
         ports = new PortRequisitioner(serverOptions.host());
         ports.add("http", serverOptions.httpPort());
         ports.add("stop", serverOptions.stopPort());
@@ -227,28 +226,23 @@ public class Server {
         if (serverOptions.sslSelfSign()) {
             configurer.generateSelfSignedCertificate();
         }
-        /*if(serverOptions.service()){
-            new Service(serverOptions).generateServiceScripts();
-            System.exit(0);
-        }*/
 
         LOG.info("Starting RunWAR " + getVersion());
-        LOG.debug("Starting Server: "+options.host());;
+        LOG.debug("Starting Server: " + options.host());;
         LaunchUtil.assertMinimumJavaVersion("1.8");
         requisitionPorts();
 
         Builder serverBuilder = Undertow.builder();
         setUndertowOptions(serverBuilder);
 
-        LOG.debug("SERVER BUILDER:"+serverOptions.httpEnable());
+        LOG.debug("SERVER BUILDER:" + serverOptions.httpEnable());
         if (serverOptions.httpEnable()) {
-            LOG.debug("Server Builder - PORT:"+ports.get("http").socket+" HOST:"+host);
+            LOG.debug("Server Builder - PORT:" + ports.get("http").socket + " HOST:" + host);
             serverBuilder.addHttpListener(ports.get("http").socket, host);
-        }else{
-        LOG.info("HTTP Enabled:"+serverOptions.httpEnable());
+        } else {
+            LOG.info("HTTP Enabled:" + serverOptions.httpEnable());
         }
 
-        
         if (serverOptions.http2Enable()) {
             LOG.info("Enabling HTTP2 protocol");
             if (!serverOptions.sslEnable()) {
@@ -257,8 +251,8 @@ public class Server {
             }
             serverBuilder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
             //serverBuilder.setSocketOption(Options.REUSE_ADDRESSES, true);
-        }else{
-            LOG.info("HTTP2 Enabled:"+serverOptions.http2Enable());
+        } else {
+            LOG.info("HTTP2 Enabled:" + serverOptions.http2Enable());
         }
 
         if (serverOptions.sslEnable()) {
@@ -277,7 +271,7 @@ public class Server {
                     File keyFile = serverOptions.sslKey();
                     char[] keypass = serverOptions.sslKeyPass();
                     String[] sslAddCerts = serverOptions.sslAddCerts();
-                    
+
                     sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{serverOptions.host()});
                     if (keypass != null) {
                         Arrays.fill(keypass, '*');
@@ -291,8 +285,8 @@ public class Server {
                 e.printStackTrace();
                 System.exit(1);
             }
-        }else{
-            LOG.info("HTTP sslEnable:"+serverOptions.sslEnable());
+        } else {
+            LOG.info("HTTP sslEnable:" + serverOptions.sslEnable());
         }
 
         if (serverOptions.ajpEnable()) {
@@ -302,8 +296,8 @@ public class Server {
                 // if no options is set, default to the large packet size
                 serverBuilder.setServerOption(UndertowOptions.MAX_AJP_PACKET_SIZE, 65536);
             }
-        }else{
-            LOG.info("HTTP ajpEnable:"+serverOptions.ajpEnable());
+        } else {
+            LOG.info("HTTP ajpEnable:" + serverOptions.ajpEnable());
         }
 
         securityManager = new SecurityManager();
@@ -328,9 +322,9 @@ public class Server {
                 serverOptions.contentDirs(warFile.getAbsolutePath());
             }
             serverOptions.warFile(warFile);
-        }else{
-            LOG.info("HTTP warFile exists:"+warFile.exists());
-            LOG.info("HTTP warFile isDirectory:"+warFile.isDirectory());
+        } else {
+            LOG.info("HTTP warFile exists:" + warFile.exists());
+            LOG.info("HTTP warFile isDirectory:" + warFile.isDirectory());
         }
         if (!warFile.exists()) {
             throw new RuntimeException("war does not exist: " + warFile.getAbsolutePath());
@@ -344,8 +338,8 @@ public class Server {
             // just in case
             Thread.sleep(200);
             System.exit(0);
-        }else{
-            LOG.info("HTTP background:"+serverOptions.background());
+        } else {
+            LOG.info("HTTP background:" + serverOptions.background());
         }
 
         File webinf = serverOptions.webInfDir();
@@ -410,19 +404,23 @@ public class Server {
         }
 
         if (osName != null && osName.startsWith("Mac OS X")) {
-            Image dockIcon = Tray.getIconImage(dockIconPath);
-            System.setProperty("com.apple.mrj.application.apple.menu.about.name", processName);
-            System.setProperty("com.apple.mrj.application.growbox.intrudes", "false");
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
-            System.setProperty("-Xdock:name", processName);
-            try {
-                Class<?> appClass = Class.forName("com.apple.eawt.Application");
-                Method getAppMethod = appClass.getMethod("getApplication");
-                Object appInstance = getAppMethod.invoke(null);
-                Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
-                dockMethod.invoke(appInstance, dockIcon);
-            } catch (Exception e) {
-                LOG.warn("error setting dock icon image", e);
+            if (serverOptions.dockEnable()) {
+                Image dockIcon = Tray.getIconImage(dockIconPath);
+                System.setProperty("com.apple.mrj.application.apple.menu.about.name", processName);
+                System.setProperty("com.apple.mrj.application.growbox.intrudes", "false");
+                System.setProperty("apple.laf.useScreenMenuBar", "true");
+                System.setProperty("-Xdock:name", processName);
+                try {
+                    Class<?> appClass = Class.forName("com.apple.eawt.Application");
+                    Method getAppMethod = appClass.getMethod("getApplication");
+                    Object appInstance = getAppMethod.invoke(null);
+                    Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
+                    dockMethod.invoke(appInstance, dockIcon);
+                } catch (Exception e) {
+                    LOG.warn("error setting dock icon image", e);
+                }
+            } else {
+                System.setProperty("apple.awt.UIElement", "true");
             }
         }
         LOG.info(bar);
@@ -449,6 +447,9 @@ public class Server {
         // configure NIO options and worker
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
         OptionMap.Builder serverXnioOptions = serverOptions.xnioOptions();
+        
+        logXnioOptions(serverXnioOptions);
+        
         if (serverOptions.ioThreads() != 0) {
             LOG.info("IO Threads: " + serverOptions.ioThreads());
             serverBuilder.setIoThreads(serverOptions.ioThreads()); // posterity: ignored when managing worker
@@ -502,7 +503,7 @@ public class Server {
 
         configurer.configureServerResourceHandler(servletBuilder);
         if (serverOptions.basicAuthEnable()) {
-            securityManager.configureAuth(servletBuilder, serverOptions);
+            securityManager.configureAuth(servletBuilder, serverOptions);//SECURITY_MANAGER
         }
 
         configurer.configureServlet(servletBuilder);
@@ -525,22 +526,13 @@ public class Server {
         }
 
         manager.deploy();
-        HttpHandler servletHandler = manager.start();
+        HttpHandler servletHandler = manager.start();        
         LOG.debug("started servlet deployment manager");
 
         if (!System.getProperty("java.version", "").equalsIgnoreCase(originalJavaVersion)) {
             System.setProperty("java.version", originalJavaVersion);
         }
 
-        /*
-        List welcomePages =  manager.getDeployment().getDeploymentInfo().getWelcomePages();
-        CFMLResourceHandler resourceHandler = new CFMLResourceHandler(servletBuilder.getResourceManager(), servletHandler, welcomePages);
-        resourceHandler.directoryListingEnable(directoryListingEnable);
-        PathHandler pathHandler = Handlers.path(Handlers.redirect(contextPath))
-                .addPrefixPath(contextPath, resourceHandler);
-        HttpHandler errPageHandler = new SimpleErrorPageHandler(pathHandler);
-        Builder serverBuilder = Undertow.builder().addHttpListener(portNumber, host).setHandler(errPageHandler);
-         */
         if (serverOptions.bufferSize() != 0) {
             LOG.info("Buffer Size: " + serverOptions.bufferSize());
             serverBuilder.setBufferSize(serverOptions.bufferSize());
@@ -556,15 +548,6 @@ public class Server {
 
             @Override
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
-                /*
-                final SessionManager sessionManager = exchange.getAttachment(SessionManager.ATTACHMENT_KEY);
-                final SessionConfig sessionconfig = exchange.getAttachment(SessionConfig.ATTACHMENT_KEY);
-                Session session = sessionManager.getSession(exchange, sessionconfig);
-                if (session == null) {
-                    LOG.error("SESSION WAS NULL");
-                    session = sessionManager.createSession(exchange, sessionconfig);
-                }
-                 */
                 if (!exchange.getResponseHeaders().contains(HTTPONLY) && addHttpOnlyHeader) {
                     exchange.getResponseHeaders().add(HTTPONLY, "true");
                 }
@@ -572,11 +555,7 @@ public class Server {
                     exchange.getResponseHeaders().add(SECURE, "true");
                 }
 
-                /*   if (fusionReactor.hasFusionReactor()) {
-                    fusionReactor.setFusionReactorInfo("myTransaction", "myTransacitonApplication");
-                }*/
                 CONTEXT_LOG.debug("requested: '" + fullExchangePath(exchange) + "'");
-                // sessionConfig.setSessionId(exchange, ""); // TODO: see if this suppresses jsessionid
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
                 }
@@ -652,7 +631,7 @@ public class Server {
         }
 
         if (serverOptions.basicAuthEnable()) {
-            securityManager.configureAuth(httpHandler, serverBuilder, options);
+            securityManager.configureAuth(httpHandler, serverBuilder, options); //SECURITY_MANAGER
         } else {
             serverBuilder.setHandler(httpHandler);
         }
@@ -709,17 +688,6 @@ public class Server {
             LaunchUtil.displayMessage(serverOptions.processName(), "info", msg);
         }
         setServerState(ServerState.STARTED);
-//        ConfigWebAdmin admin = new ConfigWebAdmin(lucee.runtime.engine.ThreadLocalPageContext.getConfig(), null);
-//        admin._updateMapping(virtual, physical, archive, primary, inspect, toplevel);
-//        admin._store();
-
-//        Class<?> appClass = _classLoader.loadClass("lucee.loader.engine.CFMLEngineFactory");
-//        Method getAppMethod = appClass.getMethod("getInstance");
-//        Object appInstance = getAppMethod.invoke(null);
-//        Object webs = appInstance.getClass().getMethod("getCFMLEngineFactory").invoke(appInstance, null);
-//        Object ef = webs.getClass().getMethod("getInstance").invoke(webs, null);
-//
-//        System.out.println(appInstance.toString());
         if (serverOptions.mariaDB4jEnable()) {
             LOG.info("MariaDB support enable");
             mariadb4jManager = new MariaDB4jManager(_classLoader);
@@ -764,6 +732,14 @@ public class Server {
             serverBuilder.setServerOption(option, undertowOptionsMap.get(option));
         }
     }
+    
+    @SuppressWarnings("unchecked")
+    private void logXnioOptions(OptionMap.Builder xnioOptions) {
+        OptionMap serverXnioOptionsMap = xnioOptions.getMap();
+        for (Option option : serverXnioOptionsMap) {
+            LOG.info("XNIO-Option " + option.getName() + ':' + serverXnioOptionsMap.get(option));
+        }
+    }
 
     PortRequisitioner getPorts() {
         return ports;
@@ -785,7 +761,7 @@ public class Server {
         }
     }
 
-    private synchronized void unhookSystemStreams() {
+    private void unhookSystemStreams() {
         LOG.trace("Unhooking system streams logger");
         if (originalSystemOut != null) {
             System.setOut(originalSystemOut);
@@ -796,27 +772,27 @@ public class Server {
     }
 
     private void addShutDownHook() {
-        if(shutDownThread == null) {
+        if (shutDownThread == null) {
             shutDownThread = new Thread() {
                 public void run() {
-                LOG.debug("Running shutdown hook");
-                try {
-                    if (!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
-                        LOG.debug("shutdown hook:stopServer()");
-                        stopServer();
-                    }
+                    LOG.debug("Running shutdown hook");
+                    try {
+                        if (!getServerState().equals(ServerState.STOPPING) && !getServerState().equals(ServerState.STOPPED)) {
+                            LOG.debug("shutdown hook:stopServer()");
+                            stopServer();
+                        }
 //                    if(tempWarDir != null) {
 //                        LaunchUtil.deleteRecursive(tempWarDir);
 //                    }
-                    if (mainThread.isAlive()) {
-                        LOG.debug("shutdown hook joining main thread");
-                        mainThread.interrupt();
-                        mainThread.join();
+                        if (mainThread.isAlive()) {
+                            LOG.debug("shutdown hook joining main thread");
+                            mainThread.interrupt();
+                            mainThread.join( 3000 );
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                LOG.debug("Shutdown hook finished");
+                    LOG.debug("Shutdown hook finished");
                 }
             };
             Runtime.getRuntime().addShutdownHook(shutDownThread);
@@ -824,15 +800,12 @@ public class Server {
         }
     }
 
-    public synchronized void stopServer() {
+    public void stopServer() {
         int exitCode = 0;
         if (shutDownThread != null && Thread.currentThread() != shutDownThread) {
             LOG.debug("Removed shutdown hook");
             Runtime.getRuntime().removeShutdownHook(shutDownThread);
         }
-//        if (monitor != null) {
-//            monitor.removeShutDownHook();
-//        }
         switch (getServerState()) {
             case ServerState.STOPPING:
                 LOG.warn("Stop server called, however the server is already stopping.");
@@ -863,7 +836,9 @@ public class Server {
                             if (http2proxy != null) {
                                 http2proxy.stop();
                             }
+                            if (undertow != null) {
                             undertow.stop();
+                            }
                             if (worker != null) {
                                 worker.shutdown();
                                 logWorker.shutdown();
@@ -894,14 +869,12 @@ public class Server {
                     LoggerFactory.listLoggers();
                 }
 
-                LOG.debug("Stopping server monitor");
                 if (monitor != null) {
+                LOG.debug("Stopping server monitor");
                     MonitorThread monitorThread = monitor;
                     monitor = null;
                     monitorThread.stopListening(false);
                     monitorThread.interrupt();
-                } else {
-                    LOG.error("server monitor was null!");
                 }
 
                 if (exitCode != 0) {
@@ -1113,13 +1086,14 @@ public class Server {
                     sock.close();
                 } catch (IOException e) {
                     // don't care
-        }
+                }
             }
         }
         return false;
     }
 
     class OpenBrowserTask extends TimerTask {
+
         public void run() {
             int portNumber = ports.get("http").socket;
             String protocol = "http";
@@ -1163,18 +1137,8 @@ public class Server {
         return serverOptions;
     }
 
-    private synchronized void setServerState(String state) {
+    private void setServerState(String state) {
         serverState = state;
-        if (statusFile != null) {
-            try {
-                PrintWriter writer;
-                writer = new PrintWriter(statusFile);
-                writer.print(state);
-                writer.close();
-            } catch (FileNotFoundException e) {
-                LOG.error(e.getMessage());
-            }
-        }
     }
 
     public static String getProcessName() {
@@ -1190,6 +1154,7 @@ public class Server {
     }
 
     public static class ServerState {
+
         public static final String STARTING = "STARTING";
         public static final String STARTED = "STARTED";
         public static final String STARTING_BACKGROUND = "STARTING_BACKGROUND";
@@ -1200,11 +1165,12 @@ public class Server {
     }
 
     public static class Mode {
+
         public static final String WAR = "war";
         public static final String SERVLET = "servlet";
         public static final String DEFAULT = "default";
     }
-    
+
     private class MonitorThread extends Thread {
 
         private char[] stoppassword;
@@ -1232,7 +1198,7 @@ public class Server {
                 LOG.info(bar);
                 while (listening) {
                     LOG.debug("StopMonitor listening for password");
-                    if(serverState == ServerState.STOPPED || serverState == ServerState.STOPPING){
+                    if (serverState == ServerState.STOPPED || serverState == ServerState.STOPPING) {
                         listening = false;
                     }
                     final Socket clientSocket = serverSocket.accept();
@@ -1250,12 +1216,12 @@ public class Server {
                         if (i == stoppassword.length) {
                             listening = false;
                         } else {
-                            if(listening) {
+                            if (listening) {
                                 LOG.warn("Incorrect password used when trying to stop server.");
                             } else {
                                 LOG.debug("stopped listening for stop password.");
                             }
-                                
+
                         }
                     } catch (java.net.SocketException e) {
                         // reset
@@ -1283,9 +1249,9 @@ public class Server {
                     if (mainThread.isAlive()) {
                         LOG.debug("monitor joining main thread");
                         mainThread.interrupt();
-                        try{
+                        try {
                             mainThread.join();
-                        } catch (InterruptedException ie){
+                        } catch (InterruptedException ie) {
                             // expected
                         }
                     }
@@ -1294,12 +1260,12 @@ public class Server {
                     e.printStackTrace();
                 }
             }
-            if(systemExitOnStop)
+            if (systemExitOnStop) {
                 System.exit(exitCode); // this will call our shutdown hook
-//            Thread.currentThread().interrupt();
+            }
             return;
         }
-        
+
         public void stopListening(boolean systemExitOnStop) {
             this.systemExitOnStop = systemExitOnStop;
             listening = false;
@@ -1317,7 +1283,7 @@ public class Server {
             }
 
         }
-        
+
     }
 
 }

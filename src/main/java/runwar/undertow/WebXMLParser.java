@@ -281,7 +281,6 @@ public class WebXMLParser {
     private static String getRequired(Context ctx, String param) {
         final String result = $(ctx).find(param).text();
         if(result == null) {
-            // ((RunwarLogger) CONF_LOG).missingRewuiredParam(string);
             String msg = "Missing required parameter: '" + param + "'";
             CONF_LOG.error(msg);
             throw new RuntimeException(msg);
@@ -299,8 +298,6 @@ public class WebXMLParser {
 
     private static void trace(String string, Object elements) {
         CONF_LOG.tracef(string, elements);
-        // System.out.printf(string,elements);
-        // System.out.println();
     }
     
 }

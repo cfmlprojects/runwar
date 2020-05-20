@@ -1,8 +1,6 @@
 package runwar.logging;
 
 import java.io.PrintStream;
-//import org.apache.log4j.Level;
-//import org.apache.log4j.Logger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 
