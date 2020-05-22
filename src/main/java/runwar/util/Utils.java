@@ -17,7 +17,7 @@ import net.minidev.json.JSONObject;
  */
 public class Utils {
 
-    private static String OS = System.getProperty("os.name").toLowerCase();
+    private static String OS = System.getProperty("os.name");
 
     public static String replaceHost(String openbrowserURL, String oldHost, String newHost) {
         String url = openbrowserURL;
@@ -43,7 +43,7 @@ public class Utils {
 
     public static boolean isMac() {
 
-        return (OS.indexOf("mac") >= 0);
+        return (OS.toLowerCase().indexOf("mac") >= 0);
 
     }
 
