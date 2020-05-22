@@ -156,7 +156,6 @@ public class Tray {
     }
 
     public void addMenuItems(JSONArray items, Menu menu, Server server) {
-        System.setProperty("os.name", System.getProperty("os.name").toLowerCase());
         for (Object ob : items) {
             JSONObject itemInfo = (JSONObject) ob;
             InputStream is = null;

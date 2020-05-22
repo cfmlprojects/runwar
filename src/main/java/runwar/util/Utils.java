@@ -37,7 +37,7 @@ public class Utils {
 
     public static boolean isWindows() {
 
-        return (OS.indexOf("win") >= 0);
+        return (OS.toLowerCase().indexOf("win") >= 0);
 
     }
 
