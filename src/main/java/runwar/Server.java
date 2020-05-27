@@ -642,7 +642,9 @@ public class Server {
         if (serverOptions.basicAuthEnable()) {
             securityManager.configureAuth(httpHandler, serverBuilder, options); //SECURITY_MANAGER
         } else {
-            String test_predicate="path('/healthcheck') -> rewrite('/tests/runner.cfm')";
+            String test_predicate="path('/healthcheck') -> rewrite('/tests/runner.cfm')\n"+
+                    "path(/skipallrules) and true -> done\n"+
+                    "";
             //PredicatedHandler ph = CustomPredicatedHandlersParser.parseAndGetHandler(test_predicate, _classLoader);
             List<PredicatedHandler> ph = PredicatedHandlersParser.parse(test_predicate, _classLoader);
             //here it needs to make a decission, since que only have the predicated
