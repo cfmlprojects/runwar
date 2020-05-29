@@ -263,7 +263,12 @@ public class Server {
                 LOG.debug("disabling com.sun.net.ssl.enableECC");
                 System.setProperty("com.sun.net.ssl.enableECC", "false");
             } else {
-                LOG.debug("NOT disabling com.sun.net.ssl.enableECC");
+                if (cfengine.equals("adobe") || cfengine.equals("")){
+                    LOG.debug("NOT disabling com.sun.net.ssl.enableECC");
+                }else{
+                    LOG.debug("It's not possible to set enableECC -> true when using Lucee Server");
+                    System.setProperty("com.sun.net.ssl.enableECC", "false");
+                }
             }
             try {
                 if (serverOptions.sslCertificate() != null) {
