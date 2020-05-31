@@ -65,6 +65,7 @@ import javax.servlet.Servlet;
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
 import io.undertow.servlet.attribute.ServletRequestAttribute;
+import static runwar.LaunchUtil.getResourceAsString;
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
 import runwar.undertow.CustomPredicatedHandlersParser;
@@ -642,10 +643,22 @@ public class Server {
         if (serverOptions.basicAuthEnable()) {
             securityManager.configureAuth(httpHandler, serverBuilder, options); //SECURITY_MANAGER
         } else {
-            String test_predicate="path('/healthcheck') -> rewrite('/tests/runner.cfm')\n"+
-                    "path(/skipallrules) and true -> done\n";
+            File predicates = new File(serverOptions.workingDir(), "predicates");
+            BufferedReader br = new BufferedReader(
+                    new FileReader(predicates)
+            );
+
+            String st;
+            String test_predicate="";
+            LOG.error("predicates in file");
+            while ((st = br.readLine()) != null) {
+                test_predicate = st+"\n";
+                LOG.error("predicate::::"+test_predicate);
+            }
+            
             //PredicatedHandler ph = CustomPredicatedHandlersParser.parseAndGetHandler(test_predicate, _classLoader);
             List<PredicatedHandler> ph = PredicatedHandlersParser.parse(test_predicate, _classLoader);
+            LOG.error("predicates to be used::::"+ph.size());
             //here it needs to make a decission, since que only have the predicated
             //our ph variable has 
             //ph.getHandler();
