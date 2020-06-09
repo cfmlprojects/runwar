@@ -208,7 +208,11 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new ExitAction(server));
                     menuItem.setShortcut('s');
                 } else if (action.equalsIgnoreCase("restartserver")) {
-                    menuItem = new MenuItem(label, is, new RestartAction(server));
+                    //menuItem = new MenuItem(label, is, new RestartAction(server));
+                    String command = "box server restart";
+                    String workingDirectory = server.getServerOptions().warUriString();
+                    String shell = Utils.availableShellPick();
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                     menuItem.setShortcut('r');
                 } else if (action.equalsIgnoreCase("getversion")) {
                     menuItem = new MenuItem("Version: " + Server.getVersion(), is, new GetVersionAction());
