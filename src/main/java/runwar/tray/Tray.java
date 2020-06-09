@@ -223,7 +223,7 @@ public class Tray {
                     menuItem.setShortcut('b');
                 } else if (action.equalsIgnoreCase("run")) {
                     String command = getString(itemInfo, "command", "");
-                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
+                    String workingDirectory = getString(itemInfo, "workingDirectory", server.getServerOptions().warUriString());
                     String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     Boolean waitResponse = true;
                     try {
@@ -235,7 +235,7 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, waitResponse, shell));
                 } else if (action.equalsIgnoreCase("runAsync")) {
                     String command = getString(itemInfo, "command", "");
-                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
+                    String workingDirectory = getString(itemInfo, "workingDirectory", server.getServerOptions().warUriString());
                     String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                 } else {
