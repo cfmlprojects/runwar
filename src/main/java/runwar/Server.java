@@ -602,11 +602,13 @@ public class Server {
 	
 	        String st;
 	        String test_predicate = "";
+	        LOG.debug( "Predicate Language Rules read from " + predicates.toString() );
 	        while ((st = br.readLine()) != null) {
+		        LOG.debug( st );
 	            test_predicate = test_predicate + st + "\n";
 	        }
 	        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(test_predicate, _classLoader);
-	        LOG.error("predicates to be used::::" + ph.size());
+	        LOG.info( ph.size() + " predicates loaded" );
 	        httpHandler = Handlers.predicates(ph, pathHandler);
         }
         
