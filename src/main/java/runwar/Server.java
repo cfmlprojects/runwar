@@ -592,21 +592,24 @@ public class Server {
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
-
-        File predicates = new File(serverOptions.workingDir(), "predicates");
-        BufferedReader br = new BufferedReader(
-                new FileReader(predicates)
-        );
-
-        String st;
-        String test_predicate = "";
-        while ((st = br.readLine()) != null) {
-            test_predicate = test_predicate + st + "\n";
-        }
-        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(test_predicate, _classLoader);
-        LOG.error("predicates to be used::::" + ph.size());
+        HttpHandler httpHandler = pathHandler;
         
-        HttpHandler httpHandler = Handlers.predicates(ph, pathHandler);
+        File predicates = new File(serverOptions.warFile(), "predicates");
+        if( predicates.exists() ) {
+	        BufferedReader br = new BufferedReader(
+	                new FileReader(predicates)
+	        );
+	
+	        String st;
+	        String test_predicate = "";
+	        while ((st = br.readLine()) != null) {
+	            test_predicate = test_predicate + st + "\n";
+	        }
+	        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(test_predicate, _classLoader);
+	        LOG.error("predicates to be used::::" + ph.size());
+	        httpHandler = Handlers.predicates(ph, pathHandler);
+        }
+        
         if (serverOptions.gzipEnable()) {
             final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size(5)")))
