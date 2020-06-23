@@ -425,6 +425,10 @@ public class ConfigParser {
             if (serverConfig.hasOption(Keys.TRAYCONFIG)) {
                 serverOptions.trayConfig(getFile(serverConfig.getOptionValue(Keys.TRAYCONFIG)));
             }
+            
+            if (serverConfig.hasOption(Keys.PREDICATES)) {
+                serverOptions.predicates(getFile(serverConfig.getOptionValue(Keys.PREDICATES)));
+            }
 
             if (serverConfig.hasOption(Keys.STATUSFILE)) {
                 serverOptions.statusFile(getFile(serverConfig.getOptionValue(Keys.STATUSFILE)));

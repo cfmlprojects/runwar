@@ -64,6 +64,7 @@ public interface ServerOptions {
         final static String DOCK = "dock";
         final static String SHELL = "shell";
         final static String TRAYCONFIG = "trayconfig";
+        final static String PREDICATES = "predicates";
         final static String ICON = "icon";
         final static String URLREWRITEFILE = "urlrewritefile";
         final static String URLREWRITELOG = "urlrewritelog";
@@ -534,5 +535,8 @@ public interface ServerOptions {
     ServerOptions undertowOptions(String options);
 
     ServerOptions undertowOptions(OptionMap.Builder options);
-
+    
+    File predicates();
+    
+    ServerOptions predicates(File predicates);
 }

@@ -40,7 +40,7 @@ public class ServerOptionsImpl implements ServerOptions {
     @Expose
     private URL jarURL = null;
     @Expose
-    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null;
+    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicates;
     @Expose
     private String iconImage = null;
     @Expose
@@ -1103,15 +1103,7 @@ public class ServerOptionsImpl implements ServerOptions {
     public File trayConfig() {
         return trayConfig;
     }
-
-    /** 
-     * @see runwar.options.ServerOptions#trayConfigJSON()
-     */
-    @Override
-    public JSONArray trayConfigJSON() {
-        return trayConfigJSON;
-    }
-
+    
     /** 
      * @see runwar.options.ServerOptions#trayConfig(java.io.File)
      */
@@ -1119,6 +1111,31 @@ public class ServerOptionsImpl implements ServerOptions {
     public ServerOptions trayConfig(File trayConfig) {
         this.trayConfig = trayConfig;
         return this;
+    }
+    
+        /** 
+     * @see runwar.options.ServerOptions#predicates()
+     */
+    @Override
+    public File predicates() {
+        return predicates;
+    }
+    
+    /** 
+     * @see runwar.options.ServerOptions#predicates(java.io.File)
+     */
+    @Override
+    public ServerOptions predicates(File predicates) {
+        this.predicates = predicates;
+        return this;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#trayConfigJSON()
+     */
+    @Override
+    public JSONArray trayConfigJSON() {
+        return trayConfigJSON;
     }
 
     /** 

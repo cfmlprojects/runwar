@@ -592,20 +592,36 @@ public class Server {
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
-
-        File predicates = new File(serverOptions.workingDir(), "predicates");
-        BufferedReader br = new BufferedReader(
-                new FileReader(predicates)
-        );
-
-        String st;
-        String test_predicate = "";
-        while ((st = br.readLine()) != null) {
-            test_predicate = test_predicate + st + "\n";
+        String predicatesLines = "";
+        BufferedReader br;
+        try {
+            if (serverOptions.predicates() == null) {
+                LOG.warn("No default predicates file was defined, looking on working directory...");
+                File predicates = new File(serverOptions.workingDir(), "predicates");
+                br = new BufferedReader(
+                        new FileReader(predicates)
+                );
+                LOG.warn("predicates file found on working directory...");
+            } else {
+                LOG.warn("DEFINED");
+                br = new BufferedReader(
+                        new FileReader(serverOptions.predicates())
+                );
+                LOG.warn("Using predicates file: "+serverOptions.predicates().getAbsolutePath());
+            }
+            String st;
+            predicatesLines = "";
+            while ((st = br.readLine()) != null) {
+                predicatesLines = predicatesLines + st + "\n";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOG.warn("No default predicates file was found on working directory");
         }
-        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(test_predicate, _classLoader);
-        LOG.error("predicates to be used::::" + ph.size());
-        
+
+        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
+        LOG.info("Number of predicates parsed -->" + ph.size());
+
         HttpHandler httpHandler = Handlers.predicates(ph, pathHandler);
         if (serverOptions.gzipEnable()) {
             final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
