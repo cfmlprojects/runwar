@@ -603,7 +603,6 @@ public class Server {
                 );
                 LOG.warn("predicates file found on working directory...");
             } else {
-                LOG.warn("DEFINED");
                 br = new BufferedReader(
                         new FileReader(serverOptions.predicates())
                 );
@@ -620,7 +619,7 @@ public class Server {
         }
 
         List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
-        LOG.info("Number of predicates parsed -->" + ph.size());
+        LOG.info( ph.size() + " predicates loaded" );
 
         HttpHandler httpHandler = Handlers.predicates(ph, pathHandler);
         if (serverOptions.gzipEnable()) {
