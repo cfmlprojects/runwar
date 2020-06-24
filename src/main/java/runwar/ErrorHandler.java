@@ -19,8 +19,8 @@ public class ErrorHandler implements HttpHandler {
                 RunwarLogger.CONTEXT_LOG.warn("The response channel was closed prematurely.  Request path: " + exchange.getRequestPath() + " status-code: " + exchange.getStatusCode() );
                 return false;
             }
-            if(exchange.getStatusCode() != 200)
-                RunwarLogger.CONTEXT_LOG.errorf("Location: '%s' generated no content, maybe verify any errorPage locations? (status code: %s)", exchange.getRequestPath(), exchange.getStatusCode());
+            //if(exchange.getStatusCode() != 200)
+                //RunwarLogger.CONTEXT_LOG.errorf("Location: '%s' generated no content, maybe verify any errorPage locations? (status code: %s)", exchange.getRequestPath(), exchange.getStatusCode());
 /*
             // does not seem to actually return the content, no idea why
             if (exchange.getStatusCode() != 200) {
