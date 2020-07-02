@@ -310,7 +310,7 @@ public class CommandLineHandler {
                 .create(Keys.TRAYCONFIG));
 
         options.addOption(OptionBuilder
-                .withLongOpt("predicateFile")
+                .withLongOpt("predicate-file")
                 .withDescription("predicates definitions path")
                 .hasArg().withArgName("path")
                 .create(Keys.PREDICATEFILE));
