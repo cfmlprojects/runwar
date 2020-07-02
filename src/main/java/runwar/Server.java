@@ -270,8 +270,13 @@ public class Server {
             serverOptions.directBuffers(true);
             LOG.info("Enabling SSL protocol on port " + sslPort);
             if (serverOptions.sslEccDisable()) {
-                LOG.debug("disabling com.sun.net.ssl.enableECC");
-                System.setProperty("com.sun.net.ssl.enableECC", "false");
+                if (cfengine.equals("adobe")){
+                    LOG.debug("disabling com.sun.net.ssl.enableECC");
+                    System.setProperty("com.sun.net.ssl.enableECC", "false");
+                }else{
+                    LOG.debug("It's not possible to set enableECC -> false when using Lucee Server");
+                    
+                }
             } else {
                 LOG.debug("NOT disabling com.sun.net.ssl.enableECC");
             }

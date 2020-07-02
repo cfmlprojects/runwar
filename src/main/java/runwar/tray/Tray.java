@@ -208,7 +208,11 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new ExitAction(server));
                     menuItem.setShortcut('s');
                 } else if (action.equalsIgnoreCase("restartserver")) {
-                    menuItem = new MenuItem(label, is, new RestartAction(server));
+                    //menuItem = new MenuItem(label, is, new RestartAction(server));
+                    String command = "box server restart";
+                    String workingDirectory = server.getServerOptions().warUriString();
+                    String shell = Utils.availableShellPick();
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                     menuItem.setShortcut('r');
                 } else if (action.equalsIgnoreCase("getversion")) {
                     menuItem = new MenuItem("Version: " + Server.getVersion(), is, new GetVersionAction());
@@ -223,7 +227,7 @@ public class Tray {
                     menuItem.setShortcut('b');
                 } else if (action.equalsIgnoreCase("run")) {
                     String command = getString(itemInfo, "command", "");
-                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
+                    String workingDirectory = getString(itemInfo, "workingDirectory", server.getServerOptions().warUriString());
                     String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     Boolean waitResponse = true;
                     try {
@@ -235,7 +239,7 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, waitResponse, shell));
                 } else if (action.equalsIgnoreCase("runAsync")) {
                     String command = getString(itemInfo, "command", "");
-                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
+                    String workingDirectory = getString(itemInfo, "workingDirectory", server.getServerOptions().warUriString());
                     String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                 } else {
