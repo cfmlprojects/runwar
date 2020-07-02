@@ -592,57 +592,49 @@ public class Server {
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
-        String predicatesLines = "";
-        BufferedReader br;
-        try {
-            if (serverOptions.predicates() == null) {
-                LOG.warn("No default predicates file was defined, looking on working directory...");
-                File predicates = new File(serverOptions.workingDir(), "predicates");
-                br = new BufferedReader(
-                        new FileReader(predicates)
-                );
-                LOG.warn("predicates file found on working directory...");
-            } else {
-                br = new BufferedReader(
-                        new FileReader(serverOptions.predicates())
-                );
-                LOG.warn("Using predicates file: "+serverOptions.predicates().getAbsolutePath());
+        HttpHandler httpHandler = pathHandler;
+        
+        if ( serverOptions.predicateFile() != null ) {
+            LOG.debug("Predicates file: " + serverOptions.predicateFile().getAbsolutePath() );
+            
+            if( !serverOptions.predicateFile().exists() ) {
+                throw new RuntimeException( "The predicate file [" + serverOptions.predicateFile().getAbsolutePath() + "] does not exist on disk." );
             }
-            String st;
-            predicatesLines = "";
-            while ((st = br.readLine()) != null) {
-                predicatesLines = predicatesLines + st + "\n";
+            
+            BufferedReader br = new BufferedReader( new FileReader( serverOptions.predicateFile() ) );
+            String predicatesLines = "";
+	        String st;
+            try {
+		        while ((st = br.readLine()) != null) {
+		            LOG.trace( st );
+		            predicatesLines = predicatesLines + st + "\n";
+		        }
+            } finally {
+            	br.close();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            LOG.warn("No default predicates file was found on working directory");
+            
+	        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
+	        LOG.debug( ph.size() + " predicate(s) loaded" );
+	
+	        httpHandler = Handlers.predicates(ph, httpHandler);
         }
-
-        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
-        LOG.info( ph.size() + " predicates loaded" );
-
-        HttpHandler httpHandler = Handlers.predicates(ph, pathHandler);
+        
         if (serverOptions.gzipEnable()) {
-            final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
+            httpHandler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size(5)")))
                     .setNext(httpHandler);
-            httpHandler = new ErrorHandler(handler);
-        } else {
-            httpHandler = new ErrorHandler(httpHandler);
         }
 
+        httpHandler = new ErrorHandler(httpHandler);
+        
         if (serverOptions.logAccessEnable()) {
-//            final String PATTERN = "cs-uri cs(test-header) x-O(aa) x-H(secure)";
             RunwarAccessLogReceiver accessLogReceiver = RunwarAccessLogReceiver.builder().setLogWriteExecutor(logWorker)
                     .setRotate(true)
                     .setOutputDirectory(serverOptions.logAccessDir().toPath())
                     .setLogBaseName(serverOptions.logAccessBaseFileName())
                     .setLogNameSuffix(serverOptions.logSuffix())
-                    //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
                     .build();
             LOG.info("Logging combined access to " + serverOptions.logAccessDir() + " base name of '" + serverOptions.logAccessBaseFileName() + "." + serverOptions.logSuffix() + ", rotated daily'");
-//            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
-//            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
             httpHandler = new AccessLogHandler(httpHandler, accessLogReceiver, "combined", Server.class.getClassLoader());
         }
 

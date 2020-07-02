@@ -310,10 +310,10 @@ public class CommandLineHandler {
                 .create(Keys.TRAYCONFIG));
 
         options.addOption(OptionBuilder
-                .withLongOpt("predicates")
+                .withLongOpt("predicateFile")
                 .withDescription("predicates definitions path")
                 .hasArg().withArgName("path")
-                .create(Keys.PREDICATES));
+                .create(Keys.PREDICATEFILE));
 
         options.addOption(OptionBuilder
                 .withLongOpt("status-file")
@@ -886,8 +886,8 @@ public class CommandLineHandler {
             if (hasOptionValue(line, Keys.TRAYCONFIG)) {
                 serverOptions.trayConfig(getFile(line.getOptionValue(Keys.TRAYCONFIG)));
             }
-            if (hasOptionValue(line, Keys.PREDICATES)) {
-                serverOptions.predicates(getFile(line.getOptionValue(Keys.PREDICATES)));
+            if (hasOptionValue(line, Keys.PREDICATEFILE)) {
+                serverOptions.predicateFile(getFile(line.getOptionValue(Keys.PREDICATEFILE)));
             }
 
             if (hasOptionValue(line, Keys.STATUSFILE)) {

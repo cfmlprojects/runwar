@@ -40,7 +40,7 @@ public class ServerOptionsImpl implements ServerOptions {
     @Expose
     private URL jarURL = null;
     @Expose
-    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicates;
+    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicateFile;
     @Expose
     private String iconImage = null;
     @Expose
@@ -1114,19 +1114,19 @@ public class ServerOptionsImpl implements ServerOptions {
     }
     
         /** 
-     * @see runwar.options.ServerOptions#predicates()
+     * @see runwar.options.ServerOptions#predicateFile()
      */
     @Override
-    public File predicates() {
-        return predicates;
+    public File predicateFile() {
+        return predicateFile;
     }
     
     /** 
-     * @see runwar.options.ServerOptions#predicates(java.io.File)
+     * @see runwar.options.ServerOptions#predicateFile(java.io.File)
      */
     @Override
-    public ServerOptions predicates(File predicates) {
-        this.predicates = predicates;
+    public ServerOptions predicateFile(File predicateFile) {
+        this.predicateFile = predicateFile;
         return this;
     }
 
