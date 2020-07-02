@@ -4,15 +4,22 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
+import io.undertow.attribute.ExchangeAttribute;
+import io.undertow.predicate.Predicate;
 import io.undertow.predicate.Predicates;
+import io.undertow.predicate.PredicatesHandler;
 import io.undertow.server.DefaultByteBufferPool;
+import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.AccessControlListHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ProxyPeerAddressHandler;
 import io.undertow.server.handlers.SSLHeaderHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
+import io.undertow.server.handlers.builder.PredicatedHandler;
+import io.undertow.server.handlers.builder.PredicatedHandlersParser;
 import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
@@ -57,8 +64,11 @@ import javax.servlet.Servlet;
 
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
+import io.undertow.servlet.attribute.ServletRequestAttribute;
+import static runwar.LaunchUtil.getResourceAsString;
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
+import runwar.undertow.CustomPredicatedHandlersParser;
 import runwar.util.Utils;
 
 public class Server {
@@ -452,9 +462,9 @@ public class Server {
         // configure NIO options and worker
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
         OptionMap.Builder serverXnioOptions = serverOptions.xnioOptions();
-        
+
         logXnioOptions(serverXnioOptions);
-        
+
         if (serverOptions.ioThreads() != 0) {
             LOG.info("IO Threads: " + serverOptions.ioThreads());
             serverBuilder.setIoThreads(serverOptions.ioThreads()); // posterity: ignored when managing worker
@@ -531,7 +541,7 @@ public class Server {
         }
 
         manager.deploy();
-        HttpHandler servletHandler = manager.start();        
+        HttpHandler servletHandler = manager.start();
         LOG.debug("started servlet deployment manager");
 
         if (!System.getProperty("java.version", "").equalsIgnoreCase(originalJavaVersion)) {
@@ -587,30 +597,49 @@ public class Server {
             }
         };
         pathHandler.addPrefixPath(contextPath, servletHandler);
-
-        HttpHandler httpHandler;
-
+        HttpHandler httpHandler = pathHandler;
+        
+        if ( serverOptions.predicateFile() != null ) {
+            LOG.debug("Predicates file: " + serverOptions.predicateFile().getAbsolutePath() );
+            
+            if( !serverOptions.predicateFile().exists() ) {
+                throw new RuntimeException( "The predicate file [" + serverOptions.predicateFile().getAbsolutePath() + "] does not exist on disk." );
+            }
+            
+            BufferedReader br = new BufferedReader( new FileReader( serverOptions.predicateFile() ) );
+            String predicatesLines = "";
+	        String st;
+            try {
+		        while ((st = br.readLine()) != null) {
+		            LOG.trace( st );
+		            predicatesLines = predicatesLines + st + "\n";
+		        }
+            } finally {
+            	br.close();
+            }
+            
+	        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
+	        LOG.debug( ph.size() + " predicate(s) loaded" );
+	
+	        httpHandler = Handlers.predicates(ph, httpHandler);
+        }
+        
         if (serverOptions.gzipEnable()) {
-            final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
+            httpHandler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size(5)")))
-                    .setNext(pathHandler);
-            httpHandler = new ErrorHandler(handler);
-        } else {
-            httpHandler = new ErrorHandler(pathHandler);
+                    .setNext(httpHandler);
         }
 
+        httpHandler = new ErrorHandler(httpHandler);
+        
         if (serverOptions.logAccessEnable()) {
-//            final String PATTERN = "cs-uri cs(test-header) x-O(aa) x-H(secure)";
             RunwarAccessLogReceiver accessLogReceiver = RunwarAccessLogReceiver.builder().setLogWriteExecutor(logWorker)
                     .setRotate(true)
                     .setOutputDirectory(serverOptions.logAccessDir().toPath())
                     .setLogBaseName(serverOptions.logAccessBaseFileName())
                     .setLogNameSuffix(serverOptions.logSuffix())
-                    //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
                     .build();
             LOG.info("Logging combined access to " + serverOptions.logAccessDir() + " base name of '" + serverOptions.logAccessBaseFileName() + "." + serverOptions.logSuffix() + ", rotated daily'");
-//            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
-//            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
             httpHandler = new AccessLogHandler(httpHandler, accessLogReceiver, "combined", Server.class.getClassLoader());
         }
 
@@ -737,7 +766,7 @@ public class Server {
             serverBuilder.setServerOption(option, undertowOptionsMap.get(option));
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     private void logXnioOptions(OptionMap.Builder xnioOptions) {
         OptionMap serverXnioOptionsMap = xnioOptions.getMap();
@@ -792,7 +821,7 @@ public class Server {
                         if (mainThread.isAlive()) {
                             LOG.debug("shutdown hook joining main thread");
                             mainThread.interrupt();
-                            mainThread.join( 3000 );
+                            mainThread.join(3000);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -842,7 +871,7 @@ public class Server {
                                 http2proxy.stop();
                             }
                             if (undertow != null) {
-                            undertow.stop();
+                                undertow.stop();
                             }
                             if (worker != null) {
                                 worker.shutdown();
@@ -875,7 +904,7 @@ public class Server {
                 }
 
                 if (monitor != null) {
-                LOG.debug("Stopping server monitor");
+                    LOG.debug("Stopping server monitor");
                     MonitorThread monitorThread = monitor;
                     monitor = null;
                     monitorThread.stopListening(false);
@@ -1136,7 +1165,6 @@ public class Server {
             return;
         }
     }
-
 
     public ServerOptions getServerOptions() {
         return serverOptions;
