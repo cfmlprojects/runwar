@@ -4,15 +4,10 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
-import io.undertow.attribute.ExchangeAttribute;
-import io.undertow.predicate.Predicate;
 import io.undertow.predicate.Predicates;
-import io.undertow.predicate.PredicatesHandler;
 import io.undertow.server.DefaultByteBufferPool;
-import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.AccessControlListHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ProxyPeerAddressHandler;
 import io.undertow.server.handlers.SSLHeaderHandler;
@@ -61,14 +56,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import javax.servlet.Servlet;
+import javax.servlet.http.HttpServletResponse;
 
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
-import io.undertow.servlet.attribute.ServletRequestAttribute;
-import static runwar.LaunchUtil.getResourceAsString;
+import io.undertow.servlet.handlers.ServletRequestContext;
+
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
-import runwar.undertow.CustomPredicatedHandlersParser;
 import runwar.util.Utils;
 
 public class Server {
@@ -178,7 +173,7 @@ public class Server {
         LOG.info(bar);
         stopServer();
         LaunchUtil.restartApplication(() -> {
-            LOG.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
+            LOG.debug("About to restart... ");
             stopServer();
             serverWentDown();
         });
@@ -269,17 +264,12 @@ public class Server {
             int sslPort = ports.get("https").socket;
             serverOptions.directBuffers(true);
             LOG.info("Enabling SSL protocol on port " + sslPort);
-            if (serverOptions.sslEccDisable()) {
-                if (cfengine.equals("adobe")){
-                    LOG.debug("disabling com.sun.net.ssl.enableECC");
-                    System.setProperty("com.sun.net.ssl.enableECC", "false");
-                }else{
-                    LOG.debug("It's not possible to set enableECC -> false when using Lucee Server");
-                    
-                }
-            } else {
-                LOG.debug("NOT disabling com.sun.net.ssl.enableECC");
+            
+            if ( serverOptions.sslEccDisable() && cfengine.toLowerCase().equals("adobe") ) {
+                LOG.debug("disabling com.sun.net.ssl.enableECC");
+                System.setProperty("com.sun.net.ssl.enableECC", "false");
             }
+            
             try {
                 if (serverOptions.sslCertificate() != null) {
                     File certFile = serverOptions.sslCertificate();
@@ -529,6 +519,20 @@ public class Server {
                 new WebSocketDeploymentInfo().setBuffers(new DefaultByteBufferPool(true, 1024 * 16)).setWorker(worker));
         LOG.debug("Added websocket context");
 
+        // Remove this if/when this ticket is complete:
+        // https://issues.redhat.com/browse/UNDERTOW-1747
+        servletBuilder.addOuterHandlerChainWrapper(next -> new HttpHandler() {
+            @Override
+            public void handleRequest(HttpServerExchange exchange) throws Exception {
+                if( exchange.getStatusCode() > 399 && exchange.getResponseContentLength() == -1 ) {
+                    ServletRequestContext src = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                    ((HttpServletResponse)src.getServletResponse()).sendError(exchange.getStatusCode());
+                } else {
+                    next.handleRequest(exchange);
+                }
+            }
+        });
+        
         manager = defaultContainer().addDeployment(servletBuilder);
 
         //hack for older adobe versions
@@ -570,7 +574,6 @@ public class Server {
                     exchange.getResponseHeaders().add(SECURE, "true");
                 }
 
-                CONTEXT_LOG.debug("requested: '" + fullExchangePath(exchange) + "'");
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
                 }
@@ -578,15 +581,6 @@ public class Server {
                 if (serverOptions.directoryListingRefreshEnable() && exchange.getRequestPath().endsWith("/")) {
                     CONTEXT_LOG.trace("*** Resetting servlet path info");
                     manager.getDeployment().getServletPaths().invalidate();
-                }
-                if (serverOptions.debug()) {
-                    // output something if in debug mode and response is other than OK
-                    exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                        if (httpServerExchange.getStatusCode() > 399) {
-                            CONTEXT_LOG.warnf("responded: Status Code %s (%s)", httpServerExchange.getStatusCode(), fullExchangePath(httpServerExchange));
-                        }
-                        nextListener.proceed();
-                    });
                 }
 
                 if (serverOptions.debug() && serverOptions.testing() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
@@ -596,6 +590,7 @@ public class Server {
                 }
             }
         };
+        
         pathHandler.addPrefixPath(contextPath, servletHandler);
         HttpHandler httpHandler = pathHandler;
         
@@ -624,14 +619,17 @@ public class Server {
 	        httpHandler = Handlers.predicates(ph, httpHandler);
         }
         
+        httpHandler = new LifecyleHandler(httpHandler,serverOptions);
+        
         if (serverOptions.gzipEnable()) {
             httpHandler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
+            		// The max-content-size predicate doesn't do what you think it does.  
+            		// The "Predicate ... returns true if the Content-Size of a request is above a given value."
+            		// This means gzip is only applied if the content length is LARGER than 5 bytes
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size(5)")))
                     .setNext(httpHandler);
         }
 
-        httpHandler = new ErrorHandler(httpHandler);
-        
         if (serverOptions.logAccessEnable()) {
             RunwarAccessLogReceiver accessLogReceiver = RunwarAccessLogReceiver.builder().setLogWriteExecutor(logWorker)
                     .setRotate(true)
@@ -779,7 +777,7 @@ public class Server {
         return ports;
     }
 
-    private static String fullExchangePath(HttpServerExchange exchange) {
+    static String fullExchangePath(HttpServerExchange exchange) {
         return exchange.getRequestPath() + (exchange.getQueryString().length() > 0 ? "?" + exchange.getQueryString() : "");
     }
 

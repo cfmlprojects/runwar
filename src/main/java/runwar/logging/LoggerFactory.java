@@ -84,6 +84,7 @@ public class LoggerFactory {
         Logger RUNWAR_REQUEST = Logger.getLogger("runwar.request");
         loggers.add(RUNWAR_REQUEST);
 
+
         Logger RUNWAR_BACKGROUND = Logger.getLogger("runwar.background");
         RUNWAR_BACKGROUND.addAppender(consoleAppender("%m%n"));
         RUNWAR_BACKGROUND.setLevel(Level.TRACE);
@@ -128,7 +129,11 @@ public class LoggerFactory {
                 RUNWAR_SERVER.setLevel(level);
                 RUNWAR_CONTEXT.setLevel(level);
                 RUNWAR_SECURITY.setLevel(level);
-                RUNWAR_REQUEST.setLevel(level);
+                
+                // This logger is only used in the resource mapper and is really chatty
+                // Consider a setting to enable it only when troubleshooting file system mapping issues
+                //RUNWAR_REQUEST.setLevel(level);
+                
                 Logger.getRootLogger().setLevel(level);
                 System.setProperty("org.eclipse.jetty.LEVEL", "ALL");
                 configureUrlRewriteLoggers(true);
