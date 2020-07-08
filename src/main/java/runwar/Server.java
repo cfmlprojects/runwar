@@ -531,6 +531,10 @@ public class Server {
                     next.handleRequest(exchange);
                 }
             }
+            @Override
+            public String toString() {
+                return "Runwar OuterHandlerChainWrapper";
+            }
         });
         
         manager = defaultContainer().addDeployment(servletBuilder);
@@ -588,6 +592,10 @@ public class Server {
                 } else {
                     super.handleRequest(exchange);
                 }
+            }
+            @Override
+            public String toString() {
+                return "Runwar PathHandler";
             }
         };
         
