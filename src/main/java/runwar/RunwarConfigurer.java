@@ -226,9 +226,9 @@ class RunwarConfigurer {
                 serverOptions.urlRewriteFile(new File(webInfDir,"urlrewrite.xml"));
             }
             try{
-                rewriteFilter = (Class<Filter>) getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+                rewriteFilter = (Class<Filter>) getClassLoader().loadClass("runwar.util.UrlRewriteFilter");
             } catch (java.lang.ClassNotFoundException e) {
-                rewriteFilter = (Class<Filter>) Server.class.getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+                rewriteFilter = (Class<Filter>) Server.class.getClassLoader().loadClass("runwar.util.UrlRewriteFilter");
             }
             if(serverOptions.urlRewriteFile() != null) {
                 if(!serverOptions.urlRewriteFile().isFile()) {
