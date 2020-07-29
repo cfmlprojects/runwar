@@ -115,13 +115,13 @@ dependencies {
     // regexpathinfofilter lets us handle *.cfm/* paths
     compile("org.cfmlprojects:regexpathinfofilter:1.0.1") //finding the way to compile it
 
-    compile("net.java.dev.jna:jna:5.5.0")
-    compile("net.java.dev.jna:jna-platform:5.5.0")
+    compile("net.java.dev.jna:jna:4.3.0")
+    compile("net.java.dev.jna:jna-platform:4.3.0")
 
     // ssl
-    compile("org.bouncycastle:bcpkix-jdk15on:1.65")
+    compile("org.bouncycastle:bcpkix-jdk15on:1.57")
     // version compare
-    compile("com.vdurmont:semver4j:3.1.0") { transitive = false }
+    compile("com.vdurmont:semver4j:2.2.0") { transitive = false }
     // ansi colors for logging system output
     compile("com.jcabi:jcabi-log:0.18.1") { transitive = false }
 
@@ -130,7 +130,7 @@ dependencies {
         // the javax packages that are removed in Java 11+
 //        implementation( 'org.jboss.spec.javax.xml.ws:jboss-jaxws-api_2.3_spec:1.0.0.Final')
 //        implementation( 'org.jboss.spec.javax.xml.soap:jboss-saaj-api_1.3_spec:1.0.6.Final')
-        implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:2.0.0.Final'
+        implementation 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:1.0.1.Final'
 //        implementation 'javax.jws:jsr181-api:1.0-MR1'
     }
     //runtimeOnly 'org.cfmlprojects:javashim:1.0.1' // for Railo (sun.misc.VM)
