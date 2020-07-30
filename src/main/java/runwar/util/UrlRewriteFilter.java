@@ -22,7 +22,6 @@ import org.tuckey.web.filters.urlrewrite.UrlRewriter;
  */
 public class UrlRewriteFilter extends org.tuckey.web.filters.urlrewrite.UrlRewriteFilter {
 
-    private List<UrlRewriter> urlrewriters = new ArrayList<>();
     Logger LOG = Logger.getLogger("runwar.server"); 
     @Override
     public void loadUrlRewriter(FilterConfig filterConfig) throws ServletException {
@@ -31,7 +30,7 @@ public class UrlRewriteFilter extends org.tuckey.web.filters.urlrewrite.UrlRewri
             LOG.trace("Config rewrite file:" + confPathStr);
             InputStream inputStream = new FileInputStream(confPathStr);
             Conf conf1 = new Conf(filterConfig.getServletContext(), inputStream, confPathStr, null, true);
-            urlrewriters.add(new UrlRewriter(conf1));
+            checkConf(conf1);
         } catch (FileNotFoundException e) {
             throw new ServletException(e);
         }
