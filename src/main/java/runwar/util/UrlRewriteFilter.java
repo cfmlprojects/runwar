@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import org.jboss.logging.Logger;
 import org.tuckey.web.filters.urlrewrite.Conf;
 import org.tuckey.web.filters.urlrewrite.UrlRewriter;
 
@@ -22,12 +23,12 @@ import org.tuckey.web.filters.urlrewrite.UrlRewriter;
 public class UrlRewriteFilter extends org.tuckey.web.filters.urlrewrite.UrlRewriteFilter {
 
     private List<UrlRewriter> urlrewriters = new ArrayList<>();
-
+    Logger LOG = Logger.getLogger("runwar.server"); 
     @Override
     public void loadUrlRewriter(FilterConfig filterConfig) throws ServletException {
         try {
             String confPathStr = filterConfig.getInitParameter("confPath");
-            System.out.println("Config rewrite file:" + confPathStr);
+            LOG.trace("Config rewrite file:" + confPathStr);
             InputStream inputStream = new FileInputStream(confPathStr);
             Conf conf1 = new Conf(filterConfig.getServletContext(), inputStream, confPathStr, null, true);
             urlrewriters.add(new UrlRewriter(conf1));
