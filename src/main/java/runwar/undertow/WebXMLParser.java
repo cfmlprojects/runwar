@@ -42,13 +42,6 @@ public class WebXMLParser {
         Map<String, ServletInfo> servletMap = new HashMap<String, ServletInfo>();
         Map<String, FilterInfo> filterMap = new HashMap<String, FilterInfo>();
         try {
-            final String webinfPath;
-            if (File.separatorChar == '\\') {
-                webinfPath = webinf.getCanonicalPath().replace("\\\\", "\\");
-            } else {
-                webinfPath = webinf.getCanonicalPath();
-            }
-            trace("parsing '%s'", webxml.getCanonicalPath());
             DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 
             // disable validation, so we don't incur network calls
@@ -74,10 +67,10 @@ public class WebXMLParser {
                 info.addInitParameter(pName, pValue);
                 CONF_LOG.tracef("context param: '%s' = '%s'", pName, pValue);
             });
-            trace("Total no of context-params: %s", info.getServletContextAttributes().size());
+            trace("Total No. of context-params: %s", info.getServletContextAttributes().size());
 
             Match listeners = $(doc).find("listener");
-            trace("Total no of listeners: %s", listeners.size());
+            trace("Total No. of listeners: %s", listeners.size());
             listeners.each(ctx -> {
                 String pName = getRequired(ctx,"listener-class");
                 CONF_LOG.tracef("Listener: %s", pName);
@@ -92,7 +85,7 @@ public class WebXMLParser {
             });
 
             Match servlets = $(doc).find("servlet");
-            trace("Total no of servlets: %s", servlets.size());
+            trace("Total No. of servlets: %s", servlets.size());
             servlets.each(servletElement -> {
                 String servletName = getRequired(servletElement, "servlet-name");
                 String servletClassName = getRequired(servletElement, "servlet-class");
@@ -115,12 +108,10 @@ public class WebXMLParser {
                     servlet.setLoadOnStartup(Integer.valueOf(loadOnStartup));
                 }
                 Match initParams = $(servletElement).find("init-param");
-                CONF_LOG.debugf("Total no of %s init-params: %s", servletName, initParams.size());
+                CONF_LOG.debugf("Total No. of %s init-params: %s", servletName, initParams.size());
                 initParams.each(initParamElement -> {
                     String pName = getRequired(initParamElement, "param-name");
                     String pValue = getRequired(initParamElement, "param-value");
-                    pValue = pValue.replaceAll(".?/WEB-INF",
-                            SPECIAL_REGEX_CHARS.matcher(webinfPath).replaceAll("\\\\$0"));
                     CONF_LOG.tracef("%s init-param: param-name: '%s'  param-value: '%s'", servletName, pName, pValue);
                     servlet.addInitParam(pName, pValue);
                 });
@@ -128,7 +119,7 @@ public class WebXMLParser {
             });
 
             Match servletMappings = $(doc).find("servlet-mapping");
-            trace("Total no of servlet-mappings: %s", servletMappings.size());
+            trace("Total No. of servlet-mappings: %s", servletMappings.size());
             servletMappings.each(mappingElement -> {
                 String servletName = getRequired(mappingElement, "servlet-name");
                 ServletInfo servlet = servletMap.get(servletName);
@@ -154,7 +145,7 @@ public class WebXMLParser {
             info.addServlets(servletMap.values());
             // do filters
             Match filters = $(doc).find("filter");
-            trace("Total no of filters: %s", filters.size());
+            trace("Total No. of filters: %s", filters.size());
             filters.each(ctx -> {
                 String filterName = $(ctx).find("filter-name").text();
                 String className = $(ctx).find("filter-class").text();
@@ -163,7 +154,7 @@ public class WebXMLParser {
                     FilterInfo filter = new FilterInfo(filterName,
                             (Class<? extends Filter>) info.getClassLoader().loadClass(className));
                     Match initParams = $(ctx).find("init-param");
-                    CONF_LOG.debugf("Total no of %s init-params: %s", filterName, initParams.size());
+                    CONF_LOG.debugf("Total No. of %s init-params: %s", filterName, initParams.size());
                     initParams.each(cctx -> {
                         String pName = $(cctx).find("param-name").text();
                         String pValue = $(cctx).find("param-value").text();
@@ -182,7 +173,7 @@ public class WebXMLParser {
             info.addFilters(filterMap.values());
 
             Match filterMappings = $(doc).find("filter-mapping");
-            trace("Total no of filters-mappings: %s", filterMappings.size());
+            trace("Total No. of filters-mappings: %s", filterMappings.size());
             filterMappings.each(ctx -> {
                 String filterName = $(ctx).find("filter-name").text();
                 FilterInfo filter = filterMap.get(filterName);
@@ -217,7 +208,7 @@ public class WebXMLParser {
                 CONF_LOG.info("Ignoring any welcome pages in web.xml");
             } else {
                 Match welcomeFileList = $(doc).find("welcome-file-list");
-                trace("Total no of welcome files: %s", welcomeFileList.find("welcome-file").size());
+                trace("Total No. of welcome files: %s", welcomeFileList.find("welcome-file").size());
                 welcomeFileList.find("welcome-file").each(welcomeFileElement -> {
                     String welcomeFile = $(welcomeFileElement).text();
                     CONF_LOG.debugf("welcome-file: %s", welcomeFile);
@@ -226,7 +217,7 @@ public class WebXMLParser {
             }
 
             Match mimeMappings = $(doc).find("mime-mapping");
-            trace("Total no of mime-mappings: %s", mimeMappings.size());
+            trace("Total No. of mime-mappings: %s", mimeMappings.size());
             mimeMappings.each(ctx -> {
                 String extension = $(ctx).find("extension").text();
                 String mimeType = $(ctx).find("mime-type").text();
@@ -235,7 +226,7 @@ public class WebXMLParser {
             });
 
             Match errorPages = $(doc).find("error-page");
-            trace("Total no of error-pages: %s", errorPages.size());
+            trace("Total No. of error-pages: %s", errorPages.size());
             errorPages.each(ctx -> {
                 String location = $(ctx).find("location").text();
                 String errorCode = $(ctx).find("error-code").text();
@@ -263,7 +254,7 @@ public class WebXMLParser {
             });
 
             Match sessionConfigElement = $(doc).find("session-config");
-            trace("Total no of cookie config elements: %s", sessionConfigElement.find("cookie-config").size());
+            trace("Total No. of cookie config elements: %s", sessionConfigElement.find("cookie-config").size());
             sessionConfigElement.find("cookie-config").each(welcomeFileElement -> {
                 String httpOnly = $(welcomeFileElement).find("http-only").text();
                 String secure = $(welcomeFileElement).find("secure").text();
