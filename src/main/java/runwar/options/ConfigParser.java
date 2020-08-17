@@ -589,6 +589,10 @@ public class ConfigParser {
             if (serverConfig.hasOption(Keys.SSLSELFSIGN)) {
                 serverOptions.sslSelfSign(Boolean.valueOf(serverConfig.getOptionValue(Keys.SSLSELFSIGN)));
             }
+            
+            if (serverConfig.hasOption(Keys.BROWSER)) {
+                serverOptions.sslSelfSign(Boolean.valueOf(serverConfig.getOptionValue(Keys.BROWSER)));
+            }
 
             if (serverConfig.hasOption(Keys.WEBINF)) {
                 String webInfPath = serverConfig.getOptionValue(Keys.WEBINF);
