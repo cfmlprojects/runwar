@@ -12,7 +12,7 @@ public class BrowserOpener {
     private static final String errMsg = "Error attempting to launch web browser";
 
     public static void main(String[] args) throws Exception {
-        openURL(args[0],"");
+        openURL(args[0], "");
     }
 
     public static void openURL(String url, String prefered_browser) {
@@ -37,22 +37,8 @@ public class BrowserOpener {
                     Method openURL = desktopClass.getDeclaredMethod("browse", new Class[]{URI.class});
                     openURL.invoke(desktopObject, new Object[]{new URI(url)});
                 } catch (Exception e) {
-                    String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape"};
-                    String browser = null;
-                    if (Utils.containsCaseInsensitive(prefered_browser, Arrays.asList(browsers))){
-                        Runtime.getRuntime().exec(new String[] { prefered_browser, url });
-                    }else{
-                        for (int count = 0; count < browsers.length && browser == null; count++) {
-                            if (Runtime.getRuntime().exec(new String[]{"which", browsers[count]}).waitFor() == 0) {
-                                browser = browsers[count];
-                            }
-                        }
-                        if (browser == null) {
-                            throw new Exception("Could not find web browser");
-                        } else {
-                            Runtime.getRuntime().exec(new String[]{browser, url});
-                        }
-                    }
+                    e.printStackTrace();
+                    Utils.searchBrowser(prefered_browser, url);
                 }
             }
         } catch (Exception e) {

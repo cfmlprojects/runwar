@@ -6,8 +6,10 @@
 package runwar.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import net.minidev.json.JSONObject;
@@ -95,13 +97,32 @@ public class Utils {
         return null;
 
     }
-    
-    public static boolean containsCaseInsensitive(String s, List<String> l){
-     for (String string : l){
-        if (string.equalsIgnoreCase(s)){
-            return true;
-         }
-     }
-    return false;
-  }
+
+    public static boolean containsCaseInsensitive(String s, List<String> l) {
+        for (String string : l) {
+            if (string.equalsIgnoreCase(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void searchBrowser(String prefered_browser, String url) throws IOException, Exception {
+        String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape"};
+        String browser = null;
+        if (!prefered_browser.equalsIgnoreCase("default") && Utils.containsCaseInsensitive(prefered_browser, Arrays.asList(browsers))) {
+            Runtime.getRuntime().exec(new String[]{prefered_browser, url});
+        } else {
+            for (int count = 0; count < browsers.length && browser == null; count++) {
+                if (Runtime.getRuntime().exec(new String[]{"which", browsers[count]}).waitFor() == 0) {
+                    browser = browsers[count];
+                }
+            }
+            if (browser == null) {
+                throw new Exception("Could not find web browser");
+            } else {
+                Runtime.getRuntime().exec(new String[]{browser, url});
+            }
+        }
+    }
 }
