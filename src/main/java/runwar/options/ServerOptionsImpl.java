@@ -70,6 +70,8 @@ public class ServerOptionsImpl implements ServerOptions {
     @Expose
     private String action = "start";
     @Expose
+    private String browser = "";
+    @Expose
     private String cfengineName = "";
     @Expose
     private boolean customHTTPStatusEnable = true;
@@ -1169,6 +1171,11 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public String defaultShell() {
         return defaultShell;
+    }
+    
+    @Override
+    public String browser() {
+        return browser;
     }
 
     public ServerOptions defaultShell(String defaultShell) {

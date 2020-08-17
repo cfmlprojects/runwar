@@ -572,6 +572,13 @@ public class CommandLineHandler {
                 .withDescription("List of Undertow options")
                 .hasArg().withArgName("MAX_PARAMETERS=12,MAX_HEADERS=200")
                 .create(Keys.UNDERTOWOPTIONS));
+        
+        options.addOption(OptionBuilder
+                .withLongOpt("browser")
+                .withDescription("Browser to be used when a URL is Opened")
+                .hasArg()
+                .withArgName(Keys.BROWSER)
+                .create(Keys.BROWSER));
 
         options.addOption(new Option("h", Keys.HELP, false, "print this message"));
         options.addOption(new Option("v", "version", false, "print runwar version and undertow version"));

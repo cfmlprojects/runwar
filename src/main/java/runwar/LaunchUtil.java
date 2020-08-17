@@ -43,6 +43,7 @@ import dorkbox.util.OS;
 import runwar.logging.LoggerFactory;
 import runwar.logging.RunwarLogger;
 import runwar.options.ServerOptions;
+import runwar.util.Utils;
 
 public class LaunchUtil {
 
@@ -427,7 +428,7 @@ public class LaunchUtil {
         throw new IOException("Unable to open " + path);
     }
     
-    public static void openURL(String url) {
+    public static void openURL(String url, String prefered_browser) {
         String osName = System.getProperty("os.name");
         if (url == null) {
             System.out.println("ERROR: No URL specified to open the browser to!");
@@ -451,13 +452,17 @@ public class LaunchUtil {
                 } catch (Exception e) {
                     String[] browsers = { "firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape" };
                     String browser = null;
-                    for (int count = 0; count < browsers.length && browser == null; count++)
-                        if (Runtime.getRuntime().exec(new String[] { "which", browsers[count] }).waitFor() == 0)
-                            browser = browsers[count];
-                    if (browser == null)
-                        throw new Exception("Could not find web browser");
-                    else
-                        Runtime.getRuntime().exec(new String[] { browser, url });
+                    if (Utils.containsCaseInsensitive(prefered_browser, Arrays.asList(browsers))){
+                        Runtime.getRuntime().exec(new String[] { prefered_browser, url });
+                    }else{
+                        for (int count = 0; count < browsers.length && browser == null; count++)
+                            if (Runtime.getRuntime().exec(new String[] { "which", browsers[count] }).waitFor() == 0)
+                                browser = browsers[count];
+                        if (browser == null)
+                            throw new Exception("Could not find web browser");
+                        else
+                            Runtime.getRuntime().exec(new String[] { browser, url });
+                    }
                 }
             }
         } catch (Exception e) {

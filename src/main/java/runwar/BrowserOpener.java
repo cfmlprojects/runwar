@@ -2,18 +2,20 @@ package runwar;
 
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.Arrays;
 
 import javax.swing.JOptionPane;
+import runwar.util.Utils;
 
 public class BrowserOpener {
 
     private static final String errMsg = "Error attempting to launch web browser";
 
     public static void main(String[] args) throws Exception {
-        openURL(args[0]);
+        openURL(args[0],"");
     }
 
-    public static void openURL(String url) {
+    public static void openURL(String url, String prefered_browser) {
         String osName = System.getProperty("os.name");
         if (url == null) {
             System.out.println("ERROR: No URL specified to open the browser to!");
@@ -37,15 +39,19 @@ public class BrowserOpener {
                 } catch (Exception e) {
                     String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape"};
                     String browser = null;
-                    for (int count = 0; count < browsers.length && browser == null; count++) {
-                        if (Runtime.getRuntime().exec(new String[]{"which", browsers[count]}).waitFor() == 0) {
-                            browser = browsers[count];
+                    if (Utils.containsCaseInsensitive(prefered_browser, Arrays.asList(browsers))){
+                        Runtime.getRuntime().exec(new String[] { prefered_browser, url });
+                    }else{
+                        for (int count = 0; count < browsers.length && browser == null; count++) {
+                            if (Runtime.getRuntime().exec(new String[]{"which", browsers[count]}).waitFor() == 0) {
+                                browser = browsers[count];
+                            }
                         }
-                    }
-                    if (browser == null) {
-                        throw new Exception("Could not find web browser");
-                    } else {
-                        Runtime.getRuntime().exec(new String[]{browser, url});
+                        if (browser == null) {
+                            throw new Exception("Could not find web browser");
+                        } else {
+                            Runtime.getRuntime().exec(new String[]{browser, url});
+                        }
                     }
                 }
             }

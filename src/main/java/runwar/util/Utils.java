@@ -9,6 +9,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Iterator;
+import java.util.List;
 import net.minidev.json.JSONObject;
 
 /**
@@ -94,4 +95,13 @@ public class Utils {
         return null;
 
     }
+    
+    public static boolean containsCaseInsensitive(String s, List<String> l){
+     for (String string : l){
+        if (string.equalsIgnoreCase(s)){
+            return true;
+         }
+     }
+    return false;
+  }
 }
