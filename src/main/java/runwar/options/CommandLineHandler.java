@@ -1045,7 +1045,7 @@ public class CommandLineHandler {
             }
             
             if (hasOptionValue(line, Keys.BROWSER)) {
-                serverOptions.undertowOptions(line.getOptionValue(Keys.BROWSER));
+                serverOptions.browser(line.getOptionValue(Keys.BROWSER));
             }
             
             if (serverOptions.logLevel().equals(Keys.TRACE)) {
