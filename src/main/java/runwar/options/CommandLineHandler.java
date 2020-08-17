@@ -574,7 +574,7 @@ public class CommandLineHandler {
                 .create(Keys.UNDERTOWOPTIONS));
         
         options.addOption(OptionBuilder
-                .withLongOpt("browser")
+                .withLongOpt("prefered-browser")
                 .withDescription("Browser to be used when a URL is Opened")
                 .hasArg()
                 .withArgName(Keys.BROWSER)
