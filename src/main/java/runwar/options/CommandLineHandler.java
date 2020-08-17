@@ -577,7 +577,6 @@ public class CommandLineHandler {
                 .withLongOpt("prefered-browser")
                 .withDescription("Browser to be used when a URL is Opened")
                 .hasArg()
-                .withArgName(Keys.BROWSER)
                 .create(Keys.BROWSER));
 
         options.addOption(new Option("h", Keys.HELP, false, "print this message"));
