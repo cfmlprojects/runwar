@@ -1177,6 +1177,11 @@ public class ServerOptionsImpl implements ServerOptions {
     public String browser() {
         return browser;
     }
+    
+    public ServerOptions browser(String browser){
+        this.browser = browser;
+        return this;
+    }
 
     public ServerOptions defaultShell(String defaultShell) {
         this.defaultShell = defaultShell;

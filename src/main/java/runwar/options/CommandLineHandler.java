@@ -1043,6 +1043,10 @@ public class CommandLineHandler {
             if (hasOptionValue(line, Keys.UNDERTOWOPTIONS)) {
                 serverOptions.undertowOptions(line.getOptionValue(Keys.UNDERTOWOPTIONS));
             }
+            
+            if (hasOptionValue(line, Keys.BROWSER)) {
+                serverOptions.undertowOptions(line.getOptionValue(Keys.BROWSER));
+            }
 
             if (serverOptions.logLevel().equals(Keys.TRACE)) {
                 for (Option arg : line.getOptions()) {

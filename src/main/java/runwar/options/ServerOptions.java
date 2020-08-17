@@ -356,6 +356,8 @@ public interface ServerOptions {
     String warUriString();
     
     String browser();
+    
+    ServerOptions browser(String browser);
 
     ServerOptions sslCertificate(File file);
 
