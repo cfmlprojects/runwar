@@ -38,7 +38,13 @@ public class BrowserOpener {
                     openURL.invoke(desktopObject, new Object[]{new URI(url)});
                 } catch (Exception e) {
                     e.printStackTrace();
-                    Utils.searchBrowser(prefered_browser, url);
+                    if (Utils.isWindows()) {
+                        Utils.openInBrowser(prefered_browser, url, 1);
+                    } else if (Utils.isMac()) {
+                        Utils.openInBrowser(prefered_browser, url, 2);
+                    } else {
+                        Utils.openInBrowser(prefered_browser, url, 3);
+                    }
                 }
             }
         } catch (Exception e) {
