@@ -31,15 +31,8 @@ ext {
         println "Master Revision:"+ masterRevision
         isSnapshot = masterRevision != revision
         println "Building SNAPSHOT:"+isSnapshot
-        
-        String minor=version.substring(version.lastIndexOf('.')+1);
-        int min=0;
-        
-        if(!minor.equalsIgnoreCase("x")){
-            min=Integer.parseInt(minor)+1;
-        }else{
-            
-        }
+        //      isSnapshot = describedCommit.matches(".*-[0-9]+-g[0-9a-f]{7}")
+        //      version = describedCommit.replaceAll("(.*)-[0-9]+-g[0-9a-f]{7}(.*)", '$1$2') + (isSnapshot ? "-SNAPSHOT" : "")
         
         if(rev != revision){
             File file = new File("gradle/version")

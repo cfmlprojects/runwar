@@ -1,6 +1,5 @@
 package runwar.options;
 
-import com.google.gson.annotations.Expose;
 import io.undertow.UndertowOptions;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -37,17 +36,17 @@ public class ServerOptionsImpl implements ServerOptions {
     private int launchTimeout = 50 * 1000; // 50 secs
     
     private URL jarURL = null;
-    @Expose
+    
     private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicateFile;
-    @Expose
+    
     private String iconImage = null;
     
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
     
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
-
+    
     private String defaultShell = "";
-
+    
     private boolean trayEnable = true;
     
     private boolean dockEnable = true; // for mac users
