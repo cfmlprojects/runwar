@@ -264,12 +264,12 @@ public class Server {
             int sslPort = ports.get("https").socket;
             serverOptions.directBuffers(true);
             LOG.info("Enabling SSL protocol on port " + sslPort);
-            
-            if ( serverOptions.sslEccDisable() && cfengine.toLowerCase().equals("adobe") ) {
+
+            if (serverOptions.sslEccDisable() && cfengine.toLowerCase().equals("adobe")) {
                 LOG.debug("disabling com.sun.net.ssl.enableECC");
                 System.setProperty("com.sun.net.ssl.enableECC", "false");
             }
-            
+
             try {
                 if (serverOptions.sslCertificate() != null) {
                     File certFile = serverOptions.sslCertificate();
@@ -524,19 +524,20 @@ public class Server {
         servletBuilder.addOuterHandlerChainWrapper(next -> new HttpHandler() {
             @Override
             public void handleRequest(HttpServerExchange exchange) throws Exception {
-                if( exchange.getStatusCode() > 399 && exchange.getResponseContentLength() == -1 ) {
+                if (exchange.getStatusCode() > 399 && exchange.getResponseContentLength() == -1) {
                     ServletRequestContext src = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                    ((HttpServletResponse)src.getServletResponse()).sendError(exchange.getStatusCode());
+                    ((HttpServletResponse) src.getServletResponse()).sendError(exchange.getStatusCode());
                 } else {
                     next.handleRequest(exchange);
                 }
             }
+
             @Override
             public String toString() {
                 return "Runwar OuterHandlerChainWrapper";
             }
         });
-        
+
         manager = defaultContainer().addDeployment(servletBuilder);
 
         //hack for older adobe versions
@@ -593,49 +594,59 @@ public class Server {
                     super.handleRequest(exchange);
                 }
             }
+
             @Override
             public String toString() {
                 return "Runwar PathHandler";
             }
         };
-        
+
         pathHandler.addPrefixPath(contextPath, servletHandler);
         HttpHandler httpHandler = pathHandler;
-        
-        if ( serverOptions.predicateFile() != null ) {
-            LOG.debug("Predicates file: " + serverOptions.predicateFile().getAbsolutePath() );
-            
-            if( !serverOptions.predicateFile().exists() ) {
-                throw new RuntimeException( "The predicate file [" + serverOptions.predicateFile().getAbsolutePath() + "] does not exist on disk." );
+
+        if (serverOptions.predicateFile() != null) {
+            LOG.debug("Predicates file: " + serverOptions.predicateFile().getAbsolutePath());
+
+            if (!serverOptions.predicateFile().exists()) {
+                throw new RuntimeException("The predicate file [" + serverOptions.predicateFile().getAbsolutePath() + "] does not exist on disk.");
             }
-            
-            BufferedReader br = new BufferedReader( new FileReader( serverOptions.predicateFile() ) );
+
+            BufferedReader br = new BufferedReader(new FileReader(serverOptions.predicateFile()));
             String predicatesLines = "";
-	        String st;
+            String st;
             try {
-		        while ((st = br.readLine()) != null) {
-		            LOG.trace( st );
-		            predicatesLines = predicatesLines + st + "\n";
-		        }
+                while ((st = br.readLine()) != null) {
+                    LOG.trace(st);
+                    predicatesLines = predicatesLines + st + "\n";
+                }
             } finally {
-            	br.close();
+                br.close();
+            }
+
+            List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
+            LOG.debug(ph.size() + " predicate(s) loaded");
+
+            httpHandler = Handlers.predicates(ph, httpHandler);
+        }
+
+        httpHandler = new LifecyleHandler(httpHandler, serverOptions);
+
+        if (serverOptions.gzipEnable()) {
+            //the default packet size on the internet is 1500 bytes so 
+            //any file less than 1.5k can be sent in a single packet 
+            long defaultSize = 1500;
+            String predicate = serverOptions.gzipPredicate();
+            if (serverOptions.gzipContentSize() != null) {
+                LOG.debug("Setting GZIP minimun content size = " + serverOptions.gzipContentSize() + " bytes");
+                defaultSize = serverOptions.gzipContentSize();
             }
             
-	        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
-	        LOG.debug( ph.size() + " predicate(s) loaded" );
-	
-	        httpHandler = Handlers.predicates(ph, httpHandler);
-        }
-        
-        httpHandler = new LifecyleHandler(httpHandler,serverOptions);
-        
-        if (serverOptions.gzipEnable()) {
+            predicate = predicate+"(" + defaultSize + ")";
+            // The max-content-size predicate doesn't do what you think it does.  
+            // The "Predicate ... returns true if the Content-Size of a request is above a given value."
+            // This means gzip is only applied if the content length is LARGER than 5 bytes
             httpHandler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
-            		// The max-content-size predicate doesn't do what you think it does.  
-            		// The "Predicate ... returns true if the Content-Size of a request is above a given value."
-            		// This means gzip is only applied if the content length is LARGER than 5 bytes
-                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size(5)")))
-                    .setNext(httpHandler);
+                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse(predicate))).setNext(httpHandler);
         }
 
         if (serverOptions.logAccessEnable()) {

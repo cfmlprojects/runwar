@@ -76,6 +76,10 @@ public class ServerOptionsImpl implements ServerOptions {
     @Expose
     private boolean gzipEnable = false;
     @Expose
+    private Long gzipContentSize = 1500L;
+    @Expose
+    private String gzipPredicate = "max-content-size";
+    @Expose
     private Long transferMinSize = (long) 100;
     @Expose
     private boolean mariadb4jEnable = false;
@@ -1510,6 +1514,28 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public boolean gzipEnable() {
         return this.gzipEnable;
+    }
+    
+    @Override
+    public ServerOptions gzipContentSize(Long size) {
+        this.gzipContentSize = size;
+        return this;
+    }
+
+    @Override
+    public Long gzipContentSize() {
+        return this.gzipContentSize;
+    }
+    
+    @Override
+    public ServerOptions gzipPredicate(String predicate) {
+        this.gzipPredicate = predicate;
+        return this;
+    }
+
+    @Override
+    public String gzipPredicate() {
+        return this.gzipPredicate;
     }
 
     /** 
