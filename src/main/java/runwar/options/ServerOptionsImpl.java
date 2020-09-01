@@ -1,5 +1,6 @@
 package runwar.options;
 
+import com.google.gson.annotations.Expose;
 import io.undertow.UndertowOptions;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -36,9 +37,9 @@ public class ServerOptionsImpl implements ServerOptions {
     private int launchTimeout = 50 * 1000; // 50 secs
     
     private URL jarURL = null;
-    
-    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null;
-    
+    @Expose
+    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicateFile;
+    @Expose
     private String iconImage = null;
     
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
@@ -1100,15 +1101,7 @@ public class ServerOptionsImpl implements ServerOptions {
     public File trayConfig() {
         return trayConfig;
     }
-
-    /** 
-     * @see runwar.options.ServerOptions#trayConfigJSON()
-     */
-    @Override
-    public JSONArray trayConfigJSON() {
-        return trayConfigJSON;
-    }
-
+    
     /** 
      * @see runwar.options.ServerOptions#trayConfig(java.io.File)
      */
@@ -1116,6 +1109,31 @@ public class ServerOptionsImpl implements ServerOptions {
     public ServerOptions trayConfig(File trayConfig) {
         this.trayConfig = trayConfig;
         return this;
+    }
+    
+        /** 
+     * @see runwar.options.ServerOptions#predicateFile()
+     */
+    @Override
+    public File predicateFile() {
+        return predicateFile;
+    }
+    
+    /** 
+     * @see runwar.options.ServerOptions#predicateFile(java.io.File)
+     */
+    @Override
+    public ServerOptions predicateFile(File predicateFile) {
+        this.predicateFile = predicateFile;
+        return this;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#trayConfigJSON()
+     */
+    @Override
+    public JSONArray trayConfigJSON() {
+        return trayConfigJSON;
     }
 
     /** 

@@ -5,16 +5,19 @@
  */
 package runwar.util;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Iterator;
+import net.minidev.json.JSONObject;
 
 /**
  *
  * @author pyro
  */
 public class Utils {
-    
-    private static String OS = System.getProperty("os.name").toLowerCase();
+
+    private static String OS = System.getProperty("os.name");
 
     public static String replaceHost(String openbrowserURL, String oldHost, String newHost) {
         String url = openbrowserURL;
@@ -33,14 +36,14 @@ public class Utils {
     }
 
     public static boolean isWindows() {
-        
-        return (OS.indexOf("win") >= 0);
+
+        return (OS.toLowerCase().indexOf("win") >= 0);
 
     }
 
     public static boolean isMac() {
 
-        return (OS.indexOf("mac") >= 0);
+        return (OS.toLowerCase().indexOf("mac") >= 0);
 
     }
 
@@ -50,4 +53,45 @@ public class Utils {
 
     }
 
+    public static String[] shells = new String[]{"/bin/bash", "/usr/bin/bash",
+        "/bin/pfbash", "/usr/bin/pfbash",
+        "/bin/csh", "/usr/bin/csh",
+        "/bin/pfcsh", "/usr/bin/pfcsh",
+        "/bin/jsh", "/usr/bin/jsh",
+        "/bin/ksh", "/usr/bin/ksh",
+        "/bin/pfksh", "/usr/bin/pfksh",
+        "/bin/ksh93", "/usr/bin/ksh93",
+        "/bin/pfksh93", "/usr/bin/pfksh93",
+        "/bin/pfsh", "/usr/bin/pfsh",
+        "/bin/tcsh", "/usr/bin/tcsh",
+        "/bin/pftcsh", "/usr/bin/pftcsh",
+        "/usr/xpg4/bin/sh", "/usr/xp4/bin/pfsh",
+        "/bin/zsh", "/usr/bin/zsh",
+        "/bin/pfzsh", "/usr/bin/pfzsh",
+        "/bin/sh", "/usr/bin/sh",};
+
+    public static String availableShellPick() {
+        String shell = "";
+        for (String curShell : shells) {
+            if (new File(curShell).canExecute()) {
+                shell = curShell;
+                break;
+            }
+        }
+        return shell;
+    }
+
+    public static Object getIgnoreCase(JSONObject jobj, String key) {
+
+        Iterator<String> iter = jobj.keySet().iterator();
+        while (iter.hasNext()) {
+            String key1 = iter.next();
+            if (key1.equalsIgnoreCase(key)) {
+                return jobj.get(key1);
+            }
+        }
+
+        return null;
+
+    }
 }

@@ -13,6 +13,8 @@ import io.undertow.server.handlers.ProxyPeerAddressHandler;
 import io.undertow.server.handlers.SSLHeaderHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
+import io.undertow.server.handlers.builder.PredicatedHandler;
+import io.undertow.server.handlers.builder.PredicatedHandlersParser;
 import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
@@ -54,9 +56,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import javax.servlet.Servlet;
+import javax.servlet.http.HttpServletResponse;
 
 import static io.undertow.servlet.Servlets.defaultContainer;
 import static io.undertow.servlet.Servlets.deployment;
+import io.undertow.servlet.handlers.ServletRequestContext;
+
 import static runwar.logging.RunwarLogger.CONTEXT_LOG;
 import static runwar.logging.RunwarLogger.LOG;
 import runwar.util.Utils;
@@ -168,7 +173,7 @@ public class Server {
         LOG.info(bar);
         stopServer();
         LaunchUtil.restartApplication(() -> {
-            LOG.debug("About to restart... (but probably we'll just die here-- this is neigh impossible.)");
+            LOG.debug("About to restart... ");
             stopServer();
             serverWentDown();
         });
@@ -259,12 +264,12 @@ public class Server {
             int sslPort = ports.get("https").socket;
             serverOptions.directBuffers(true);
             LOG.info("Enabling SSL protocol on port " + sslPort);
-            if (serverOptions.sslEccDisable()) {
+            
+            if ( serverOptions.sslEccDisable() && cfengine.toLowerCase().equals("adobe") ) {
                 LOG.debug("disabling com.sun.net.ssl.enableECC");
                 System.setProperty("com.sun.net.ssl.enableECC", "false");
-            } else {
-                LOG.debug("NOT disabling com.sun.net.ssl.enableECC");
             }
+            
             try {
                 if (serverOptions.sslCertificate() != null) {
                     File certFile = serverOptions.sslCertificate();
@@ -447,9 +452,9 @@ public class Server {
         // configure NIO options and worker
         Xnio xnio = Xnio.getInstance("nio", Server.class.getClassLoader());
         OptionMap.Builder serverXnioOptions = serverOptions.xnioOptions();
-        
+
         logXnioOptions(serverXnioOptions);
-        
+
         if (serverOptions.ioThreads() != 0) {
             LOG.info("IO Threads: " + serverOptions.ioThreads());
             serverBuilder.setIoThreads(serverOptions.ioThreads()); // posterity: ignored when managing worker
@@ -514,6 +519,24 @@ public class Server {
                 new WebSocketDeploymentInfo().setBuffers(new DefaultByteBufferPool(true, 1024 * 16)).setWorker(worker));
         LOG.debug("Added websocket context");
 
+        // Remove this if/when this ticket is complete:
+        // https://issues.redhat.com/browse/UNDERTOW-1747
+        servletBuilder.addOuterHandlerChainWrapper(next -> new HttpHandler() {
+            @Override
+            public void handleRequest(HttpServerExchange exchange) throws Exception {
+                if( exchange.getStatusCode() > 399 && exchange.getResponseContentLength() == -1 ) {
+                    ServletRequestContext src = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                    ((HttpServletResponse)src.getServletResponse()).sendError(exchange.getStatusCode());
+                } else {
+                    next.handleRequest(exchange);
+                }
+            }
+            @Override
+            public String toString() {
+                return "Runwar OuterHandlerChainWrapper";
+            }
+        });
+        
         manager = defaultContainer().addDeployment(servletBuilder);
 
         //hack for older adobe versions
@@ -526,7 +549,7 @@ public class Server {
         }
 
         manager.deploy();
-        HttpHandler servletHandler = manager.start();        
+        HttpHandler servletHandler = manager.start();
         LOG.debug("started servlet deployment manager");
 
         if (!System.getProperty("java.version", "").equalsIgnoreCase(originalJavaVersion)) {
@@ -555,7 +578,6 @@ public class Server {
                     exchange.getResponseHeaders().add(SECURE, "true");
                 }
 
-                CONTEXT_LOG.debug("requested: '" + fullExchangePath(exchange) + "'");
                 if (exchange.getRequestPath().endsWith(".svgz")) {
                     exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, "gzip");
                 }
@@ -564,15 +586,6 @@ public class Server {
                     CONTEXT_LOG.trace("*** Resetting servlet path info");
                     manager.getDeployment().getServletPaths().invalidate();
                 }
-                if (serverOptions.debug()) {
-                    // output something if in debug mode and response is other than OK
-                    exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                        if (httpServerExchange.getStatusCode() > 399) {
-                            CONTEXT_LOG.warnf("responded: Status Code %s (%s)", httpServerExchange.getStatusCode(), fullExchangePath(httpServerExchange));
-                        }
-                        nextListener.proceed();
-                    });
-                }
 
                 if (serverOptions.debug() && serverOptions.testing() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
                     new RequestDumper().handleRequest(exchange);
@@ -580,32 +593,59 @@ public class Server {
                     super.handleRequest(exchange);
                 }
             }
+            @Override
+            public String toString() {
+                return "Runwar PathHandler";
+            }
         };
+        
         pathHandler.addPrefixPath(contextPath, servletHandler);
-
-        HttpHandler httpHandler;
-
+        HttpHandler httpHandler = pathHandler;
+        
+        if ( serverOptions.predicateFile() != null ) {
+            LOG.debug("Predicates file: " + serverOptions.predicateFile().getAbsolutePath() );
+            
+            if( !serverOptions.predicateFile().exists() ) {
+                throw new RuntimeException( "The predicate file [" + serverOptions.predicateFile().getAbsolutePath() + "] does not exist on disk." );
+            }
+            
+            BufferedReader br = new BufferedReader( new FileReader( serverOptions.predicateFile() ) );
+            String predicatesLines = "";
+	        String st;
+            try {
+		        while ((st = br.readLine()) != null) {
+		            LOG.trace( st );
+		            predicatesLines = predicatesLines + st + "\n";
+		        }
+            } finally {
+            	br.close();
+            }
+            
+	        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
+	        LOG.debug( ph.size() + " predicate(s) loaded" );
+	
+	        httpHandler = Handlers.predicates(ph, httpHandler);
+        }
+        
+        httpHandler = new LifecyleHandler(httpHandler,serverOptions);
+        
         if (serverOptions.gzipEnable()) {
-            final EncodingHandler handler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
+            httpHandler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
+            		// The max-content-size predicate doesn't do what you think it does.  
+            		// The "Predicate ... returns true if the Content-Size of a request is above a given value."
+            		// This means gzip is only applied if the content length is LARGER than 5 bytes
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size(5)")))
-                    .setNext(pathHandler);
-            httpHandler = new ErrorHandler(handler);
-        } else {
-            httpHandler = new ErrorHandler(pathHandler);
+                    .setNext(httpHandler);
         }
 
         if (serverOptions.logAccessEnable()) {
-//            final String PATTERN = "cs-uri cs(test-header) x-O(aa) x-H(secure)";
             RunwarAccessLogReceiver accessLogReceiver = RunwarAccessLogReceiver.builder().setLogWriteExecutor(logWorker)
                     .setRotate(true)
                     .setOutputDirectory(serverOptions.logAccessDir().toPath())
                     .setLogBaseName(serverOptions.logAccessBaseFileName())
                     .setLogNameSuffix(serverOptions.logSuffix())
-                    //                .setLogFileHeaderGenerator(new ExtendedAccessLogParser.ExtendedAccessLogHeaderGenerator(PATTERN))
                     .build();
             LOG.info("Logging combined access to " + serverOptions.logAccessDir() + " base name of '" + serverOptions.logAccessBaseFileName() + "." + serverOptions.logSuffix() + ", rotated daily'");
-//            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver, PATTERN, new ExtendedAccessLogParser( Server.class.getClassLoader()).parse(PATTERN));
-//            errPageHandler = new AccessLogHandler(errPageHandler, logReceiver,"common", Server.class.getClassLoader());
             httpHandler = new AccessLogHandler(httpHandler, accessLogReceiver, "combined", Server.class.getClassLoader());
         }
 
@@ -732,7 +772,7 @@ public class Server {
             serverBuilder.setServerOption(option, undertowOptionsMap.get(option));
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     private void logXnioOptions(OptionMap.Builder xnioOptions) {
         OptionMap serverXnioOptionsMap = xnioOptions.getMap();
@@ -745,7 +785,7 @@ public class Server {
         return ports;
     }
 
-    private static String fullExchangePath(HttpServerExchange exchange) {
+    static String fullExchangePath(HttpServerExchange exchange) {
         return exchange.getRequestPath() + (exchange.getQueryString().length() > 0 ? "?" + exchange.getQueryString() : "");
     }
 
@@ -787,7 +827,7 @@ public class Server {
                         if (mainThread.isAlive()) {
                             LOG.debug("shutdown hook joining main thread");
                             mainThread.interrupt();
-                            mainThread.join( 3000 );
+                            mainThread.join(3000);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -837,7 +877,7 @@ public class Server {
                                 http2proxy.stop();
                             }
                             if (undertow != null) {
-                            undertow.stop();
+                                undertow.stop();
                             }
                             if (worker != null) {
                                 worker.shutdown();
@@ -870,7 +910,7 @@ public class Server {
                 }
 
                 if (monitor != null) {
-                LOG.debug("Stopping server monitor");
+                    LOG.debug("Stopping server monitor");
                     MonitorThread monitorThread = monitor;
                     monitor = null;
                     monitorThread.stopListening(false);
@@ -1131,7 +1171,6 @@ public class Server {
             return;
         }
     }
-
 
     public ServerOptions getServerOptions() {
         return serverOptions;

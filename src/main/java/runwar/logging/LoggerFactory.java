@@ -54,13 +54,16 @@ public class LoggerFactory {
         Logger UNDERTOW_LOG = Logger.getLogger("io.undertow.servlet");
         loggers.add(UNDERTOW_LOG);
 
-        Logger UNDERTOW_REQUEST_LOG = Logger.getLogger("io.undertow.request");
-        loggers.add(UNDERTOW_REQUEST_LOG);
+        Logger UNDERTOW_PREDICATE_LOG = Logger.getLogger("io.undertow.predicate");
+        loggers.add(UNDERTOW_PREDICATE_LOG);
+
+       // Logger UNDERTOW_REQUEST_LOG = Logger.getLogger("io.undertow.request");
+       // loggers.add(UNDERTOW_REQUEST_LOG);
 
         Logger UNDERTOW_IO_LOG = Logger.getLogger("io.undertow");
         loggers.add(UNDERTOW_IO_LOG);
 
-        Logger XNIO_LOG = Logger.getLogger("org.xnio.nio");
+        Logger XNIO_LOG = Logger.getLogger("org.xnio");
         loggers.add(XNIO_LOG);
 
         Logger HTTP_CLIENT_LOG = Logger.getLogger("org.apache.http.client.protocol");
@@ -80,6 +83,7 @@ public class LoggerFactory {
 
         Logger RUNWAR_REQUEST = Logger.getLogger("runwar.request");
         loggers.add(RUNWAR_REQUEST);
+
 
         Logger RUNWAR_BACKGROUND = Logger.getLogger("runwar.background");
         RUNWAR_BACKGROUND.addAppender(consoleAppender("%m%n"));
@@ -105,6 +109,8 @@ public class LoggerFactory {
         RUNWAR_REQUEST.setLevel(Level.WARN);
         DORKBOX_LOG.setLevel(Level.ERROR);
         UNDERTOW_LOG.setLevel(Level.WARN);
+        UNDERTOW_IO_LOG.setLevel(Level.WARN);
+        XNIO_LOG.setLevel(Level.WARN);
         HTTP_CLIENT_LOG.setLevel(Level.WARN);
         System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
 
@@ -117,18 +123,24 @@ public class LoggerFactory {
                 DORKBOX_LOG.setLevel(level);
                 appenders.forEach(DORKBOX_LOG::addAppender);
                 UNDERTOW_LOG.setLevel(level);
+                UNDERTOW_PREDICATE_LOG.setLevel(level);
                 HTTP_CLIENT_LOG.setLevel(level);
                 RUNWAR_CONFIG.setLevel(level);
                 RUNWAR_SERVER.setLevel(level);
                 RUNWAR_CONTEXT.setLevel(level);
                 RUNWAR_SECURITY.setLevel(level);
-                RUNWAR_REQUEST.setLevel(level);
+                
+                // This logger is only used in the resource mapper and is really chatty
+                // Consider a setting to enable it only when troubleshooting file system mapping issues
+                //RUNWAR_REQUEST.setLevel(level);
+                
                 Logger.getRootLogger().setLevel(level);
                 System.setProperty("org.eclipse.jetty.LEVEL", "ALL");
                 configureUrlRewriteLoggers(true);
             } else {
                 RUNWAR_REQUEST.setLevel(Level.INFO);
                 RUNWAR_SECURITY.setLevel(Level.DEBUG);
+                UNDERTOW_PREDICATE_LOG.setLevel(Level.DEBUG);
                 configureUrlRewriteLoggers(false);
             }
         }

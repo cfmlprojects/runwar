@@ -20,6 +20,7 @@ import dorkbox.systemTray.Menu;
 import dorkbox.systemTray.MenuItem;
 import dorkbox.systemTray.Separator;
 import dorkbox.systemTray.SystemTray;
+import dorkbox.util.OS;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -48,6 +49,10 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import runwar.gui.SubmitActionlistioner;
 import runwar.util.dae.OSType;
+
+import java.lang.reflect.Method;
+import static runwar.util.Reflection.invoke;
+import static runwar.util.Reflection.method;
 
 public class Tray {
 
@@ -151,32 +156,31 @@ public class Tray {
     }
 
     public void addMenuItems(JSONArray items, Menu menu, Server server) {
-        System.setProperty("os.name", System.getProperty("os.name").toLowerCase());
         for (Object ob : items) {
             JSONObject itemInfo = (JSONObject) ob;
             InputStream is = null;
             String label = getString(itemInfo, "label", "");
             String hotkey = getString(itemInfo, "hotkey", "");
             boolean isDisabled = Boolean.parseBoolean(getString(itemInfo, "disabled", "false"));
-            if (itemInfo.get("image") != null) {
-                is = getImageInputStream(itemInfo.get("image").toString());
+            if (Utils.getIgnoreCase(itemInfo, "image") != null) {
+                is = getImageInputStream(Utils.getIgnoreCase(itemInfo, "image").toString());
             } else {
                 //check if property action is used
-                if (itemInfo.get("action") != null) {
+                if (Utils.getIgnoreCase(itemInfo, "action") != null) {
                     //set Defaults
                     try {
-                        if (itemInfo.get("command") != null && itemInfo.get("command").toString().startsWith("box ")) {
+                        if (Utils.getIgnoreCase(itemInfo, "command") != null && Utils.getIgnoreCase(itemInfo, "command").toString().toLowerCase().startsWith("box ")) {
                             is = getClass().getResourceAsStream("/box.png");
                         } else {
-                            switch ((String) itemInfo.get("action")) {
+                            switch ((String) Utils.getIgnoreCase(itemInfo, "action")) {
                                 case "run":
                                     is = getClass().getResourceAsStream("/run.png");
                                     break;
                                 case "runAsync":
-                                    is = getClass().getResourceAsStream("/run_async.png");
+                                    is = getClass().getResourceAsStream("/runAsync.png");
                                     break;
                                 case "runTerminal":
-                                    is = getClass().getResourceAsStream("/icon_terminal.png");
+                                    is = getClass().getResourceAsStream("/runTerminal.png");
                                     break;
                             }
                         }
@@ -186,31 +190,35 @@ public class Tray {
                 }
             }
             MenuItem menuItem = null;
-            if (itemInfo.get("items") != null) {
+            if (Utils.getIgnoreCase(itemInfo, "items") != null) {
                 Menu submenu = new Menu(label, is);
                 submenu.setShortcut(label.charAt(0));
                 menu.add(submenu);
-                addMenuItems((JSONArray) itemInfo.get("items"), submenu, server);
-            } else if (itemInfo.get("separator") != null) {
+                addMenuItems((JSONArray) Utils.getIgnoreCase(itemInfo, "items"), submenu, server);
+            } else if (Utils.getIgnoreCase(itemInfo, "separator") != null) {
                 menu.add(new Separator());
-            } else if (itemInfo.get("checkbox") != null) {
+            } else if (Utils.getIgnoreCase(itemInfo, "checkbox") != null) {
                 Checkbox checkbox = new Checkbox(label, null);
                 checkbox.setShortcut(label.charAt(0));
                 checkbox.setEnabled(!isDisabled);
                 menu.add(checkbox);
-            } else if (itemInfo.get("action") != null) {
+            } else if (Utils.getIgnoreCase(itemInfo, "action") != null) {
                 String action = getString(itemInfo, "action", "");
                 if (action.equalsIgnoreCase("stopserver")) {
                     menuItem = new MenuItem(label, is, new ExitAction(server));
                     menuItem.setShortcut('s');
                 } else if (action.equalsIgnoreCase("restartserver")) {
-                    menuItem = new MenuItem(label, is, new RestartAction(server));
+                    //menuItem = new MenuItem(label, is, new RestartAction(server));
+                    String command = "box server restart";
+                    String workingDirectory = server.getServerOptions().warUriString();
+                    String shell = Utils.availableShellPick();
+                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                     menuItem.setShortcut('r');
                 } else if (action.equalsIgnoreCase("getversion")) {
                     menuItem = new MenuItem("Version: " + Server.getVersion(), is, new GetVersionAction());
                     menuItem.setShortcut('v');
                 } else if (action.equalsIgnoreCase("openbrowser")) {
-                    String url = itemInfo.get("url").toString();
+                    String url = Utils.getIgnoreCase(itemInfo, "url").toString();
                     menuItem = new MenuItem(label, is, new OpenBrowserAction(url));
                     menuItem.setShortcut('o');
                 } else if (action.equalsIgnoreCase("openfilesystem")) {
@@ -219,8 +227,8 @@ public class Tray {
                     menuItem.setShortcut('b');
                 } else if (action.equalsIgnoreCase("run")) {
                     String command = getString(itemInfo, "command", "");
-                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
+                    String workingDirectory = getString(itemInfo, "workingDirectory", server.getServerOptions().warUriString());
+                    String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     Boolean waitResponse = true;
                     try {
                         waitResponse = Boolean.parseBoolean(getString(itemInfo, "waitResponse", "true"));
@@ -231,28 +239,8 @@ public class Tray {
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, waitResponse, shell));
                 } else if (action.equalsIgnoreCase("runAsync")) {
                     String command = getString(itemInfo, "command", "");
-                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
-                    menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
-                } else if (action.equalsIgnoreCase("runTerminal")) {
-                    String command = getString(itemInfo, "command", "");
-                    String workingDirectory = getString(itemInfo, "workingDirectory", "");
-                    String shell = getString(itemInfo, "shell", server.getServerOptions().defaultShell());
-                    String waitResponse = getString(itemInfo, "waitResponse", "true");
-                    RunwarLogger.LOG.info("This action (runTerminal) cannot wait for response, ignoring -> waitResponse:" + waitResponse);
-
-                    if (Utils.isMac()) {
-                        RunwarLogger.LOG.info("Executing on Mac OS X");
-                        command = "osascript -e 'tell app \"Terminal\" to do script \"" + command + "\"'";
-                    } else if (Utils.isWindows()) {
-                        RunwarLogger.LOG.info("Executing on Windows");
-                        command = "start cmd.exe /k \"" + command + "\"";
-                    } else if (Utils.isUnix()) {
-                        RunwarLogger.LOG.info("Executing on *NIX");
-                    } else {
-                        RunwarLogger.LOG.error("Your OS is not currently supported to perform this action");
-                    }
-
+                    String workingDirectory = getString(itemInfo, "workingDirectory", server.getServerOptions().warUriString());
+                    String shell = getString(itemInfo, "shell", Utils.availableShellPick());
                     menuItem = new MenuItem(label, is, new RunShellCommandAction(command, workingDirectory, false, shell));
                 } else {
                     RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
@@ -292,7 +280,7 @@ public class Tray {
             loadItems = (JSONArray) menuObject;
         } else {
             config = (JSONObject) JSONValue.parse(jsonText);
-            loadItems = (JSONArray) config.get("items");
+            loadItems = (JSONArray) Utils.getIgnoreCase(config, "items");
         }
         String title = getString(config, "title", defaultTitle);
         config.put("title", title);
@@ -309,20 +297,20 @@ public class Tray {
 
         for (Object ob : loadItems) {
             JSONObject itemInfo = (JSONObject) ob;
-            if (itemInfo.get("label") == null) {
+            if (Utils.getIgnoreCase(itemInfo, "label") == null) {
                 RunwarLogger.LOG.error("No label for menu item: " + itemInfo.toJSONString());
                 continue;
             }
             String label = getString(itemInfo, "label", "");
             itemInfo.put("label", label);
             if (itemInfo.get("action") != null) {
-                String action = itemInfo.get("action").toString();
+                String action = Utils.getIgnoreCase(itemInfo, "action").toString();
                 if (action.toLowerCase().equals("stopserver") && action.toLowerCase().equals("openbrowser")) {
                     RunwarLogger.LOG.error("Unknown menu item action \"" + action + "\" for \"" + label + "\"");
                     itemInfo.put("action", null);
                 }
             }
-            if (itemInfo.get("url") != null) {
+            if (Utils.getIgnoreCase(itemInfo, "url") != null) {
                 itemInfo.put("action", getString(itemInfo, "action", "openbrowser"));
                 itemInfo.put("url", getString(itemInfo, "url", ""));
             }
@@ -334,7 +322,7 @@ public class Tray {
     }
 
     private static String getString(JSONObject menu, String key, String defaultValue) {
-        String value = menu.get(key) != null ? menu.get(key).toString() : defaultValue;
+        String value = Utils.getIgnoreCase(menu, key) != null ? Utils.getIgnoreCase(menu, key).toString() : defaultValue;
         return replaceMenuTokens(value);
     }
 
@@ -517,21 +505,6 @@ public class Tray {
         }
     }
 
-    public static class ConsumerClass {
-
-        JTextArea jta;
-        final static String newline = "\n";
-
-        public ConsumerClass(JTextArea jta) {
-            this.jta = jta;
-        }
-
-        public void printString(String text) {
-            jta.append(newline);
-            jta.append(text);
-        }
-    }
-
     private static class RunShellCommandAction implements ActionListener {
 
         private String command;
@@ -576,7 +549,6 @@ public class Tray {
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
-                RunwarLogger.LOG.info("RunShellCommandAction ------");
                 boolean isWindows = System.getProperty("os.name")
                         .toLowerCase().startsWith("windows");
 
@@ -604,56 +576,32 @@ public class Tray {
 
                 Process process = builder.start();
 
-                int exitCode = 99;
                 if (waitResponse) {
-                    JTextArea jta = new JTextArea("");
-                    ConsumerClass cc = new ConsumerClass(jta);
-                    StreamGobbler streamGobbler
-                            = new StreamGobbler(process.getInputStream(), cc::printString);
-                    ExecutorService service = Executors.newSingleThreadExecutor();
-                    Future tsk = service.submit(streamGobbler);
-                    JScrollPane jsp = new JScrollPane(jta) {
-                        @Override
-                        public Dimension getPreferredSize() {
-                            return new Dimension(680, 420);
-                        }
-                    };
-
-                    String cmd = null;
-                    for (String bc : builder.command()) {
-                        cmd = bc;
-                        break;
-                    }
-
-                    Runnable r = new MyRunnable(process, jsp, service, tsk, jta, cmd);
+                    RunwarLogger.LOG.info("Tray menu sync execution of: " + builder.command());
+                    Runnable r = new TrayActionSyncRunner(process, command);
                     new Thread(r).start();
 
-                    RunwarLogger.LOG.info("Content:" + exitCode);
-                    Notify.create()
-                            .title("Run Output")
-                            .text("Executed " + builder.command())
-                            .position(Pos.TOP_RIGHT)
-                            .hideAfter(5000)
-                            .darkStyle()
-                            .showConfirm();
                 } else {
-                    RunwarLogger.LOG.info("Not waiting for response:" + exitCode);
-                    Notify.create()
-                            .title("Run Output")
-                            .text("Executed " + builder.command())
-                            .position(Pos.TOP_RIGHT)
-                            .darkStyle()
-                            .hideAfter(5000)
-                            .showConfirm();
-                    RunwarLogger.LOG.warn("Not waiting for response when running -->>" + command);
+                    RunwarLogger.LOG.info("Tray menu async execution of: " + builder.command());
                 }
+
+                // Consistent with server popups
+                Pos position = OS.isMacOsX() ? Pos.TOP_RIGHT : Pos.BOTTOM_RIGHT;
+                Notify.create()
+                        .title("Run Command")
+                        .text("Executed " + command)
+                        .position(position)
+                        .darkStyle()
+                        .hideAfter(5000)
+                        .showConfirm();
+
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
         }
     }
 
-    public static class MyRunnable implements Runnable {
+    public static class TrayActionSyncRunner implements Runnable {
 
         Process process;
         JScrollPane jsp;
@@ -661,63 +609,97 @@ public class Tray {
         Future tsk;
         JTextArea jta;
         String title;
+        String newline = "\n";
 
-        public MyRunnable(Process process, JScrollPane jsp, ExecutorService service, Future tsk, JTextArea jta, String title) {
-            this.process = process;
-            this.jsp = jsp;
-            this.service = service;
-            this.tsk = tsk;
-            this.jta = jta;
-            this.title = title;
-        }
+        public void run() {
 
-        public void showFrame(JScrollPane jsp, JTextArea jta) {
             try {
-                JFrame frame = new JFrame("Command Output");
-                jsp = new JScrollPane(jta) {
+                this.jta = new JTextArea("");
+                StreamGobbler streamGobbler
+                        = new StreamGobbler(process.getInputStream(), this::printString);
+                this.service = Executors.newSingleThreadExecutor();
+                this.jsp = new JScrollPane(jta) {
                     @Override
                     public Dimension getPreferredSize() {
                         return new Dimension(680, 420);
                     }
                 };
-                frame.setTitle(title);
+
+                JFrame frame = new JFrame("Command Output");
+
+                long PID = 0;
+                // PID is only accessable on Java 9+
+                Method pidMethod = method(process.getClass(), "pid");
+                if (pidMethod != null) {
+                    pidMethod.setAccessible(true);
+                    PID = (long) invoke(pidMethod, process);
+                }
+
+                if (PID > 0) {
+                    frame.setTitle(title + "  PID: " + PID);
+                } else {
+                    frame.setTitle(title);
+                }
                 frame.getContentPane().add(jsp, BorderLayout.CENTER);
                 frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
                 frame.setSize(new Dimension(880, 620));
-                JButton b1 = new JButton("Stop Command");
-                b1.setSize(20, 100);
-                b1.setLocation(500, 350);
-                b1.addActionListener(new java.awt.event.ActionListener() {
+                JButton stopButton = new JButton("Stop Command");
+                stopButton.setSize(20, 100);
+                stopButton.setLocation(500, 350);
+                stopButton.addActionListener(new java.awt.event.ActionListener() {
                     public void actionPerformed(java.awt.event.ActionEvent evt) {
-                        b1.setEnabled(false);
+                        stopButton.setEnabled(false);
                         stopCommandAttempt(evt);
-                        //b1.setEnabled(true);
                     }
                 });
-                frame.getContentPane().add(b1, BorderLayout.SOUTH);
+                frame.getContentPane().add(stopButton, BorderLayout.SOUTH);
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
+
+                if (PID > 0) {
+                    this.jta.append("PID: " + PID + newline + newline);
+                }
+                this.jta.append("$> " + title);
+
+                this.tsk = service.submit(streamGobbler);
+
                 int exitCode = process.waitFor();
-                this.jta.append("\n" + "Exit Code:" + exitCode);
+
+                // Give the stream gobbler time to finish
+                service.shutdown();
+                service.awaitTermination(5, TimeUnit.SECONDS);
+
+                this.jta.append(newline + newline + "Exit Code:" + exitCode);
+                stopButton.setEnabled(false);
             } catch (InterruptedException ex) {
-                RunwarLogger.LOG.info("An Error Occurred:" + ex.getMessage());
+                ex.printStackTrace();
+                RunwarLogger.LOG.error("An Error Occurred:" + ex.getMessage());
             }
+        }
+
+        private void printString(String text) {
+            jta.append(newline + text);
+        }
+
+        public TrayActionSyncRunner(Process process, String title) {
+            this.process = process;
+            this.title = title;
         }
 
         private void stopCommandAttempt(java.awt.event.ActionEvent evt) {
             try {
-                RunwarLogger.LOG.info("Attempting to stop Command...");
+                RunwarLogger.LOG.info("Attempting to stop process: " + this.title);
                 process.destroy();
-                process.waitFor(5000, TimeUnit.MILLISECONDS);
+                process.waitFor(5, TimeUnit.SECONDS);
                 if (process.isAlive()) {
-                    RunwarLogger.LOG.warn("Attemting to destroy process forcibly");
+                    RunwarLogger.LOG.warn("Attempting to destroy process forcibly: " + this.title);
                     process.destroyForcibly();
                 }
 
                 if (!process.isAlive()) {
-                    RunwarLogger.LOG.info("Process Stopped");
+                    RunwarLogger.LOG.info("Process Stopped: " + this.title);
                 } else {
-                    RunwarLogger.LOG.info("Process cannot be Stopped");
+                    RunwarLogger.LOG.warn("Process cannot be Stopped: " + this.title);
                 }
                 if (service != null) {
                     service.shutdown();
@@ -726,19 +708,7 @@ public class Tray {
                     tsk.cancel(true);
                 };
             } catch (InterruptedException ex) {
-                RunwarLogger.LOG.info("An Error Occurred:" + ex.getMessage());
-            }
-        }
-
-        public void run() {
-            try {
-                showFrame(jsp, jta);
-
-                //int exitCode = process.waitFor();                
-                //RunwarLogger.LOG.info("Exit code:" + exitCode);
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.err.println(e);
+                RunwarLogger.LOG.error("An Error Occurred trying to stop command :" + this.title, ex);
             }
         }
     }

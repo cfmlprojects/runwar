@@ -51,7 +51,7 @@ public class LaunchUtil {
     public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
             "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
 
-    private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
+    private static final String OS_NAME = System.getProperty("os.name");
     private static String uname;
     private static String linuxRelease;
     static {
