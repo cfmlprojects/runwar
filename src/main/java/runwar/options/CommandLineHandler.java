@@ -395,11 +395,6 @@ public class CommandLineHandler {
                 .create(Keys.GZIP));
 
         options.addOption(OptionBuilder
-                .withLongOpt("gzip-content-size")
-                .withDescription("Content size for gzip")
-                .hasArg().create(Keys.GZIP_CONTENT_SIZE));
-
-        options.addOption(OptionBuilder
                 .withLongOpt("gzip-predicate")
                 .withDescription("GZIP predicate")
                 .hasArg().create(Keys.GZIP_PREDICATE));
@@ -930,9 +925,6 @@ public class CommandLineHandler {
             }
             if (hasOptionValue(line, Keys.GZIP)) {
                 serverOptions.gzipEnable(Boolean.valueOf(line.getOptionValue(Keys.GZIP)));
-            }
-            if (hasOptionValue(line, Keys.GZIP_CONTENT_SIZE)) {
-                serverOptions.gzipContentSize(Long.parseLong(line.getOptionValue(Keys.GZIP_CONTENT_SIZE)));
             }
             if (hasOptionValue(line, Keys.GZIP_PREDICATE)) {
                 serverOptions.gzipPredicate(line.getOptionValue(Keys.GZIP_PREDICATE));

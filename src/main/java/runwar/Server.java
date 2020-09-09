@@ -634,19 +634,14 @@ public class Server {
         if (serverOptions.gzipEnable()) {
             //the default packet size on the internet is 1500 bytes so 
             //any file less than 1.5k can be sent in a single packet 
-            long defaultSize = 1500;
-            String predicate = serverOptions.gzipPredicate();
-            if (serverOptions.gzipContentSize() != null) {
-                LOG.debug("Setting GZIP minimun content size = " + serverOptions.gzipContentSize() + " bytes");
-                defaultSize = serverOptions.gzipContentSize();
+            if (serverOptions.gzipPredicate() != null) {
+                LOG.debug("Setting GZIP predicate to = " + serverOptions.gzipPredicate());
             }
-            
-            predicate = predicate+"(" + defaultSize + ")";
             // The max-content-size predicate doesn't do what you think it does.  
             // The "Predicate ... returns true if the Content-Size of a request is above a given value."
             // This means gzip is only applied if the content length is LARGER than 5 bytes
             httpHandler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
-                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse(predicate))).setNext(httpHandler);
+                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse(serverOptions.gzipPredicate()))).setNext(httpHandler);
         }
 
         if (serverOptions.logAccessEnable()) {

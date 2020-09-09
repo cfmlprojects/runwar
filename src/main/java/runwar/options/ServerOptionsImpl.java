@@ -76,9 +76,7 @@ public class ServerOptionsImpl implements ServerOptions {
     @Expose
     private boolean gzipEnable = false;
     @Expose
-    private Long gzipContentSize = 1500L;
-    @Expose
-    private String gzipPredicate = "max-content-size";
+    private String gzipPredicate = "max-content-size(1500)";
     @Expose
     private Long transferMinSize = (long) 100;
     @Expose
@@ -1516,16 +1514,6 @@ public class ServerOptionsImpl implements ServerOptions {
         return this.gzipEnable;
     }
     
-    @Override
-    public ServerOptions gzipContentSize(Long size) {
-        this.gzipContentSize = size;
-        return this;
-    }
-
-    @Override
-    public Long gzipContentSize() {
-        return this.gzipContentSize;
-    }
     
     @Override
     public ServerOptions gzipPredicate(String predicate) {

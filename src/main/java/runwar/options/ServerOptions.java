@@ -80,7 +80,6 @@ public interface ServerOptions {
         final static String TRANSFERMINSIZE = "transferminsize";
         final static String SENDFILE = "sendfile";
         final static String GZIP = "gzip";
-        final static String GZIP_CONTENT_SIZE = "gzipContentSize";
         final static String GZIP_PREDICATE = "gzipPredicate";
         final static String MARIADB4J = "mariadb4j";
         final static String MARIADB4JPORT = "mariadb4jport";
@@ -393,10 +392,6 @@ public interface ServerOptions {
     ServerOptions gzipEnable(boolean enable);
 
     boolean gzipEnable();
-    
-    ServerOptions gzipContentSize(Long enable);
-
-    Long gzipContentSize();
     
     ServerOptions gzipPredicate(String enable);
 
