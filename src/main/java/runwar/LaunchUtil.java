@@ -465,11 +465,11 @@ public class LaunchUtil {
                 } catch (Exception e) {
                     e.printStackTrace();
                      if (Utils.isWindows()) {
-                        Utils.openInBrowser(prefered_browser, url, 1);
+                        BrowserOpener.openInBrowser(prefered_browser, url, 1);
                     } else if (Utils.isMac()) {
-                        Utils.openInBrowser(prefered_browser, url, 2);
+                        BrowserOpener.openInBrowser(prefered_browser, url, 2);
                     } else {
-                        Utils.openInBrowser(prefered_browser, url, 3);
+                        BrowserOpener.openInBrowser(prefered_browser, url, 3);
                     }
                 }
             }
