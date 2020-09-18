@@ -226,9 +226,9 @@ class RunwarConfigurer {
                 serverOptions.urlRewriteFile(new File(webInfDir,"urlrewrite.xml"));
             }
             try{
-                rewriteFilter = (Class<Filter>) getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+                rewriteFilter = (Class<Filter>) getClassLoader().loadClass("runwar.util.UrlRewriteFilter");
             } catch (java.lang.ClassNotFoundException e) {
-                rewriteFilter = (Class<Filter>) Server.class.getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+                rewriteFilter = (Class<Filter>) Server.class.getClassLoader().loadClass("runwar.util.UrlRewriteFilter");
             }
             if(serverOptions.urlRewriteFile() != null) {
                 if(!serverOptions.urlRewriteFile().isFile()) {
@@ -236,16 +236,7 @@ class RunwarConfigurer {
                     LOG.error(message);
                     throw new RuntimeException(message);
                 } else {
-                    String rewriteFileName = "urlrewrite";
-                    rewriteFileName += serverOptions.urlRewriteApacheFormat() ? ".htaccess" : ".xml";
-                    File webInfRewriteFile = new File(webInfDir, rewriteFileName);
-                    if(!serverOptions.urlRewriteFile().equals(webInfRewriteFile)){
-                        LaunchUtil.copyFile(serverOptions.urlRewriteFile(), webInfRewriteFile);
-                        LOG.debug("Copying URL rewrite file " + serverOptions.urlRewriteFile().getAbsolutePath() + " to WEB-INF: " + webInfRewriteFile.getAbsolutePath());
-                    }else{
-                        LOG.debug("Keeping the rewrite file ");
-                    }
-                    urlRewriteFile = "/WEB-INF/"+rewriteFileName;
+                    urlRewriteFile = serverOptions.urlRewriteFile().getAbsolutePath();
                 }
             }
 
