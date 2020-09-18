@@ -119,7 +119,7 @@ dependencies {
     // version compare
     compile("com.vdurmont:semver4j:2.2.0") { transitive = false }
     // ansi colors for logging system output
-    compile("com.jcabi:jcabi-log:0.18") { transitive = false }
+    //compile("com.jcabi:jcabi-log:0.18") { transitive = false }
 
     if( org.gradle.util.VersionNumber.parse( System.getProperty( 'java.version' ) ) > org.gradle.util.VersionNumber.parse( '1.8' ) ) {
         // needed for hibernate annotations since not included in later JDKs

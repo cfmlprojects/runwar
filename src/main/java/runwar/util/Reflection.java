@@ -88,7 +88,7 @@ public class Reflection {
         Field[] fields = optionsClass.getDeclaredFields();
         Option option;
         boolean foundOption = false;
-        for (Field f : fields)
+        for (Field f : fields) {
             if (Modifier.isStatic(f.getModifiers()) && name.equals(f.getName())) {
                 foundOption = true;
                 try {
@@ -102,13 +102,16 @@ public class Reflection {
                         builder.set(option, Boolean.valueOf(value));
                     } else if (typename.contains("Double>")) {
                         builder.set(option, Double.valueOf(value));
+                    } else if (typename.contains("Long>")) {
+                        builder.set(option, Long.valueOf(value));
                     } else {
-                        throw new IllegalArgumentException("Bad type.");
+                        throw new IllegalArgumentException( optionsClass.getName() + " option " + f.getName() + " has an unhandled type of " + typename );
                     }
                 } catch (IllegalAccessException e) {
                     LOG.error(e);
                 }
             }
+        }
         if (!foundOption) {
             LOG.error("No matching " + optionsClass.getName() + " option for:" + name + ':' + value);
         }
