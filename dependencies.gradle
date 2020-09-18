@@ -10,7 +10,7 @@ configurations {
 }
 
 ext {
-    undertowVersion = '2.1.0.Final'
+    undertowVersion = '2.2.0.Final'
     urlRewriteVersion = '5.0.0-SNAPSHOT'
     proguardVersion = '6.0.2'
     systemTrayVersion = '3.17'
@@ -22,8 +22,8 @@ repositories {
     mavenLocal()
     maven { url "https://repo.maven.apache.org/maven2" }
     maven { url "http://repository.jboss.org/nexus/content/repositories/releases" }
-    //maven { url "http://cfmlprojects.org/artifacts" }
     maven { url "http://downloads.ortussolutions.com/" }
+    maven { url "http://cfmlprojects.org/artifacts" }
 }
 
 task dorkboxUberJar(type: ShadowJar) {
