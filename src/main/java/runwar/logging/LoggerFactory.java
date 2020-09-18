@@ -214,7 +214,7 @@ public class LoggerFactory {
         Logger REWRITE_EXECUTION_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.RuleExecutionOutput");
         Logger REWRITE_WRITER_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.UrlRewriter");
         Logger REWRITE_URL_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite");
-        Logger REWRITE_FILTER = Logger.getLogger("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+        Logger REWRITE_FILTER = Logger.getLogger("runwar.util.UrlRewriteFilter");
         Logger REWRITE_LOG = Logger.getLogger("org.tuckey.web.filters.urlrewrite.utils.Log");
         urlrewriteLoggers = new ArrayList<>();
         urlrewriteLoggers.add(REWRITE_CONDITION_LOG);
