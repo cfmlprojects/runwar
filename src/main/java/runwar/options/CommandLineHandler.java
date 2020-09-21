@@ -395,6 +395,11 @@ public class CommandLineHandler {
                 .create(Keys.GZIP));
 
         options.addOption(OptionBuilder
+                .withLongOpt("gzip-predicate")
+                .withDescription("GZIP predicate")
+                .hasArg().create(Keys.GZIP_PREDICATE));
+
+        options.addOption(OptionBuilder
                 .withLongOpt("mariadb4j-enable")
                 .withDescription("enable MariaDB4j")
                 .hasArg().withArgName("true|false").withType(Boolean.class)
@@ -920,6 +925,9 @@ public class CommandLineHandler {
             }
             if (hasOptionValue(line, Keys.GZIP)) {
                 serverOptions.gzipEnable(Boolean.valueOf(line.getOptionValue(Keys.GZIP)));
+            }
+            if (hasOptionValue(line, Keys.GZIP_PREDICATE)) {
+                serverOptions.gzipPredicate(line.getOptionValue(Keys.GZIP_PREDICATE));
             }
             if (hasOptionValue(line, Keys.MARIADB4J)) {
                 serverOptions.mariaDB4jEnable(Boolean.valueOf(line.getOptionValue(Keys.MARIADB4J)));

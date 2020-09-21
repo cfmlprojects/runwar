@@ -72,7 +72,9 @@ public class ServerOptionsImpl implements ServerOptions {
     private boolean customHTTPStatusEnable = true;
     
     private boolean gzipEnable = false;
-    
+
+    private String gzipPredicate = "max-content-size(1500)";
+
     private Long transferMinSize = (long) 100;
     
     private boolean mariadb4jEnable = false;
@@ -1507,6 +1509,18 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public boolean gzipEnable() {
         return this.gzipEnable;
+    }
+    
+    
+    @Override
+    public ServerOptions gzipPredicate(String predicate) {
+        this.gzipPredicate = predicate;
+        return this;
+    }
+
+    @Override
+    public String gzipPredicate() {
+        return this.gzipPredicate;
     }
 
     /** 
