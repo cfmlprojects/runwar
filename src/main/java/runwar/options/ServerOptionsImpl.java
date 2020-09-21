@@ -66,7 +66,9 @@ public class ServerOptionsImpl implements ServerOptions {
     private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
     
     private String action = "start";
-    
+
+    private String browser = "";
+
     private String cfengineName = "";
     
     private boolean customHTTPStatusEnable = true;
@@ -1168,6 +1170,16 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public String defaultShell() {
         return defaultShell;
+    }
+    
+    @Override
+    public String browser() {
+        return browser;
+    }
+    
+    public ServerOptions browser(String browser){
+        this.browser = browser;
+        return this;
     }
 
     public ServerOptions defaultShell(String defaultShell) {

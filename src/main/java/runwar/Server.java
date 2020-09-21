@@ -1167,7 +1167,7 @@ public class Server {
             try {
                 if (serverCameUp(timeout, 3000, InetAddress.getByName(host), portNumber)) {
                     LOG.infof("Opening browser to url: %s", openbrowserURL);
-                    BrowserOpener.openURL(openbrowserURL.trim());
+                    BrowserOpener.openURL(openbrowserURL.trim(),serverOptions.browser());
                 } else {
                     LOG.errorf("Timeout of %s reached, could not open browser to url: %s", timeout, openbrowserURL);
                 }

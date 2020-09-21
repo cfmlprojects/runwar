@@ -111,6 +111,7 @@ public interface ServerOptions {
         final static String SERVICE = "service";
         final static String UNDERTOWOPTIONS = "undertowOptions";
         final static String XNIOOPTIONS = "xnioOptions";
+        final static String BROWSER = "browser";
     }
     
     String defaultShell();
@@ -354,6 +355,10 @@ public interface ServerOptions {
     ServerOptions welcomeFiles(String[] welcomeFiles);
 
     String warUriString();
+    
+    String browser();
+    
+    ServerOptions browser(String browser);
 
     ServerOptions sslCertificate(File file);
 

@@ -1,19 +1,24 @@
 package runwar;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.Arrays;
 
 import javax.swing.JOptionPane;
+import runwar.logging.RunwarLogger;
+import runwar.util.Utils;
+import static runwar.util.Utils.containsCaseInsensitive;
 
 public class BrowserOpener {
 
     private static final String errMsg = "Error attempting to launch web browser";
 
     public static void main(String[] args) throws Exception {
-        openURL(args[0]);
+        openURL(args[0], "");
     }
 
-    public static void openURL(String url) {
+    public static void openURL(String url, String prefered_browser) {
         String osName = System.getProperty("os.name");
         if (url == null) {
             System.out.println("ERROR: No URL specified to open the browser to!");
@@ -35,23 +40,105 @@ public class BrowserOpener {
                     Method openURL = desktopClass.getDeclaredMethod("browse", new Class[]{URI.class});
                     openURL.invoke(desktopObject, new Object[]{new URI(url)});
                 } catch (Exception e) {
-                    String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape"};
-                    String browser = null;
-                    for (int count = 0; count < browsers.length && browser == null; count++) {
-                        if (Runtime.getRuntime().exec(new String[]{"which", browsers[count]}).waitFor() == 0) {
-                            browser = browsers[count];
-                        }
-                    }
-                    if (browser == null) {
-                        throw new Exception("Could not find web browser");
+                    e.printStackTrace();
+                    if (Utils.isWindows()) {
+                        openInBrowser(prefered_browser, url, 1);
+                    } else if (Utils.isMac()) {
+                        openInBrowser(prefered_browser, url, 2);
                     } else {
-                        Runtime.getRuntime().exec(new String[]{browser, url});
+                        openInBrowser(prefered_browser, url, 3);
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, errMsg + ":\n" + e.getLocalizedMessage());
+        }
+    }
+
+        public static void openInBrowser(String prefered_browser, String url, int os) throws IOException, Exception {
+        String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape"};
+
+        if (!prefered_browser.equalsIgnoreCase("default") && Utils.containsCaseInsensitive(prefered_browser, Arrays.asList(browsers))) {
+            switch (os) {
+                case 1:
+                    openUrlInBrowserOnWindows(prefered_browser, url);
+                    break;
+                case 2:
+                    openUrlInBrowserOnMacOS(prefered_browser, url);
+                    break;
+                //*nix
+                case 3:
+                    try {
+                        Runtime.getRuntime().exec(new String[]{prefered_browser, url});
+                    } catch (Exception e) {
+                        //prefered browser was not executed
+                        RunwarLogger.LOG.error("Could not find prefered web browser.", e);
+                        searchAvailableBrowser(browsers, url);
+
+                    }
+                    break;
+            }
+
+        } else {
+            searchAvailableBrowser(browsers, url);
+        }
+    }
+
+    public static void searchAvailableBrowser(String[] browsers, String url) throws Exception {
+        String browser = null;
+        for (int count = 0; count < browsers.length && browser == null; count++) {
+            if (Runtime.getRuntime().exec(new String[]{"which", browsers[count]}).waitFor() == 0) {
+                browser = browsers[count];
+            }
+        }
+        if (browser == null) {
+            RunwarLogger.LOG.error("Could not find web browser.");
+            throw new Exception("Could not find web browser");
+        } else {
+            Runtime.getRuntime().exec(new String[]{browser, url});
+        }
+    }
+
+    public static void openUrlInBrowserOnWindows(String preferedBrowser, String url) throws Exception {
+        try {
+            String[] browsers = {"firefox", "chrome", "opera", "MicrosoftEdge", "explorer"};
+            if (!preferedBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferedBrowser, Arrays.asList(browsers))) {
+                Runtime runtime = Runtime.getRuntime();
+                String[] args = {"cmd.exe", "/c", preferedBrowser, url};
+                Process p = runtime.exec(args);
+            } else {
+                //opening url on default browser
+                Runtime runtime = Runtime.getRuntime();
+                String[] args = {"cmd.exe", "/c", "start", url};
+                Process p = runtime.exec(args);
+            }
+        } catch (Exception e) {
+            RunwarLogger.LOG.error("Error opening Browser.", e);
+            throw e;
+        }
+    }
+
+    public static void openUrlInBrowserOnMacOS(String preferedBrowser, String url) throws Exception {
+        try {
+            String[] browsers = {"Firefox", "Google Chrome", "Microsoft Edge", "Safari", "Opera"};
+            if (!preferedBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferedBrowser, Arrays.asList(browsers))) {
+                //using multiline osascript
+                Runtime runtime = Runtime.getRuntime();
+                String applescriptCommand = "tell application \"" + preferedBrowser + "\"\n"
+                        + "	open location \"" + url + "\"\n"
+                        + "end tell";
+                String[] args = {"osascript", "-e", applescriptCommand};
+                runtime.exec(args);
+            } else {
+                //opening url on default browser
+                Runtime runtime = Runtime.getRuntime();
+                String[] args = {"osascript", "-e", "open location \"" + url + "\""};
+                runtime.exec(args);
+            }
+        } catch (Exception e) {
+            RunwarLogger.LOG.error("Error opening Browser.", e);
+            throw e;
         }
     }
 
