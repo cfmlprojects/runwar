@@ -237,7 +237,7 @@ public class LoggerFactory {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "TRACE");
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.TRACE);
-                logger.addAppender(consoleAppender("[%color{%-5p}] %c{2}: %color{%m%n}"));
+                logger.addAppender(consoleAppender("[%-5p] %c: %m%n"));
                 logger.setAdditivity(false);
             });
         } else {
@@ -246,7 +246,7 @@ public class LoggerFactory {
             }
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.WARN);
-                logger.addAppender(consoleAppender("[%color{%-5p}] %c{2}: %color{%m%n}"));
+                logger.addAppender(consoleAppender("[%-5p] %c: %m%n"));
                 logger.setAdditivity(false);
             });
             REWRITE_EXECUTION_LOG.setLevel(Level.DEBUG);
