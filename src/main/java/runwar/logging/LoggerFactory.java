@@ -35,7 +35,6 @@ public class LoggerFactory {
         appenders = new ArrayList<>();
         loggers = new ArrayList<>();
         Level level = Level.toLevel(logLevel);
-
         consoleAppender = consoleAppender(serverOptions.getLogPattern());
         appenders.add(consoleAppender);
         Logger.getRootLogger().setLevel(Level.WARN);
