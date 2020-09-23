@@ -13,7 +13,6 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
-//import com.jcabi.log.MulticolorLayout;
 
 public class LoggerFactory {
 
@@ -32,7 +31,6 @@ public class LoggerFactory {
         Logger.getRootLogger().getLoggerRepository().resetConfiguration();
 
         logLevel = serverOptions.logLevel().toUpperCase();
-        //logPattern = "%color{%m%n}";
         logPattern = "[%-5p] %c: %m%n";
         appenders = new ArrayList<>();
         loggers = new ArrayList<>();
@@ -57,9 +55,6 @@ public class LoggerFactory {
 
         Logger UNDERTOW_PREDICATE_LOG = Logger.getLogger("io.undertow.predicate");
         loggers.add(UNDERTOW_PREDICATE_LOG);
-
-       // Logger UNDERTOW_REQUEST_LOG = Logger.getLogger("io.undertow.request");
-       // loggers.add(UNDERTOW_REQUEST_LOG);
 
         Logger UNDERTOW_IO_LOG = Logger.getLogger("io.undertow");
         loggers.add(UNDERTOW_IO_LOG);
@@ -117,9 +112,7 @@ public class LoggerFactory {
 
 
         if (serverOptions.debug() || !logLevel.equalsIgnoreCase("info")) {
-            //logPattern = "[%color{%-5p}] %c: %color{%m%n}";
             logPattern = "[%-5p] %c: %m%n";
-              // ((MulticolorLayout) consoleAppender.getLayout()).setConversionPattern(logPattern);
 
             if (logLevel.equalsIgnoreCase("trace")) {
                 DORKBOX_LOG.setLevel(level);
@@ -179,10 +172,8 @@ public class LoggerFactory {
 
     private static ConsoleAppender consoleAppender(String pattern) {
         ConsoleAppender appender = new ConsoleAppender();
-        //MulticolorLayout layout = new MulticolorLayout();
         PatternLayout layout = new PatternLayout();
         layout.setConversionPattern(pattern);
-        //layout.setLevels("TRACE:1;32,DEBUG:1;33,INFO:1;,WARN:38;5;208,ERROR:1;31,FATAL:1;40");
         appender.setLayout(layout);
         appender.setName("CONSOLE");
         appender.setThreshold(Level.toLevel(logLevel));
