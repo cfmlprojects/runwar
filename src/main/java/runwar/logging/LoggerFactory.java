@@ -31,12 +31,11 @@ public class LoggerFactory {
         Logger.getRootLogger().getLoggerRepository().resetConfiguration();
 
         logLevel = serverOptions.logLevel().toUpperCase();
-        logPattern = "[%-5p] %c: %m%n";
         appenders = new ArrayList<>();
         loggers = new ArrayList<>();
         Level level = Level.toLevel(logLevel);
 
-        consoleAppender = consoleAppender(logPattern);
+        consoleAppender = consoleAppender(serverOptions.logPattern);
         appenders.add(consoleAppender);
         Logger.getRootLogger().setLevel(Level.WARN);
         Logger.getRootLogger().addAppender(consoleAppender);
@@ -90,7 +89,7 @@ public class LoggerFactory {
             rewriteLogAppender = new RollingFileAppender();
             rewriteLogAppender.setName("URLRewriteFileLogger");
             rewriteLogAppender.setFile(serverOptions.urlRewriteLog().getAbsolutePath());
-            rewriteLogAppender.setLayout(new PatternLayout("[%-5p] %c{2}: %m%n"));
+            rewriteLogAppender.setLayout(new PatternLayout(serverOptions.logPattern));
             rewriteLogAppender.setThreshold(Level.toLevel(logLevel));
             rewriteLogAppender.setAppend(true);
             rewriteLogAppender.setMaxFileSize("10MB");
@@ -112,7 +111,6 @@ public class LoggerFactory {
 
 
         if (serverOptions.debug() || !logLevel.equalsIgnoreCase("info")) {
-            logPattern = "[%-5p] %c: %m%n";
 
             if (logLevel.equalsIgnoreCase("trace")) {
                 DORKBOX_LOG.setLevel(level);
@@ -228,7 +226,7 @@ public class LoggerFactory {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "TRACE");
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.TRACE);
-                logger.addAppender(consoleAppender("[%-5p] %c: %m%n"));
+                logger.addAppender(consoleAppender(serverOptions.logPattern));
                 logger.setAdditivity(false);
             });
         } else {
@@ -237,7 +235,7 @@ public class LoggerFactory {
             }
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.WARN);
-                logger.addAppender(consoleAppender("[%-5p] %c: %m%n"));
+                logger.addAppender(consoleAppender(serverOptions.logPattern));
                 logger.setAdditivity(false);
             });
             REWRITE_EXECUTION_LOG.setLevel(Level.DEBUG);

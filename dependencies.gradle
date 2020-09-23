@@ -11,7 +11,7 @@ configurations {
 
 ext {
     undertowVersion = '2.2.0.Final'
-    urlRewriteVersion = '5.0.0-SNAPSHOT'
+    urlRewriteVersion = '5.0.1-SNAPSHOT'
     proguardVersion = '6.0.2'
     systemTrayVersion = '3.17'
     jbossJspApiVersion = '1.0.3'
