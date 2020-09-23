@@ -549,4 +549,5 @@ public interface ServerOptions {
     File predicateFile();
     
     ServerOptions predicateFile(File predicateFile);
+    String getLogPattern();
 }

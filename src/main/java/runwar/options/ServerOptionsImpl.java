@@ -125,11 +125,16 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private boolean service = false;
     
-    private static String logPattern = "[%-5p] %c: %m%n";
+    public String logPattern = "[%-5p] %c: %m%n";
     
     private final Map<String, String> aliases = new HashMap<>();
     
     private Set<String> contentDirectories = new HashSet<>();
+
+    public String getLogPattern() {
+        return logPattern;
+    }
+    
     private OptionMap.Builder serverXnioOptions = OptionMap.builder()
             .set(Options.WORKER_IO_THREADS, 8)
             .set(Options.CONNECTION_HIGH_WATER, 1000000)

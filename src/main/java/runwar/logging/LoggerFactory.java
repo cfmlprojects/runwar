@@ -25,17 +25,18 @@ public class LoggerFactory {
     private static volatile List<Logger> urlrewriteLoggers;
     private static volatile RollingFileAppender rewriteLogAppender;
     private static volatile ConsoleAppender consoleAppender;
+    private static ServerOptions serverOptions;
 
-    public static synchronized void configure(ServerOptions serverOptions) {
+    public static synchronized void configure(ServerOptions options) {
 
         Logger.getRootLogger().getLoggerRepository().resetConfiguration();
-
+        serverOptions = options;
         logLevel = serverOptions.logLevel().toUpperCase();
         appenders = new ArrayList<>();
         loggers = new ArrayList<>();
         Level level = Level.toLevel(logLevel);
 
-        consoleAppender = consoleAppender(serverOptions.logPattern);
+        consoleAppender = consoleAppender(serverOptions.getLogPattern());
         appenders.add(consoleAppender);
         Logger.getRootLogger().setLevel(Level.WARN);
         Logger.getRootLogger().addAppender(consoleAppender);
@@ -89,7 +90,7 @@ public class LoggerFactory {
             rewriteLogAppender = new RollingFileAppender();
             rewriteLogAppender.setName("URLRewriteFileLogger");
             rewriteLogAppender.setFile(serverOptions.urlRewriteLog().getAbsolutePath());
-            rewriteLogAppender.setLayout(new PatternLayout(serverOptions.logPattern));
+            rewriteLogAppender.setLayout(new PatternLayout(serverOptions.getLogPattern()));
             rewriteLogAppender.setThreshold(Level.toLevel(logLevel));
             rewriteLogAppender.setAppend(true);
             rewriteLogAppender.setMaxFileSize("10MB");
@@ -226,7 +227,7 @@ public class LoggerFactory {
             RunwarLogger.CONF_LOG.infof("Enabling URL rewrite log level: %s", "TRACE");
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.TRACE);
-                logger.addAppender(consoleAppender(serverOptions.logPattern));
+                logger.addAppender(consoleAppender(serverOptions.getLogPattern()));
                 logger.setAdditivity(false);
             });
         } else {
@@ -235,7 +236,7 @@ public class LoggerFactory {
             }
             urlrewriteLoggers.forEach(logger -> {
                 logger.setLevel(Level.WARN);
-                logger.addAppender(consoleAppender(serverOptions.logPattern));
+                logger.addAppender(consoleAppender(serverOptions.getLogPattern()));
                 logger.setAdditivity(false);
             });
             REWRITE_EXECUTION_LOG.setLevel(Level.DEBUG);
