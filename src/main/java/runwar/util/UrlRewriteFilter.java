@@ -29,7 +29,11 @@ public class UrlRewriteFilter extends org.tuckey.web.filters.urlrewrite.UrlRewri
             String confPathStr = filterConfig.getInitParameter("confPath");
             LOG.trace("Config rewrite file:" + confPathStr);
             InputStream inputStream = new FileInputStream(confPathStr);
-            Conf conf1 = new Conf(filterConfig.getServletContext(), inputStream, confPathStr, null, true);
+            boolean type = true;
+            if(confPathStr.endsWith("xml")){
+                type = false;
+            }
+            Conf conf1 = new Conf(filterConfig.getServletContext(), inputStream, confPathStr, null, type);
             checkConf(conf1);
         } catch (FileNotFoundException e) {
             throw new ServletException(e);
