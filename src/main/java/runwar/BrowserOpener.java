@@ -1,8 +1,10 @@
 package runwar;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import javax.swing.JOptionPane;
@@ -27,18 +29,41 @@ public class BrowserOpener {
         try {
             System.out.println(url);
             if (osName.startsWith("Mac OS")) {
-                Class<?> fileMgr = Class.forName("com.apple.eio.FileManager");
-                Method openURL = fileMgr.getDeclaredMethod("openURL", new Class[]{String.class});
-                openURL.invoke(null, new Object[]{url});
+                if (!prefered_browser.equalsIgnoreCase("default")) {
+                    try {
+                        openInBrowser(prefered_browser, url, 2);
+                    } catch (Exception k) {
+                        RunwarLogger.LOG.info("Launching on default browser due:", k);
+                        defaultMac(url);
+                    }
+                } else {
+                    defaultMac(url);
+                }
+
             } else if (osName.startsWith("Windows")) {
-                Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
+                if (!prefered_browser.equalsIgnoreCase("default")) {
+                    try {
+                        openInBrowser(prefered_browser, url, 1);
+                    } catch (Exception k) {
+                        RunwarLogger.LOG.info("Launching on default browser due:", k);
+                        Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
+                    }
+                } else {
+                    Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
+                }
             } else { // assume Unix or Linux
                 // try default first
                 try {
-                    Class<?> desktopClass = Class.forName("java.awt.Desktop");
-                    Object desktopObject = desktopClass.getMethod("getDesktop", (Class[]) null).invoke(null, (Object[]) null);
-                    Method openURL = desktopClass.getDeclaredMethod("browse", new Class[]{URI.class});
-                    openURL.invoke(desktopObject, new Object[]{new URI(url)});
+                    if (!prefered_browser.equalsIgnoreCase("default")) {
+                        try {
+                            openInBrowser(prefered_browser, url, 3);
+                        } catch (Exception k) {
+                            RunwarLogger.LOG.info("Launching on default browser due:", k);
+                            defaultNix(url);
+                        }
+                    } else {
+                        defaultNix(url);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     if (Utils.isWindows()) {
@@ -56,10 +81,23 @@ public class BrowserOpener {
         }
     }
 
-        public static void openInBrowser(String prefered_browser, String url, int os) throws IOException, Exception {
+    public static void defaultNix(String url) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, URISyntaxException {
+        Class<?> desktopClass = Class.forName("java.awt.Desktop");
+        Object desktopObject = desktopClass.getMethod("getDesktop", (Class[]) null).invoke(null, (Object[]) null);
+        Method openURL = desktopClass.getDeclaredMethod("browse", new Class[]{URI.class});
+        openURL.invoke(desktopObject, new Object[]{new URI(url)});
+    }
+
+    public static void defaultMac(String url) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        Class<?> fileMgr = Class.forName("com.apple.eio.FileManager");
+        Method openURL = fileMgr.getDeclaredMethod("openURL", new Class[]{String.class});
+        openURL.invoke(null, new Object[]{url});
+    }
+
+    public static void openInBrowser(String prefered_browser, String url, int os) throws IOException, Exception {
         String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape"};
 
-        if (!prefered_browser.equalsIgnoreCase("default") && Utils.containsCaseInsensitive(prefered_browser, Arrays.asList(browsers))) {
+        if (!prefered_browser.equalsIgnoreCase("default")) {
             switch (os) {
                 case 1:
                     openUrlInBrowserOnWindows(prefered_browser, url);
@@ -105,7 +143,7 @@ public class BrowserOpener {
             String[] browsers = {"firefox", "chrome", "opera", "MicrosoftEdge", "explorer"};
             if (!preferedBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferedBrowser, Arrays.asList(browsers))) {
                 Runtime runtime = Runtime.getRuntime();
-                String[] args = {"cmd.exe", "/c", preferedBrowser, url};
+                String[] args = {"cmd.exe", "/c", "start", preferedBrowser, url};
                 Process p = runtime.exec(args);
             } else {
                 //opening url on default browser

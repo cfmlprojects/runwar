@@ -17,7 +17,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Method;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,8 +31,6 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Pack200;
 import java.util.zip.GZIPInputStream;
 
-import javax.swing.JOptionPane;
-
 import com.vdurmont.semver4j.Semver;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
@@ -42,7 +39,6 @@ import dorkbox.util.OS;
 import runwar.logging.LoggerFactory;
 import runwar.logging.RunwarLogger;
 import runwar.options.ServerOptions;
-import runwar.util.Utils;
 
 public class LaunchUtil {
 
@@ -442,41 +438,7 @@ public class LaunchUtil {
     }
 
     public static void openURL(String url, String prefered_browser) {
-        String osName = System.getProperty("os.name");
-        if (url == null) {
-            System.out.println("ERROR: No URL specified to open the browser to!");
-            return;
-        }
-        try {
-            System.out.println(url);
-            if (osName.startsWith("Mac OS")) {
-                Class<?> fileMgr = Class.forName("com.apple.eio.FileManager");
-                Method openURL = fileMgr.getDeclaredMethod("openURL", new Class[]{String.class});
-                openURL.invoke(null, new Object[]{url});
-            } else if (osName.startsWith("Windows")) {
-                Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
-            } else { // assume Unix or Linux
-                // try default first
-                try {
-                    Class<?> desktopClass = Class.forName("java.awt.Desktop");
-                    Object desktopObject = desktopClass.getMethod("getDesktop", (Class[]) null).invoke(null, (Object[]) null);
-                    Method openURL = desktopClass.getDeclaredMethod("browse", new Class[]{URI.class});
-                    openURL.invoke(desktopObject, new Object[]{new URI(url)});
-                } catch (Exception e) {
-                    e.printStackTrace();
-                     if (Utils.isWindows()) {
-                        BrowserOpener.openInBrowser(prefered_browser, url, 1);
-                    } else if (Utils.isMac()) {
-                        BrowserOpener.openInBrowser(prefered_browser, url, 2);
-                    } else {
-                        BrowserOpener.openInBrowser(prefered_browser, url, 3);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, e.getMessage() + ":\n" + e.getLocalizedMessage());
-        }
+        BrowserOpener.openURL(url, prefered_browser);
     }
 
     public static String getResourceAsString(String path) {

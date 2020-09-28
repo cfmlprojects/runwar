@@ -51,6 +51,7 @@ import runwar.gui.SubmitActionlistioner;
 import runwar.util.dae.OSType;
 
 import java.lang.reflect.Method;
+import runwar.BrowserOpener;
 import static runwar.util.Reflection.invoke;
 import static runwar.util.Reflection.method;
 
