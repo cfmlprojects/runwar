@@ -75,7 +75,7 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private boolean gzipEnable = false;
 
-    private String gzipPredicate = "max-content-size(1500)";
+    private String gzipPredicate = "request-larger-than(1500)";
 
     private Long transferMinSize = (long) 100;
     
