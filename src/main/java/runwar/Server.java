@@ -637,9 +637,7 @@ public class Server {
             if (serverOptions.gzipPredicate() != null) {
                 LOG.debug("Setting GZIP predicate to = " + serverOptions.gzipPredicate());
             }
-            // The max-content-size predicate doesn't do what you think it does.  
-            // The "Predicate ... returns true if the Content-Size of a request is above a given value."
-            // This means gzip is only applied if the content length is LARGER than 5 bytes
+            // The max-content-size predicate was replaced with request-larger-than
             httpHandler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
                     "gzip", new GzipEncodingProvider(), 50, Predicates.parse(serverOptions.gzipPredicate()))).setNext(httpHandler);
         }
