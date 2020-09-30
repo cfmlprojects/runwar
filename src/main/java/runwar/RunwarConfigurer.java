@@ -417,7 +417,7 @@ class RunwarConfigurer {
         // this prevents us from having to use our own ResourceHandler (directory listing, welcome files, see below) and error handler for now
         servletBuilder.addServlet( new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
                 .addInitParam("directory-listing", Boolean.toString(serverOptions.directoryListingEnable()))
-        		.addInitParam("disallowed-extensions", "CFM,cfm,Cfm,CFm,cFm,cfM,CfM,cFM,CFML,cfmL,CfmL,CFmL,cFmL,cfML,CfML,cFML,CFMl,cfml,Cfml,CFml,cFml,cfMl,CfMl,cFMl")
+        		.addInitParam("disallowed-extensions", "CFC,cfc,Cfc,CFc,cFc,cfC,CfC,cFC,CFM,cfm,Cfm,CFm,cFm,cfM,CfM,cFM,CFML,cfmL,CfmL,CFmL,cFmL,cfML,CfML,cFML,CFMl,cfml,Cfml,CFml,cFml,cfMl,CfMl,cFMl")
         		.addInitParam("allow-post", "true") );
 
         List<?> welcomePages =  servletBuilder.getWelcomePages();
