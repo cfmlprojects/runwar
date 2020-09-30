@@ -23,7 +23,6 @@ repositories {
     maven { url "https://repo.maven.apache.org/maven2" }
     maven { url "http://repository.jboss.org/nexus/content/repositories/releases" }
     maven { url "http://downloads.ortussolutions.com/" }
-    maven { url "http://cfmlprojects.org/artifacts" }
 }
 
 task dorkboxUberJar(type: ShadowJar) {
@@ -91,7 +90,7 @@ dependencies {
     compile("cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}")
 
     // regexpathinfofilter lets us handle *.cfm/* paths
-    compile("org.cfmlprojects:regexpathinfofilter:1.0.1") //finding the way to compile it
+    compile("cfmlprojects:regexpathinfofilter:1.0.1") //finding the way to compile it
 
     compile("net.java.dev.jna:jna:4.3.0")
     compile("net.java.dev.jna:jna-platform:4.3.0")
