@@ -579,7 +579,7 @@ public class CommandLineHandler {
                 .create(Keys.UNDERTOWOPTIONS));
         
         options.addOption(OptionBuilder
-                .withLongOpt("prefered-browser")
+                .withLongOpt("preferred-browser")
                 .withDescription("Browser to be used when a URL is Opened")
                 .hasArg().withArgName("firefox, chrome, opera, konqueror, epiphany, mozilla, netscape")
                 .create(Keys.BROWSER));
