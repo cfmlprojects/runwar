@@ -90,7 +90,7 @@ dependencies {
     compile("cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}")
 
     // regexpathinfofilter lets us handle *.cfm/* paths
-    compile("cfmlprojects:regexpathinfofilter:1.0.1") //finding the way to compile it
+    compile("org.cfmlprojects:regexpathinfofilter:1.0.1") //finding the way to compile it
 
     compile("net.java.dev.jna:jna:4.3.0")
     compile("net.java.dev.jna:jna-platform:4.3.0")
