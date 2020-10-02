@@ -437,8 +437,8 @@ public class LaunchUtil {
         throw new IOException("Unable to open " + path);
     }
 
-    public static void openURL(String url, String prefered_browser) {
-        BrowserOpener.openURL(url, prefered_browser);
+    public static void openURL(String url, String preferred_browser) {
+        BrowserOpener.openURL(url, preferred_browser);
     }
 
     public static String getResourceAsString(String path) {

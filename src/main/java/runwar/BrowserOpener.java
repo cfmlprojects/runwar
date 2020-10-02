@@ -20,7 +20,7 @@ public class BrowserOpener {
         openURL(args[0], "");
     }
 
-    public static void openURL(String url, String prefered_browser) {
+    public static void openURL(String url, String preferred_browser) {
         String osName = System.getProperty("os.name");
         if (url == null) {
             System.out.println("ERROR: No URL specified to open the browser to!");
@@ -29,9 +29,9 @@ public class BrowserOpener {
         try {
             System.out.println(url);
             if (osName.startsWith("Mac OS")) {
-                if (!prefered_browser.equalsIgnoreCase("default")) {
+                if (!preferred_browser.equalsIgnoreCase("default")) {
                     try {
-                        openInBrowser(prefered_browser, url, 2);
+                        openInBrowser(preferred_browser, url, 2);
                     } catch (Exception k) {
                         RunwarLogger.LOG.info("Launching on default browser due:", k);
                         defaultMac(url);
@@ -41,9 +41,9 @@ public class BrowserOpener {
                 }
 
             } else if (osName.startsWith("Windows")) {
-                if (!prefered_browser.equalsIgnoreCase("default")) {
+                if (!preferred_browser.equalsIgnoreCase("default")) {
                     try {
-                        openInBrowser(prefered_browser, url, 1);
+                        openInBrowser(preferred_browser, url, 1);
                     } catch (Exception k) {
                         RunwarLogger.LOG.info("Launching on default browser due:", k);
                         Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
@@ -54,9 +54,9 @@ public class BrowserOpener {
             } else { // assume Unix or Linux
                 // try default first
                 try {
-                    if (!prefered_browser.equalsIgnoreCase("default")) {
+                    if (!preferred_browser.equalsIgnoreCase("default")) {
                         try {
-                            openInBrowser(prefered_browser, url, 3);
+                            openInBrowser(preferred_browser, url, 3);
                         } catch (Exception k) {
                             RunwarLogger.LOG.info("Launching on default browser due:", k);
                             defaultNix(url);
@@ -67,11 +67,11 @@ public class BrowserOpener {
                 } catch (Exception e) {
                     e.printStackTrace();
                     if (Utils.isWindows()) {
-                        openInBrowser(prefered_browser, url, 1);
+                        openInBrowser(preferred_browser, url, 1);
                     } else if (Utils.isMac()) {
-                        openInBrowser(prefered_browser, url, 2);
+                        openInBrowser(preferred_browser, url, 2);
                     } else {
-                        openInBrowser(prefered_browser, url, 3);
+                        openInBrowser(preferred_browser, url, 3);
                     }
                 }
             }
@@ -94,24 +94,24 @@ public class BrowserOpener {
         openURL.invoke(null, new Object[]{url});
     }
 
-    public static void openInBrowser(String prefered_browser, String url, int os) throws IOException, Exception {
+    public static void openInBrowser(String preferred_browser, String url, int os) throws IOException, Exception {
         String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape"};
 
-        if (!prefered_browser.equalsIgnoreCase("default")) {
+        if (!preferred_browser.equalsIgnoreCase("default")) {
             switch (os) {
                 case 1:
-                    openUrlInBrowserOnWindows(prefered_browser, url);
+                    openUrlInBrowserOnWindows(preferred_browser, url);
                     break;
                 case 2:
-                    openUrlInBrowserOnMacOS(prefered_browser, url);
+                    openUrlInBrowserOnMacOS(preferred_browser, url);
                     break;
                 //*nix
                 case 3:
                     try {
-                        Runtime.getRuntime().exec(new String[]{prefered_browser, url});
+                        Runtime.getRuntime().exec(new String[]{preferred_browser, url});
                     } catch (Exception e) {
-                        //prefered browser was not executed
-                        RunwarLogger.LOG.error("Could not find prefered web browser.", e);
+                        //preferred browser was not executed
+                        RunwarLogger.LOG.error("Could not find preferred web browser.", e);
                         searchAvailableBrowser(browsers, url);
 
                     }
@@ -138,12 +138,12 @@ public class BrowserOpener {
         }
     }
 
-    public static void openUrlInBrowserOnWindows(String preferedBrowser, String url) throws Exception {
+    public static void openUrlInBrowserOnWindows(String preferredBrowser, String url) throws Exception {
         try {
             String[] browsers = {"firefox", "chrome", "opera", "MicrosoftEdge", "explorer"};
-            if (!preferedBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferedBrowser, Arrays.asList(browsers))) {
+            if (!preferredBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferredBrowser, Arrays.asList(browsers))) {
                 Runtime runtime = Runtime.getRuntime();
-                String[] args = {"cmd.exe", "/c", "start", preferedBrowser, url};
+                String[] args = {"cmd.exe", "/c", "start", preferredBrowser, url};
                 Process p = runtime.exec(args);
             } else {
                 //opening url on default browser
@@ -157,13 +157,13 @@ public class BrowserOpener {
         }
     }
 
-    public static void openUrlInBrowserOnMacOS(String preferedBrowser, String url) throws Exception {
+    public static void openUrlInBrowserOnMacOS(String preferredBrowser, String url) throws Exception {
         try {
             String[] browsers = {"Firefox", "Google Chrome", "Microsoft Edge", "Safari", "Opera"};
-            if (!preferedBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferedBrowser, Arrays.asList(browsers))) {
+            if (!preferredBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferredBrowser, Arrays.asList(browsers))) {
                 //using multiline osascript
                 Runtime runtime = Runtime.getRuntime();
-                String applescriptCommand = "tell application \"" + preferedBrowser + "\"\n"
+                String applescriptCommand = "tell application \"" + preferredBrowser + "\"\n"
                         + "	open location \"" + url + "\"\n"
                         + "end tell";
                 String[] args = {"osascript", "-e", applescriptCommand};
