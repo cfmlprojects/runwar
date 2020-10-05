@@ -5,7 +5,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JOptionPane;
 import runwar.logging.RunwarLogger;
@@ -95,7 +98,7 @@ public class BrowserOpener {
     }
 
     public static void openInBrowser(String preferred_browser, String url, int os) throws IOException, Exception {
-        String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape"};
+        String[] browsers = {"firefox", "chrome", "opera", "konqueror", "epiphany"};
 
         if (!preferred_browser.equalsIgnoreCase("default")) {
             switch (os) {
@@ -140,10 +143,15 @@ public class BrowserOpener {
 
     public static void openUrlInBrowserOnWindows(String preferredBrowser, String url) throws Exception {
         try {
-            String[] browsers = {"firefox", "chrome", "opera", "MicrosoftEdge", "explorer"};
-            if (!preferredBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferredBrowser, Arrays.asList(browsers))) {
+            Map<String,String> browsers =new HashMap<>();
+            browsers.put("firefox","firefox");
+            browsers.put("chrome","chrome");
+            browsers.put("edge","MicrosoftEdge");
+            browsers.put("ie","iexplore");
+            browsers.put("opera","opera");
+            if (!preferredBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferredBrowser, new ArrayList<String>(browsers.keySet()))) {
                 Runtime runtime = Runtime.getRuntime();
-                String[] args = {"cmd.exe", "/c", "start", preferredBrowser, url};
+                String[] args = {"cmd.exe", "/c", "start", browsers.get(preferredBrowser), url};
                 Process p = runtime.exec(args);
             } else {
                 //opening url on default browser
@@ -159,11 +167,16 @@ public class BrowserOpener {
 
     public static void openUrlInBrowserOnMacOS(String preferredBrowser, String url) throws Exception {
         try {
-            String[] browsers = {"Firefox", "Google Chrome", "Microsoft Edge", "Safari", "Opera"};
-            if (!preferredBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferredBrowser, Arrays.asList(browsers))) {
+            Map<String,String> browsers = new HashMap<>();
+            browsers.put("firefox","Firefox");
+            browsers.put("chrome","Google Chrome");
+            browsers.put("edge","Microsoft Edge");
+            browsers.put("safari","Safari");
+            browsers.put("opera","Opera");
+            if (!preferredBrowser.equalsIgnoreCase("default") && containsCaseInsensitive(preferredBrowser,new ArrayList<String>(browsers.keySet()))) {
                 //using multiline osascript
                 Runtime runtime = Runtime.getRuntime();
-                String applescriptCommand = "tell application \"" + preferredBrowser + "\"\n"
+                String applescriptCommand = "tell application \"" + browsers.get(preferredBrowser) + "\"\n"
                         + "	open location \"" + url + "\"\n"
                         + "end tell";
                 String[] args = {"osascript", "-e", applescriptCommand};
