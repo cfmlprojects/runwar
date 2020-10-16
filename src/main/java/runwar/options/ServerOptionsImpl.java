@@ -68,7 +68,7 @@ public class ServerOptionsImpl implements ServerOptions {
     private String action = "start";
 
     private String browser = "";
-
+    
     private String cfengineName = "";
     
     private boolean customHTTPStatusEnable = true;
@@ -126,6 +126,8 @@ public class ServerOptionsImpl implements ServerOptions {
     private boolean service = false;
     
     public String logPattern = "[%-5p] %c: %m%n";
+    
+    private String defaultServletAllowedExt = "";
     
     private final Map<String, String> aliases = new HashMap<>();
     
@@ -2133,6 +2135,23 @@ public class ServerOptionsImpl implements ServerOptions {
         return this;
     }
 
+    /*
+     * @see runwar.options.ServerOptions#defaultServletAllowedExt()
+     */
+    @Override
+    public String defaultServletAllowedExt() {
+        return defaultServletAllowedExt;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#defaultServletAllowedExt(boolean)
+     */
+    @Override
+    public ServerOptions defaultServletAllowedExt(String defaultServletAllowedExt) {
+    	this.defaultServletAllowedExt = defaultServletAllowedExt;
+        return this;
+    }
+    
     /**
      * @see runwar.options.ServerOptions#xnioOptions(java.lang.String)
      */

@@ -112,6 +112,7 @@ public interface ServerOptions {
         final static String UNDERTOWOPTIONS = "undertowOptions";
         final static String XNIOOPTIONS = "xnioOptions";
         final static String BROWSER = "browser";
+        final static String DEFAULTSERVLETALLOWEDEXT = "";
     }
     
     String defaultShell();
@@ -359,7 +360,11 @@ public interface ServerOptions {
     String browser();
     
     ServerOptions browser(String browser);
-
+    
+    String defaultServletAllowedExt();
+    
+    ServerOptions defaultServletAllowedExt(String defaultServletAllowedExt);
+    
     ServerOptions sslCertificate(File file);
 
     File sslCertificate();
