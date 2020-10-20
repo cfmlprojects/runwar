@@ -416,7 +416,7 @@ class RunwarConfigurer {
         */
 
         // Default list of what the default servlet will serve
-        String allowedExt = "aif,aiff,au,avi,bmp,btm,btm,css,csv,doc,docx,eps,font,gif,gif,htm,html,ico,ini,jpeg,jpg,js,json,map,mid,midi,mov,mp3,mp4,mpeg4,pdf,png,ppt,pptx,psd,ra,rtf,tar,tif,ttf,txt,wav,wmf,xls,xlsx,xml,zip,woff,woff2,eot,svgz";
+        String allowedExt = "aif,aiff,au,avi,bmp,btm,btm,css,csv,doc,docx,eps,font,gif,gif,htm,html,ico,ini,jpeg,jpg,js,json,map,mid,midi,mov,mp3,mp4,mpeg4,pdf,png,ppt,pptx,psd,ra,rtf,tar,tif,ttf,txt,wav,wmf,xls,xlsx,xml,zip,woff,woff2,eot,svg,svgz";
         // Add any custom additions by our users
         if( serverOptions.defaultServletAllowedExt().length() > 0 ) {
         	allowedExt += "," + serverOptions.defaultServletAllowedExt();
