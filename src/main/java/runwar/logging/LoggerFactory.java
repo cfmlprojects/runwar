@@ -125,7 +125,9 @@ public class LoggerFactory {
                 
                 // This logger is only used in the resource mapper and is really chatty
                 // Consider a setting to enable it only when troubleshooting file system mapping issues
-                //RUNWAR_REQUEST.setLevel(level);
+                if( serverOptions.resourceManagerLogging() ) {
+                    RUNWAR_REQUEST.setLevel(level);	
+                }
                 
                 Logger.getRootLogger().setLevel(level);
                 configureUrlRewriteLoggers(true);

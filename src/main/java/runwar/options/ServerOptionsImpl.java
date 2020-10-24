@@ -128,6 +128,11 @@ public class ServerOptionsImpl implements ServerOptions {
     public String logPattern = "[%-5p] %c: %m%n";
     
     private String defaultServletAllowedExt = "";
+
+    private Boolean caseSensitiveWebServer= false;
+    
+    private Boolean resourceManagerLogging= false;
+    
     
     private final Map<String, String> aliases = new HashMap<>();
     
@@ -2144,11 +2149,45 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
     /*
-     * @see runwar.options.ServerOptions#defaultServletAllowedExt(boolean)
+     * @see runwar.options.ServerOptions#defaultServletAllowedExt(String)
      */
     @Override
     public ServerOptions defaultServletAllowedExt(String defaultServletAllowedExt) {
     	this.defaultServletAllowedExt = defaultServletAllowedExt;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#resourceManagerLogging()
+     */
+    @Override
+    public Boolean resourceManagerLogging() {
+        return resourceManagerLogging;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#resourceManagerLogging(boolean)
+     */
+    @Override
+    public ServerOptions resourceManagerLogging(Boolean resourceManagerLogging) {
+    	this.resourceManagerLogging = resourceManagerLogging;
+        return this;
+    }    
+
+    /*
+     * @see runwar.options.ServerOptions#caseSensitiveWebServer()
+     */
+    @Override
+    public Boolean caseSensitiveWebServer() {
+        return caseSensitiveWebServer;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#caseSensitiveWebServer(boolean)
+     */
+    @Override
+    public ServerOptions caseSensitiveWebServer(Boolean caseSensitiveWebServer) {
+    	this.caseSensitiveWebServer = caseSensitiveWebServer;
         return this;
     }
     

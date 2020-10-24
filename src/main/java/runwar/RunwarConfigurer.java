@@ -439,7 +439,6 @@ class RunwarConfigurer {
                 .addInitParam("directory-listing", Boolean.toString(serverOptions.directoryListingEnable()))
                 .addInitParam("default-allowed", "false")                
         		.addInitParam("allowed-extensions", allowedExt)
-        		//.addInitParam("disallowed-extensions", "CFC,cfc,Cfc,CFc,cFc,cfC,CfC,cFC,CFM,cfm,Cfm,CFm,cFm,cfM,CfM,cFM,CFML,cfmL,CfmL,CFmL,cFmL,cfML,CfML,cFML,CFMl,cfml,Cfml,CFml,cFml,cfMl,CfMl,cFMl")
         		.addInitParam("allow-post", "true") );
 
         List<?> welcomePages =  servletBuilder.getWelcomePages();

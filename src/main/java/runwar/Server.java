@@ -932,7 +932,7 @@ public class Server {
     }
 
     ResourceManager getResourceManager(File warFile, Long transferMinSize, Set<Path> contentDirs, Map<String, Path> aliases, File internalCFMLServerRoot) {
-        MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, contentDirs, aliases, internalCFMLServerRoot);
+        MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, contentDirs, aliases, internalCFMLServerRoot,serverOptions);
         if (serverOptions.directoryListingRefreshEnable() || !serverOptions.bufferEnable()) {
             return mappedResourceManager;
         }
