@@ -103,7 +103,9 @@ public class MappedResourceManager extends FileResourceManager {
 	            }
 	        }
 	        
-	        reqFile = pathExists(reqFile);
+	        if (reqFile != null ) {
+	 	        reqFile = pathExists(reqFile);
+	        }
 	        
 	        if (reqFile == null ) {
  	            MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.toString() : "null");
