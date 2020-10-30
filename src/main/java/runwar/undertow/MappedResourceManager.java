@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,6 +28,7 @@ public class MappedResourceManager extends FileResourceManager {
     private Boolean forceCaseSensitiveWebServer;
     private Boolean forceCaseInsensitiveWebServer;
     private HashMap<String, Path> aliases;
+    private HashMap<String, Path> caseInsensitiveCache = new HashMap<String, Path>();
     private HashSet<Path> contentDirs;
     private File WEBINF = null, CFIDE = null;
     private static boolean isCaseSensitiveFS = caseSensitivityCheck(); 
@@ -118,9 +120,10 @@ public class MappedResourceManager extends FileResourceManager {
             
             // Check for Windows doing silly things with file canonicalization
             String originalPath = reqFile.toString();
+
             // The real path will return the actual file on the file system that is matched
             // the original path may be in the wrong case and may have extra junk on the end that Windows removes when it canonicalizes
-            String realPath = reqFile.toRealPath().toString();
+            String realPath = reqFile.toRealPath(LinkOption.NOFOLLOW_LINKS).toString();
             String originalPathCase;
             String realPathCase;
 
@@ -186,12 +189,22 @@ public class MappedResourceManager extends FileResourceManager {
     }
 
     Path pathExists(Path path) {
-        Boolean defaultCheck = Files.exists( path );
-        if( defaultCheck ) {
-            return path;
-        }
-        if( isCaseSensitiveFS && forceCaseInsensitiveWebServer ) {
+       Boolean defaultCheck = Files.exists( path );
+       if( defaultCheck ) {
+           return path;
+       }
+       if( isCaseSensitiveFS && forceCaseInsensitiveWebServer ) {
             MAPPER_LOG.debugf("*** Case insensitive check for %s",path);
+            
+            Path cacheLookup = caseInsensitiveCache.get(path.toString());
+            if( cacheLookup != null && Files.exists( cacheLookup ) ) {
+                MAPPER_LOG.tracef("*** Case insensitive lookup found in cache %s -> %s",path, cacheLookup);
+            	return cacheLookup;
+            } else if( cacheLookup != null ) {
+                MAPPER_LOG.tracef("*** Case insensitive lookup removed from cache %s",path);
+            	caseInsensitiveCache.remove(path.toString());
+            }
+            
         	String realPath = "";
         	String[] pathSegments = path.toString().replace('\\', '/').split( "/" );
         	if( pathSegments.length > 0 && pathSegments[0].contains(":") ){
@@ -209,7 +222,7 @@ public class MappedResourceManager extends FileResourceManager {
         			continue;
         		}
         		
-        		Boolean found = false;	            
+        		Boolean found = false;
         		for( String thisChild : new File( realPath + "/" ).list() ) {
         			// We're taking the FIRST MATCH.  Buyer beware
         			if( thisSegment.equalsIgnoreCase(thisChild)) {
@@ -224,9 +237,13 @@ public class MappedResourceManager extends FileResourceManager {
         		}
         	}
 			// If we made it through the outer loop, we've found a match
-        	return Paths.get( realPath );
-        }
-        return null;
+        	Path realPathFinal = Paths.get( realPath );
+
+            MAPPER_LOG.tracef("*** Case insensitive lookup put in cache %s -> %s",path,realPathFinal);
+        	caseInsensitiveCache.put(path.toString(), realPathFinal );
+        	return realPathFinal;
+      }
+      return null;
     }
 
     private void processMappings(String cfmlDirList) {
@@ -292,8 +309,7 @@ public class MappedResourceManager extends FileResourceManager {
     }
     
     private static boolean caseSensitivityCheck() {
-    	return true;
-	    /*try {
+	    try {
 	        File currentWorkingDir = new File(System.getProperty("user.dir"));
 	        File case1 = new File(currentWorkingDir, "case1");
 	        File case2 = new File(currentWorkingDir, "Case1");
@@ -313,7 +329,6 @@ public class MappedResourceManager extends FileResourceManager {
 	    	e.printStackTrace();
 	    }
         return true;
-        */
 	}
 
 }

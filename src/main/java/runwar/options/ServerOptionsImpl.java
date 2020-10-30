@@ -129,7 +129,7 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private String defaultServletAllowedExt = "";
 
-    private Boolean caseSensitiveWebServer= false;
+    private Boolean caseSensitiveWebServer= null;
     
     private Boolean resourceManagerLogging= false;
     
