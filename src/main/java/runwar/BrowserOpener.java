@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,11 +25,11 @@ public class BrowserOpener {
     public static void openURL(String url, String preferred_browser) {
         String osName = System.getProperty("os.name");
         if (url == null) {
-            System.out.println("ERROR: No URL specified to open the browser to!");
+            RunwarLogger.LOG.warn("ERROR: No URL specified to open the browser to!");
             return;
         }
         try {
-            System.out.println(url);
+            RunwarLogger.LOG.info(url);
             if (osName.startsWith("Mac OS")) {
                 if (!preferred_browser.equalsIgnoreCase("default")) {
                     try {
