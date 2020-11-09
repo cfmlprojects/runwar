@@ -405,6 +405,15 @@ public class ConfigParser {
 
             if (serverConfig.hasOption(Keys.TRAY)) {
                 serverOptions.trayEnable(Boolean.valueOf(serverConfig.getOptionValue(Keys.TRAY)));
+                if (serverOptions.trayEnable()) {
+                    if(serverConfig.hasOption("trayOptions")){
+                        serverOptions.trayConfig(serverConfig.getJSONArray("trayOptions"));
+                    }else{
+                        JSONArray array=new JSONArray();
+                        array.add(new JSONObject().put("trayOptions", new ArrayList<>()));
+                        serverOptions.trayConfig(array);
+                    }
+                }
             }
             
             if (serverConfig.hasOption(Keys.DOCK)) {
@@ -416,11 +425,7 @@ public class ConfigParser {
             }
             if (serverConfig.hasOption(Keys.ICON)) {
                 serverOptions.iconImage(serverConfig.getOptionValue(Keys.ICON));
-            }
-            
-            if (serverConfig.hasOption("trayOptions")) {
-                serverOptions.trayConfig(serverConfig.getJSONArray("trayOptions"));
-            }
+            }        
 
             if (serverConfig.hasOption(Keys.TRAYCONFIG)) {
                 serverOptions.trayConfig(getFile(serverConfig.getOptionValue(Keys.TRAYCONFIG)));
