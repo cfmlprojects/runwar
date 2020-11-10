@@ -267,12 +267,19 @@ public class Tray {
     }
     
     public String checkAndFixUrl(String url, ServerOptions serverOptions){
-        System.out.println(serverOptions.host() + " - " +serverOptions.httpPort() + " - " + serverOptions.sslPort());
-        if(url.startsWith("/")){
-            if(!serverOptions.sslEnable()){
-            url = "http://" + serverOptions.host() + ":" +serverOptions.httpPort() + url;
+        if(!url.startsWith("http")){
+            if(url.startsWith("/")){
+                if(!serverOptions.sslEnable()){
+                    url = "http://" + serverOptions.host() + ":" +serverOptions.httpPort() + url;
+                }else{
+                    url = "https://" + serverOptions.host() + ":" + serverOptions.sslPort() + url;
+                }
             }else{
-            url = "https://" + serverOptions.host() + ":" + serverOptions.sslPort() + url;
+                if(!serverOptions.sslEnable()){
+                    url = "http://" + serverOptions.host() + ":" +serverOptions.httpPort() + "/" + url;
+                }else{
+                    url = "https://" + serverOptions.host() + ":" + serverOptions.sslPort() + "/" + url;
+                }
             }
         }
         return url;
