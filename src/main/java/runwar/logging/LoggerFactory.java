@@ -175,7 +175,7 @@ public class LoggerFactory {
         PatternLayout layout = new PatternLayout();
         layout.setConversionPattern(pattern);
         appender.setLayout(layout);
-        appender.setName("CONSOLE");
+        appender.setName("rw.console");
         appender.setThreshold(Level.toLevel(logLevel));
         appender.activateOptions();
         return appender;
