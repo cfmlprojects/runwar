@@ -5,7 +5,7 @@ import javax.servlet.http.HttpSession;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
-@SuppressWarnings("depricated")
+@SuppressWarnings("deprecation")
 public class MockSession implements HttpSession {
 
     MockServletContext servletContext = new MockServletContext();

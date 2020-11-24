@@ -10,7 +10,7 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
 
-@SuppressWarnings("depricated")
+@SuppressWarnings("deprecation")
 public class MockHTTP {
 
     public static final class MockHttpRequest implements HttpServletRequest {
