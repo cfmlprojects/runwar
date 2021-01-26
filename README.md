@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/Ortus-Solutions/runwar.svg?branch=develop)](https://travis-ci.org/Ortus-Solutions/runwar)
+[![Build Status](https://travis-ci.org/Ortus-Solutions/runwar.svg?branch=develop)](https://travis-ci.com/Ortus-Solutions/runwar)
 
-# RunWAR
+# >RunWAR
 
 [README)](README.adoc)
 
