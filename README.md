@@ -1,13 +1,14 @@
 [![Build Status](https://travis-ci.org/Ortus-Solutions/runwar.svg?branch=develop)](https://travis-ci.com/Ortus-Solutions/runwar)
 
+```
+██████╗ ██╗   ██╗███╗   ██╗██╗    ██╗ █████╗ ██████╗ 
+██╔══██╗██║   ██║████╗  ██║██║    ██║██╔══██╗██╔══██╗
+██████╔╝██║   ██║██╔██╗ ██║██║ █╗ ██║███████║██████╔╝
+██╔══██╗██║   ██║██║╚██╗██║██║███╗██║██╔══██║██╔══██╗
+██║  ██║╚██████╔╝██║ ╚████║╚███╔███╔╝██║  ██║██║  ██║
+╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝
+```                                                     
 
-██████  ██    ██ ███    ██ ██     ██  █████  ██████                                                                                                                              
-██   ██ ██    ██ ████   ██ ██     ██ ██   ██ ██   ██                                                                                                                             
-██████  ██    ██ ██ ██  ██ ██  █  ██ ███████ ██████                                                                                                                              
-██   ██ ██    ██ ██  ██ ██ ██ ███ ██ ██   ██ ██   ██                                                                                                                             
-██   ██  ██████  ██   ████  ███ ███  ██   ██ ██   ██                                                                                                                             
-                                                     
-                                                     
 
 RunWAR is a web server targeted at running Java and CFML applications, with some added features for Adobe ColdFusion and Lucee (configurable web/admin context locations, and opening the admin pages from the taskbar).
 
