@@ -34,6 +34,7 @@ public class MappedResourceManager extends FileResourceManager {
     private static boolean isCaseSensitiveFS = caseSensitivityCheck(); 
     private static final Pattern CFIDE_REGEX_PATTERN;
     private static final Pattern WEBINF_REGEX_PATTERN;
+    private final FileResource baseResource;
 
     static {
         CFIDE_REGEX_PATTERN = Pattern.compile("(?i)^.*[\\\\/]?CFIDE([\\\\/].*)?");
@@ -47,9 +48,10 @@ public class MappedResourceManager extends FileResourceManager {
         this.allowResourceChangeListeners = false;
         this.contentDirs = (HashSet<Path>) contentDirs;
         this.aliases = (HashMap<String, Path>) aliases;
-        this.serverOptions = serverOptions;
+        this.serverOptions = serverOptions; 
         this.forceCaseSensitiveWebServer = serverOptions.caseSensitiveWebServer() != null && serverOptions.caseSensitiveWebServer();
         this.forceCaseInsensitiveWebServer = serverOptions.caseSensitiveWebServer() != null && !serverOptions.caseSensitiveWebServer();
+        this.baseResource = new FileResource( getBase(), this, "/");
         
         if(webinfDir != null){
             WEBINF = webinfDir;
@@ -69,6 +71,12 @@ public class MappedResourceManager extends FileResourceManager {
             return null;
         }
         MAPPER_LOG.debug("* requested: '" + path + "'");
+        
+        if( path.equals( "/" ) ) {
+        	MAPPER_LOG.debugf("** path mapped to (cached): '%s'", getBase());
+            return this.baseResource;	
+        }
+        
         try {
 	        Path reqFile = null;
 	        final Matcher webInfMatcher = WEBINF_REGEX_PATTERN.matcher(path);
