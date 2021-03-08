@@ -984,9 +984,10 @@ public class CommandLineHandler {
             }
             if (hasOptionValue(line, Keys.JVMARGS)) {
                 List<String> jvmArgs = new ArrayList<String>();
-                String[] jvmArgArray = line.getOptionValue(Keys.JVMARGS).split("(?<!\\\\);");
+                // A \\ is an escaped backslash and a \; is an escaped semicolon
+                String[] jvmArgArray = line.getOptionValue(Keys.JVMARGS).replaceAll("\\\\\\\\", "__backSlash__" ).replaceAll("\\\\;", "__semicolon__" ).split(";");
                 for (String arg : jvmArgArray) {
-                    jvmArgs.add(arg.replaceAll("\\\\;", ";"));
+                    jvmArgs.add(arg.replaceAll("__semicolon__", ";").replaceAll("__backSlash__", "\\\\"));
                 }
                 serverOptions.jvmArgs(jvmArgs);
             }
