@@ -602,6 +602,11 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false")
                 .create(Keys.RESOURCEMANAGERLOGGING));
         
+        options.addOption(OptionBuilder
+                .withLongOpt("cache-servlet-paths")
+                .withDescription("Enable file system caching in resource manager of servlet.getRealPath() calls")
+                .hasArg().withArgName("true|false")
+                .create(Keys.CACHESERVLETPATHS));
         
         options.addOption(new Option("h", Keys.HELP, false, "print this message"));
         options.addOption(new Option("v", "version", false, "print runwar version and undertow version"));
@@ -900,6 +905,10 @@ public class CommandLineHandler {
             
             if (hasOptionValue(line, Keys.RESOURCEMANAGERLOGGING)) {
                 serverOptions.resourceManagerLogging(Boolean.valueOf(line.getOptionValue(Keys.RESOURCEMANAGERLOGGING)));
+            }
+            
+            if (hasOptionValue(line, Keys.CACHESERVLETPATHS)) {
+                serverOptions.cacheServletPaths(Boolean.valueOf(line.getOptionValue(Keys.CACHESERVLETPATHS)));
             }
             
             if (line.hasOption(Keys.OPENURL)) {

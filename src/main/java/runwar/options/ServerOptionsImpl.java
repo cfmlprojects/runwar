@@ -133,7 +133,8 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private Boolean resourceManagerLogging= false;
     
-    
+    private Boolean cacheServletPaths= false;
+        
     private final Map<String, String> aliases = new HashMap<>();
     
     private Set<String> contentDirectories = new HashSet<>();
@@ -2172,7 +2173,24 @@ public class ServerOptionsImpl implements ServerOptions {
     public ServerOptions resourceManagerLogging(Boolean resourceManagerLogging) {
     	this.resourceManagerLogging = resourceManagerLogging;
         return this;
-    }    
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#cacheServletPaths()
+     */
+    @Override
+    public Boolean cacheServletPaths() {
+        return cacheServletPaths;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#cacheServletPaths(boolean)
+     */
+    @Override
+    public ServerOptions cacheServletPaths(Boolean cacheServletPaths) {
+    	this.cacheServletPaths = cacheServletPaths;
+        return this;
+    }
 
     /*
      * @see runwar.options.ServerOptions#caseSensitiveWebServer()
