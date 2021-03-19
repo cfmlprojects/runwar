@@ -8,12 +8,14 @@ import java.nio.file.Paths;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.Optional;
 
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
@@ -29,8 +31,8 @@ public class MappedResourceManager extends FileResourceManager {
     private Boolean forceCaseInsensitiveWebServer;
     private Boolean cacheServletPaths;
     private HashMap<String, Path> aliases;
-    private HashMap<String, Path> caseInsensitiveCache = new HashMap<String, Path>();
-    private HashMap<String, Resource> servletPathCache = new HashMap<String, Resource>();
+    private ConcurrentHashMap<String, Path> caseInsensitiveCache = new ConcurrentHashMap<String, Path>();
+    private ConcurrentHashMap<String, Optional<Resource>> servletPathCache = new ConcurrentHashMap<String, Optional<Resource>>();
     private HashSet<Path> contentDirs;
     private File WEBINF = null, CFIDE = null;
     private static boolean isCaseSensitiveFS = caseSensitivityCheck(); 
@@ -76,9 +78,16 @@ public class MappedResourceManager extends FileResourceManager {
         MAPPER_LOG.debug("* requested: '" + path + "'");
         
         // If cache is enabled and this path is found, return it
-        if( cacheServletPaths && servletPathCache.containsKey( path ) ) {
-        	MAPPER_LOG.debugf("** path mapped to (cached): '%s'", servletPathCache.get( path ).getFile().toString() );
-        	return servletPathCache.get( path );
+        if( cacheServletPaths ) {
+        	Optional<Resource> cacheCheck = servletPathCache.get( path );
+        	if( cacheCheck != null ) {
+        		if( cacheCheck.isPresent() ) {
+                	MAPPER_LOG.debugf("** path mapped to (cached): '%s'", cacheCheck.get().getFile().toString() );	
+        		} else {
+                	MAPPER_LOG.debugf("** path mapped to (cached): '%s'", "null (not found)" );        			
+        		}
+            	return cacheCheck.orElse( null );	
+        	}
         }
         
         if( path.equals( "/" ) ) {
@@ -131,7 +140,7 @@ public class MappedResourceManager extends FileResourceManager {
  	           MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.toString() : "null");
  	           Resource superResult = super.getResource(path); 	            
 			   if( cacheServletPaths ) {
-				   servletPathCache.put( path, superResult );  
+				   servletPathCache.put( path, Optional.ofNullable( superResult ) );  
 			   }
  	           return superResult;
 	        }	        		
@@ -170,7 +179,7 @@ public class MappedResourceManager extends FileResourceManager {
             MAPPER_LOG.debugf("** path mapped to: '%s'", reqFile);
 	            
 		   if( cacheServletPaths ) {
-			   servletPathCache.put( path, new FileResource(reqFile.toFile(), this, path) );  
+			   servletPathCache.put( path, Optional.of( new FileResource(reqFile.toFile(), this, path) ) );  
 		   }
             return new FileResource(reqFile.toFile(), this, path);
             
@@ -179,7 +188,7 @@ public class MappedResourceManager extends FileResourceManager {
             MAPPER_LOG.debug("** " + e.getMessage());
             
  		    if( cacheServletPaths ) {
- 		 	   servletPathCache.put( path, null );  
+ 		 	   servletPathCache.put( path, Optional.empty() );  
  		    }
             return null;
         } catch( IOException e ){
@@ -187,7 +196,7 @@ public class MappedResourceManager extends FileResourceManager {
             MAPPER_LOG.debug("** " + e.getMessage());
 
  		    if( cacheServletPaths ) {
- 		 	   servletPathCache.put( path, null );  
+ 		 	   servletPathCache.put( path, Optional.empty() );  
  		    }
             return null;
         }
