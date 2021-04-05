@@ -539,23 +539,9 @@ public class Server {
         });
 
         manager = defaultContainer().addDeployment(servletBuilder);
-
-        //hack for older adobe versions
-        String originalJavaVersion = System.getProperty("java.version", "");
-        if (serverOptions.cfEngineName().equalsIgnoreCase("adobe") && !servletBuilder.getDisplayName().contains("2018")) {
-            if (LaunchUtil.versionGreaterThanOrEqualTo(originalJavaVersion, "1.9")) {
-                LOG.debug("Setting java version from " + originalJavaVersion + " to 1.8 temporarily because we're running " + servletBuilder.getDisplayName());
-                System.setProperty("java.version", "1.8");
-            }
-        }
-
         manager.deploy();
         HttpHandler servletHandler = manager.start();
         LOG.debug("started servlet deployment manager");
-
-        if (!System.getProperty("java.version", "").equalsIgnoreCase(originalJavaVersion)) {
-            System.setProperty("java.version", originalJavaVersion);
-        }
 
         if (serverOptions.bufferSize() != 0) {
             LOG.info("Buffer Size: " + serverOptions.bufferSize());
