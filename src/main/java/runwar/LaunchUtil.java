@@ -171,7 +171,8 @@ public class LaunchUtil {
                 }
             }
         }
-        if ((System.currentTimeMillis() - start) > timeout && !serverIsUp) {
+
+        if ((System.currentTimeMillis() - start) >= timeout && !serverIsUp) {
             process.destroy();
             System.out.println();
             System.err.println("ERROR: Startup exceeded timeout of " + timeout / 1000 + " seconds - aborting!");
@@ -188,9 +189,7 @@ public class LaunchUtil {
 
     private static boolean processOutout(String line, Process process, boolean exitWhenUp) {
         RunwarLogger.BACKGROUNDED_LOG.debug(line);
-        if (line.indexOf("Server is up - ") != -1) {
-            // start up was successful, quit out
-//             System.out.println(line);
+        if (line.indexOf("Server is up - ") != -1 || line.indexOf("Lucee warmup completed") != -1 ) {
             if (exitWhenUp) {
                 System.exit(0);
             } else {
