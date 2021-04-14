@@ -212,6 +212,7 @@ public class Server {
         }
         serverName = serverOptions.serverName();
         String host = serverOptions.host(), cfengine = serverOptions.cfEngineName(), processName = serverOptions.processName();
+        String realHost = getRealHost( host );
         String contextPath = serverOptions.contextPath();
         File warFile = serverOptions.warFile();
         if (warFile == null) {
@@ -243,7 +244,7 @@ public class Server {
         LOG.debug("SERVER BUILDER:" + serverOptions.httpEnable());
         if (serverOptions.httpEnable()) {
             LOG.debug("Server Builder - PORT:" + ports.get("http").socket + " HOST:" + host);
-            serverBuilder.addHttpListener(ports.get("http").socket, host);
+            serverBuilder.addHttpListener(ports.get("http").socket, realHost);
         } else {
             LOG.info("HTTP Enabled:" + serverOptions.httpEnable());
         }
@@ -277,14 +278,14 @@ public class Server {
                     char[] keypass = serverOptions.sslKeyPass();
                     String[] sslAddCerts = serverOptions.sslAddCerts();
 
-                    sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{serverOptions.host()});
+                    sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{realHost});
                     if (keypass != null) {
                         Arrays.fill(keypass, '*');
                     }
                 } else {
                     sslContext = SSLUtil.createSSLContext();
                 }
-                serverBuilder.addHttpsListener(sslPort, host, sslContext);
+                serverBuilder.addHttpsListener(sslPort, realHost, sslContext);
             } catch (Exception e) {
                 LOG.error("Unable to start SSL:" + e.getMessage());
                 e.printStackTrace();
@@ -296,7 +297,7 @@ public class Server {
 
         if (serverOptions.ajpEnable()) {
             LOG.info("Enabling AJP protocol on port " + serverOptions.ajpPort());
-            serverBuilder.addAjpListener(serverOptions.ajpPort(), host);
+            serverBuilder.addAjpListener(serverOptions.ajpPort(), realHost);
             if (serverOptions.undertowOptions().getMap().size() == 0) {
                 // if no options is set, default to the large packet size
                 serverBuilder.setServerOption(UndertowOptions.MAX_AJP_PACKET_SIZE, 65536);
@@ -950,10 +951,24 @@ public class Server {
         }
     }
 
-    private InetAddress getInetAddress(String host) {
+    public static String getRealHost(String host) {
+    	return getInetAddress(host).getHostAddress();
+    }
+
+    public static InetAddress getInetAddress(String host) {
         try {
             return InetAddress.getByName(host);
         } catch (UnknownHostException e) {
+        	if( host.toLowerCase().endsWith( ".localhost" ) ) {
+    			// It's possible to have "fake" hosts such as mytest.localhost which aren't in DNS
+    			// or your hosts file.  Browsers will resolve them to localhost, but the call above 
+    			// will fail with a UnknownHostException since they aren't real
+                try {
+                	return InetAddress.getByName( "127.0.0.1" );
+                } catch (UnknownHostException e2) {
+                	throw new RuntimeException("Error getting inet address for " + host);
+                }
+        	}
             throw new RuntimeException("Error getting inet address for " + host);
         }
     }
@@ -1040,13 +1055,7 @@ public class Server {
     }
 
     public boolean serverWentDown() {
-        try {
-            return serverWentDown(serverOptions.launchTimeout(), 3000, InetAddress.getByName(serverOptions.host()), ports.get("http").socket);
-        } catch (UnknownHostException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return false;
+        return serverWentDown(serverOptions.launchTimeout(), 3000, getInetAddress(serverOptions.host()), ports.get("http").socket);
     }
 
     public static boolean serverWentDown(int timeout, long sleepTime, InetAddress server, int port) {
@@ -1149,7 +1158,7 @@ public class Server {
 
             LOG.info("Waiting up to " + (timeout / 1000) + " seconds for " + host + ":" + portNumber + "...");
             try {
-                if (serverCameUp(timeout, 3000, InetAddress.getByName(host), portNumber)) {
+                if (serverCameUp(timeout, 3000, getInetAddress(host), portNumber)) {
                     LOG.infof("Opening browser to url: %s", openbrowserURL);
                     BrowserOpener.openURL(openbrowserURL.trim(), serverOptions.browser());
                 } else {
@@ -1219,7 +1228,7 @@ public class Server {
             int exitCode = 0;
             serverSocket = null;
             try {
-                serverSocket = new ServerSocket(serverOptions.stopPort(), 1, InetAddress.getByName(serverOptions.host()));
+                serverSocket = new ServerSocket(serverOptions.stopPort(), 1, getInetAddress(serverOptions.host()));
                 listening = true;
                 LOG.info(bar);
                 LOG.info("*** starting 'stop' listener thread - Host: " + serverOptions.host()
@@ -1301,7 +1310,7 @@ public class Server {
             // send a char to the reader so it will stop waiting
             Socket s;
             try {
-                s = new Socket(InetAddress.getByName(serverOptions.host()), serverOptions.stopPort());
+                s = new Socket(getInetAddress(serverOptions.host()), serverOptions.stopPort());
                 OutputStream out = s.getOutputStream();
                 out.write('s');
                 out.flush();

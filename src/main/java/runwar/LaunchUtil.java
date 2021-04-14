@@ -888,7 +888,7 @@ public class LaunchUtil {
     }
 
     public static int getPortOrErrorOut(int portNumber, String host) {
-        try (ServerSocket nextAvail = new ServerSocket(portNumber, 1, getInetAddress(host))) {
+        try (ServerSocket nextAvail = new ServerSocket(portNumber, 1, Server.getInetAddress(host))) {
             portNumber = nextAvail.getLocalPort();
             nextAvail.close();
             return portNumber;
@@ -900,13 +900,5 @@ public class LaunchUtil {
             throw new RuntimeException(e);
         }
     }
-
-    public static InetAddress getInetAddress(String host) {
-        try {
-            return InetAddress.getByName(host);
-        } catch (UnknownHostException e) {
-            throw new RuntimeException("Error getting inet address for " + host);
-        }
-    }
-
+    
 }

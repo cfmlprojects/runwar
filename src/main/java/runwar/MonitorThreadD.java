@@ -38,7 +38,7 @@ class MonitorThreadD extends Thread {
 
     @Override
     public void run() {
-        try(ServerSocket serverSocket = new ServerSocket(ports.get("stop").socket, 1, InetAddress.getByName(serverOptions.host()))) {
+        try(ServerSocket serverSocket = new ServerSocket(ports.get("stop").socket, 1, Server.getInetAddress(serverOptions.host()))) {
             listening = true;
             MONITOR_LOG.info(bar);
             MONITOR_LOG.info("*** starting 'stop' listener thread - Host: " + serverOptions.host()
@@ -111,7 +111,7 @@ class MonitorThreadD extends Thread {
         listening = false;
         MONITOR_LOG.trace("Stopping listening");
         // send a char to the reader so it will stop waiting
-        try (Socket s = new Socket(InetAddress.getByName(serverOptions.host()), ports.get("stop").socket)) {
+        try (Socket s = new Socket(Server.getInetAddress(serverOptions.host()), ports.get("stop").socket)) {
             try (OutputStream out = s.getOutputStream()) {
                 for (char aStopPassword : stopPassword) {
                     out.write(aStopPassword);

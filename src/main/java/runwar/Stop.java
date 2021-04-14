@@ -22,7 +22,7 @@ public class Stop {
         String host = serverOptions.host();
         char[] stoppassword = serverOptions.stopPassword();
         try {
-            InetAddress addr = InetAddress.getByName(host);
+            InetAddress addr = Server.getInetAddress(host);
             Socket s = new Socket(addr, socketNumber);
             OutputStream out = s.getOutputStream();
             System.out.println("**** sending stop request to socket " + addr.getHostAddress() + ":" + socketNumber);
