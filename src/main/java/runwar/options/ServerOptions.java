@@ -543,10 +543,6 @@ public interface ServerOptions {
 
     ServerOptions startedFromCommandLine(boolean enable);
 
-    int http2ProxySSLPort();
-
-    ServerOptions http2ProxySSLPort(int portNumber);
-
     boolean ignoreWebXmlWelcomePages();
 
     boolean ignoreWebXmlRestMappings();

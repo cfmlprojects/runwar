@@ -1049,10 +1049,6 @@ public class CommandLineHandler {
                 serverOptions.proxyPeerAddressEnable(Boolean.valueOf(line.getOptionValue(Keys.PROXYPEERADDRESS)));
             }
             if (hasOptionValue(line, Keys.HTTP2)) {
-                if (!hasOptionValue(line, Keys.SECURECOOKIES)) {
-                    CONF_LOG.trace("SSL enable and secure cookies explicitly disabled; enabling secure cookies");
-                    serverOptions.secureCookies(true);
-                }
                 serverOptions.http2Enable(Boolean.valueOf(line.getOptionValue(Keys.HTTP2)));
             }
             

@@ -96,7 +96,6 @@ public class Server {
 
     private static XnioWorker worker, logWorker;
     private volatile static runwar.util.PortRequisitioner ports;
-    private static HTTP2Proxy http2proxy;
     private Tray tray;
     //private FusionReactor fusionReactor;
 
@@ -186,18 +185,12 @@ public class Server {
         ports.add("stop", serverOptions.stopPort());
         ports.add("ajp", serverOptions.ajpPort(), serverOptions.ajpEnable());
         ports.add("https", serverOptions.sslPort(), serverOptions.sslEnable());
-        ports.add("http2", serverOptions.http2ProxySSLPort(), serverOptions.http2Enable());
-        if (serverOptions.http2Enable()) {
-            ports.add("https", serverOptions.http2ProxySSLPort(), true);
-            ports.add("http2", serverOptions.sslPort());
-        }
 
         ports.requisition();
         serverOptions.httpPort(ports.get("http").socket);
         serverOptions.stopPort(ports.get("stop").socket);
         serverOptions.ajpPort(ports.get("ajp").socket);
         serverOptions.sslPort(ports.get("https").socket);
-        serverOptions.http2ProxySSLPort(ports.get("http2").socket);
 
     }
 
@@ -249,16 +242,9 @@ public class Server {
             LOG.info("HTTP Enabled:" + serverOptions.httpEnable());
         }
 
+        LOG.info("HTTP2 Enabled:" + serverOptions.http2Enable());
         if (serverOptions.http2Enable()) {
-            LOG.info("Enabling HTTP2 protocol");
-            if (!serverOptions.sslEnable()) {
-                LOG.warn("SSL is required for HTTP2.  Enabling default SSL server.");
-                serverOptions.sslEnable(true);
-            }
             serverBuilder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
-            //serverBuilder.setSocketOption(Options.REUSE_ADDRESSES, true);
-        } else {
-            LOG.info("HTTP2 Enabled:" + serverOptions.http2Enable());
         }
 
         if (serverOptions.sslEnable()) {
@@ -656,11 +642,6 @@ public class Server {
             httpHandler = new SSLHeaderHandler(new ProxyPeerAddressHandler(httpHandler));
         }
 
-        if (serverOptions.http2Enable()) {
-            http2proxy = new HTTP2Proxy(ports, xnio);
-            httpHandler = http2proxy.proxyHandler(httpHandler);
-        }
-
         if (serverOptions.basicAuthEnable()) {
             securityManager.configureAuth(httpHandler, serverBuilder, options); //SECURITY_MANAGER
         } else {
@@ -734,11 +715,6 @@ public class Server {
         try {
 
             undertow.start();
-
-            if (serverOptions.http2Enable() && http2proxy != null && sslContext != null) {
-                LOG.debug("Starting HTTP2 proxy");
-                http2proxy.start(sslContext);
-            }
 
             // two times to test system tray issue
             System.gc();
@@ -863,9 +839,6 @@ public class Server {
                                 default:
                                     manager.stop();
                                     manager.undeploy();
-                            }
-                            if (http2proxy != null) {
-                                http2proxy.stop();
                             }
                             if (undertow != null) {
                                 undertow.stop();

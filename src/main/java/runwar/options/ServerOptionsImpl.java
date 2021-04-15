@@ -25,7 +25,7 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private String host = "127.0.0.1", contextPath = "/";
     
-    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779, http2ProxySSLPort = 1444;
+    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
     
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
     
@@ -2057,23 +2057,6 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public boolean startedFromCommandLine() {
         return this.startedFromCommandline;
-    }
-
-    /*
-     * @see runwar.options.ServerOptions#http2ProxySSLPort()
-     */
-    @Override
-    public int http2ProxySSLPort() {
-        return http2ProxySSLPort;
-    }
-
-    /*
-     * @see runwar.options.ServerOptions#setsetHttp2ProxySSLPort(int)
-     */
-    @Override
-    public ServerOptions http2ProxySSLPort(int portNumber) {
-        http2ProxySSLPort = portNumber;
-        return this;
     }
 
     /*
