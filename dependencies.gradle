@@ -10,14 +10,9 @@ configurations {
 }
 
 ext {
-//    undertowVersion = '1.4.24.Final'
-    undertowVersion = '2.0.27.Final'
-    urlRewriteVersion = '5.0.2'
+    undertowVersion = '2.2.3.Final'
+    urlRewriteVersion = '5.0.1-SNAPSHOT'
     proguardVersion = '6.0.2'
-    goomphVersion = '3.17.1'
-    bndVersion = '1.5.0'
-    spotlessVersion = '3.5.1'
-//    systemTrayVersion = '3.14'
     systemTrayVersion = '3.17'
     jbossJspApiVersion = '1.0.3'
     mavenRepo = "${System.getProperty("user.home")}/cfdistro/artifacts/"
@@ -27,7 +22,7 @@ repositories {
     mavenLocal()
     maven { url "https://repo.maven.apache.org/maven2" }
     maven { url "http://repository.jboss.org/nexus/content/repositories/releases" }
-    maven { url "http://cfmlprojects.org/artifacts" }
+    maven { url "http://downloads.ortussolutions.com/" }
 }
 
 task dorkboxUberJar(type: ShadowJar) {
@@ -51,21 +46,8 @@ task jbossJspJar(type: ShadowJar) {
 dependencies {
     // undertow
     compile group: 'io.undertow', name: 'undertow-websockets-jsr', version: project.undertowVersion
-/*
-    compile('io.undertow:undertow-jsp:1.0.0.Beta27'){
-        exclude group: 'io.undertow', module: 'undertow-servlet'
-        exclude group: 'org.jboss.spec.javax.annotation', module: 'jboss-annotations-api_1.1_spec'
-        exclude group: 'io.undertow.jastow', module: 'jastow'
-        exclude group: 'org.jboss.logging', module: 'jboss-logging-processor'
-        exclude group: 'org.jboss.spec.javax.servlet', module: 'jboss-servlet-api_3.1_spec'
-        exclude group: 'org.jboss.web', module: 'jasper-jdt'
-    }
-*/
-//    compile('javax.servlet:jsp-api:2.0')
-    // squish the jsp stuff together for java 9+
-    jbossJspDependency('org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.3_spec:1.0.2.Final') { transitive = false }
-    compile("org.cfmlprojects:jboss-jsp-api:${jbossJspApiVersion}")
-    compile(files(jbossJspJar.archivePath){ builtBy jbossJspJar })
+    compile group: 'org.jboss.spec.javax.servlet.jsp', name: 'jboss-jsp-api_2.3_spec', version: '2.0.0.Final'
+
 
     compile("org.jboss.spec.javax.el:jboss-el-api_3.0_spec:1.0.2.Final")
 
@@ -82,34 +64,33 @@ dependencies {
     compile(files(dorkboxUberJar.archivePath){ builtBy dorkboxUberJar })
 
     // java 9+ compat
-    compile 'com.sun.activation:javax.activation:1.2.0'
-    //compile 'org.cfmlprojects:javashim:1.0.1'
-    //compile 'org.cfmlprojects:daevil:1.0.0-SNAPSHOT'
+    //compile 'com.sun.activation:javax.activation:1.2.0'
     compile group: 'org.graylog.repackaged', name: 'os-platform-finder', version: '1.2.3'
-    compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
-
 
     // configuration
 //    compile group: 'net.minidev', name: 'json-smart', version: '2.3'
     compile group: 'net.minidev', name: 'json-smart-mini', version: '1.0.8'
-    compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '5.0-beta-1'
+    //compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '5.0-beta-1'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile group: 'org.jooq', name: 'joox', version: '1.2.0'
 
     // logging
 //    compile("log4j:log4j:1.2.17")
-//    compile("org.slf4j:slf4j-log4j12:1.8.0-beta2")
-    compile("org.slf4j:slf4j-log4j12:1.7.25")
+    compile("org.slf4j:slf4j-log4j12:1.7.30")
     //    compile("org.jboss.logmanager:jboss-logmanager:2.1.0.Final")
-    compile("org.jboss.logging:jboss-logging:3.2.1.Final")
-    compile("org.jboss.logging:jboss-logging-annotations:2.1.0.Final")
+    compile("org.jboss.logging:jboss-logging:3.4.1.Final")
+    compile("org.jboss.logging:jboss-logging-annotations:2.2.1.Final")
     //    compile("org.apache.logging.log4j:log4j-core:2.10.0")
     //    compile("org.apache.logging.log4j:log4j-slf4j-impl:2.10.0")
 
     // forked version of tuckey for now
-    compile("org.cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}")
+    //compile("org.cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}") ///missing version of forked project
+    // https://mvnrepository.com/artifact/org.tuckey/urlrewritefilter
+    //compile group: 'org.tuckey', name: 'urlrewritefilter', version: '4.0.3'
+    compile("cfmlprojects:urlrewritefilter:${project.urlRewriteVersion}")
+
     // regexpathinfofilter lets us handle *.cfm/* paths
-    compile("org.cfmlprojects:regexpathinfofilter:1.0.1")
+    compile("org.cfmlprojects:regexpathinfofilter:1.0.1") //finding the way to compile it
 
     compile("net.java.dev.jna:jna:4.3.0")
     compile("net.java.dev.jna:jna-platform:4.3.0")
@@ -119,7 +100,7 @@ dependencies {
     // version compare
     compile("com.vdurmont:semver4j:2.2.0") { transitive = false }
     // ansi colors for logging system output
-    compile("com.jcabi:jcabi-log:0.18") { transitive = false }
+    compile("com.jcabi:jcabi-log:0.18.1") { transitive = false }
 
     if( org.gradle.util.VersionNumber.parse( System.getProperty( 'java.version' ) ) > org.gradle.util.VersionNumber.parse( '1.8' ) ) {
         // needed for hibernate annotations since not included in later JDKs
@@ -136,8 +117,8 @@ dependencies {
 //    compile 'net.bytebuddy:byte-buddy:1.9.2'
 //    compile 'net.bytebuddy:byte-buddy-agent:1.9.2'
     // tests
-    testCompile("org.apache.httpcomponents:httpclient:4.2.6")
-    testCompile("org.apache.httpcomponents:httpmime:4.2.6")
+    testCompile("org.apache.httpcomponents:httpclient:4.5.12")
+    testCompile("org.apache.httpcomponents:httpmime:4.5.12")
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.2.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
     testCompile group: 'org.junit.platform', name: 'junit-platform-launcher', version: "1.2.0"

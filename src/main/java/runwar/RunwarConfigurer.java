@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.*;
+import java.util.BitSet;
 
 import static io.undertow.Handlers.predicate;
 import static io.undertow.servlet.Servlets.servlet;
@@ -226,9 +227,9 @@ class RunwarConfigurer {
                 serverOptions.urlRewriteFile(new File(webInfDir,"urlrewrite.xml"));
             }
             try{
-                rewriteFilter = (Class<Filter>) getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+                rewriteFilter = (Class<Filter>) getClassLoader().loadClass("runwar.util.UrlRewriteFilter");
             } catch (java.lang.ClassNotFoundException e) {
-                rewriteFilter = (Class<Filter>) Server.class.getClassLoader().loadClass("org.tuckey.web.filters.urlrewrite.UrlRewriteFilter");
+                rewriteFilter = (Class<Filter>) Server.class.getClassLoader().loadClass("runwar.util.UrlRewriteFilter");
             }
             if(serverOptions.urlRewriteFile() != null) {
                 if(!serverOptions.urlRewriteFile().isFile()) {
@@ -236,16 +237,7 @@ class RunwarConfigurer {
                     LOG.error(message);
                     throw new RuntimeException(message);
                 } else {
-                    String rewriteFileName = "urlrewrite";
-                    rewriteFileName += serverOptions.urlRewriteApacheFormat() ? ".htaccess" : ".xml";
-                    File webInfRewriteFile = new File(webInfDir, rewriteFileName);
-                    if(!serverOptions.urlRewriteFile().equals(webInfRewriteFile)){
-                        LaunchUtil.copyFile(serverOptions.urlRewriteFile(), webInfRewriteFile);
-                        LOG.debug("Copying URL rewrite file " + serverOptions.urlRewriteFile().getAbsolutePath() + " to WEB-INF: " + webInfRewriteFile.getAbsolutePath());
-                    }else{
-                        LOG.debug("Keeping the rewrite file ");
-                    }
-                    urlRewriteFile = "/WEB-INF/"+rewriteFileName;
+                    urlRewriteFile = serverOptions.urlRewriteFile().getAbsolutePath();
                 }
             }
 
@@ -423,12 +415,31 @@ class RunwarConfigurer {
         });
         */
 
+        // Default list of what the default servlet will serve
+        String allowedExt = "3gp,3gpp,7z,ai,aif,aiff,asf,asx,atom,au,avi,bin,bmp,btm,cco,crt,css,csv,deb,der,dmg,doc,docx,eot,eps,flv,font,gif,hqx,htc,htm,html,ico,img,ini,iso,jad,jng,jnlp,jpeg,jpg,js,json,kar,kml,kmz,m3u8,m4a,m4v,map,mid,midi,mml,mng,mov,mp3,mp4,mpeg,mpeg4,mpg,msi,msm,msp,ogg,otf,pdb,pdf,pem,pl,pm,png,ppt,pptx,prc,ps,psd,ra,rar,rpm,rss,rtf,run,sea,shtml,sit,svg,svgz,swf,tar,tcl,tif,tiff,tk,ts,ttf,txt,wav,wbmp,webm,webp,wmf,wml,wmlc,wmv,woff,woff2,xhtml,xls,xlsx,xml,xpi,xspf,zip,aifc,aac,apk,bak,bk,bz2,cdr,cmx,dat,dtd,eml,fla,gz,gzip,ipa,ia,indd,hey,lz,maf,markdown,md,mkv,mp1,mp2,mpe,odt,ott,odg,odf,ots,pps,pot,pmd,pub,raw,sdd,tsv,xcf,yml,yaml";
+        // Add any custom additions by our users
+        if( serverOptions.defaultServletAllowedExt().length() > 0 ) {
+        	allowedExt += "," + serverOptions.defaultServletAllowedExt();
+        }
+
+        LOG.info("Extensions allowed by the default servlet for static files: " + allowedExt);
+        
+        allowedExt = allowedExt.toLowerCase();
+        StringBuilder allowedExtBuilder = new StringBuilder();
+        for( String ext : allowedExt.split(",") ) {
+        	expandExtension( ext, allowedExtBuilder );
+        }
+        allowedExt = allowedExtBuilder.toString();
+        if( allowedExt.endsWith(",") ) {
+        	allowedExt = allowedExt.substring(0, allowedExt.length()-1);
+        }
+
         // this prevents us from having to use our own ResourceHandler (directory listing, welcome files, see below) and error handler for now
-        servletBuilder.addServlet(new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
-                .addInitParam("directory-listing", Boolean.toString(serverOptions.directoryListingEnable())));
-
-//        servletBuilder.setExceptionHandler(LoggingExceptionHandler.DEFAULT);
-
+        servletBuilder.addServlet( new ServletInfo(io.undertow.servlet.handlers.ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class)
+                .addInitParam("directory-listing", Boolean.toString(serverOptions.directoryListingEnable()))
+                .addInitParam("default-allowed", "false")                
+        		.addInitParam("allowed-extensions", allowedExt)
+        		.addInitParam("allow-post", "true") );
 
         List<?> welcomePages =  servletBuilder.getWelcomePages();
         if(serverOptions.ignoreWebXmlWelcomePages()) {
@@ -456,6 +467,52 @@ class RunwarConfigurer {
             LOG.trace("REST servlets disabled");
         }
 
+    }
+    
+    void expandExtension(String input, StringBuilder allowedExtBuilder) {
+        char[] currentCombo = input.toCharArray();
+
+        // Create a bit vector the same length as the input, and set all of the bits to 1
+        BitSet bv = new BitSet(input.length());
+        bv.set(0, currentCombo.length);
+
+        // While the bit vector still has some bits set
+        while(!bv.isEmpty()) {
+            // Loop through the array of characters and set each one to uppercase or lowercase, 
+            // depending on whether its corresponding bit is set
+            for(int i = 0; i < currentCombo.length; ++i) {
+                if(bv.get(i)) // If the bit is set
+                    currentCombo[i] = Character.toUpperCase(currentCombo[i]);
+                else
+                    currentCombo[i] = Character.toLowerCase(currentCombo[i]);
+            }
+
+            // append the current combination
+            allowedExtBuilder.append(currentCombo);
+            allowedExtBuilder.append(",");
+
+            // Decrement the bit vector
+            DecrementBitVector(bv, currentCombo.length);            
+        }
+
+        // Now the bit vector contains all zeroes, which corresponds to all of the letters being lowercase.
+        // Simply append the input as lowercase for the final combination
+        allowedExtBuilder.append(input.toLowerCase());
+        allowedExtBuilder.append(",");
+    }
+
+
+    public void DecrementBitVector(BitSet bv, int numberOfBits) {
+        int currentBit = numberOfBits - 1;          
+        while(currentBit >= 0) {
+            bv.flip(currentBit);
+
+            // If the bit became a 0 when we flipped it, then we're done. 
+            // Otherwise we have to continue flipping bits
+            if(!bv.get(currentBit))
+                break;
+            currentBit--;
+        }
     }
 
     void generateSelfSignedCertificate() throws GeneralSecurityException, IOException {

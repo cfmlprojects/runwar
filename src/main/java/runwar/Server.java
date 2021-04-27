@@ -96,7 +96,6 @@ public class Server {
 
     private static XnioWorker worker, logWorker;
     private volatile static runwar.util.PortRequisitioner ports;
-    private static HTTP2Proxy http2proxy;
     private Tray tray;
     //private FusionReactor fusionReactor;
 
@@ -186,18 +185,12 @@ public class Server {
         ports.add("stop", serverOptions.stopPort());
         ports.add("ajp", serverOptions.ajpPort(), serverOptions.ajpEnable());
         ports.add("https", serverOptions.sslPort(), serverOptions.sslEnable());
-        ports.add("http2", serverOptions.http2ProxySSLPort(), serverOptions.http2Enable());
-        if (serverOptions.http2Enable()) {
-            ports.add("https", serverOptions.http2ProxySSLPort(), true);
-            ports.add("http2", serverOptions.sslPort());
-        }
 
         ports.requisition();
         serverOptions.httpPort(ports.get("http").socket);
         serverOptions.stopPort(ports.get("stop").socket);
         serverOptions.ajpPort(ports.get("ajp").socket);
         serverOptions.sslPort(ports.get("https").socket);
-        serverOptions.http2ProxySSLPort(ports.get("http2").socket);
 
     }
 
@@ -212,6 +205,7 @@ public class Server {
         }
         serverName = serverOptions.serverName();
         String host = serverOptions.host(), cfengine = serverOptions.cfEngineName(), processName = serverOptions.processName();
+        String realHost = getRealHost( host );
         String contextPath = serverOptions.contextPath();
         File warFile = serverOptions.warFile();
         if (warFile == null) {
@@ -243,33 +237,26 @@ public class Server {
         LOG.debug("SERVER BUILDER:" + serverOptions.httpEnable());
         if (serverOptions.httpEnable()) {
             LOG.debug("Server Builder - PORT:" + ports.get("http").socket + " HOST:" + host);
-            serverBuilder.addHttpListener(ports.get("http").socket, host);
+            serverBuilder.addHttpListener(ports.get("http").socket, realHost);
         } else {
             LOG.info("HTTP Enabled:" + serverOptions.httpEnable());
         }
 
+        LOG.info("HTTP2 Enabled:" + serverOptions.http2Enable());
         if (serverOptions.http2Enable()) {
-            LOG.info("Enabling HTTP2 protocol");
-            if (!serverOptions.sslEnable()) {
-                LOG.warn("SSL is required for HTTP2.  Enabling default SSL server.");
-                serverOptions.sslEnable(true);
-            }
             serverBuilder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
-            //serverBuilder.setSocketOption(Options.REUSE_ADDRESSES, true);
-        } else {
-            LOG.info("HTTP2 Enabled:" + serverOptions.http2Enable());
         }
 
         if (serverOptions.sslEnable()) {
             int sslPort = ports.get("https").socket;
             serverOptions.directBuffers(true);
             LOG.info("Enabling SSL protocol on port " + sslPort);
-            
-            if ( serverOptions.sslEccDisable() && cfengine.toLowerCase().equals("adobe") ) {
+
+            if (serverOptions.sslEccDisable() && cfengine.toLowerCase().equals("adobe")) {
                 LOG.debug("disabling com.sun.net.ssl.enableECC");
                 System.setProperty("com.sun.net.ssl.enableECC", "false");
             }
-            
+
             try {
                 if (serverOptions.sslCertificate() != null) {
                     File certFile = serverOptions.sslCertificate();
@@ -277,14 +264,14 @@ public class Server {
                     char[] keypass = serverOptions.sslKeyPass();
                     String[] sslAddCerts = serverOptions.sslAddCerts();
 
-                    sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{serverOptions.host()});
+                    sslContext = SSLUtil.createSSLContext(certFile, keyFile, keypass, sslAddCerts, new String[]{realHost});
                     if (keypass != null) {
                         Arrays.fill(keypass, '*');
                     }
                 } else {
                     sslContext = SSLUtil.createSSLContext();
                 }
-                serverBuilder.addHttpsListener(sslPort, host, sslContext);
+                serverBuilder.addHttpsListener(sslPort, realHost, sslContext);
             } catch (Exception e) {
                 LOG.error("Unable to start SSL:" + e.getMessage());
                 e.printStackTrace();
@@ -296,7 +283,7 @@ public class Server {
 
         if (serverOptions.ajpEnable()) {
             LOG.info("Enabling AJP protocol on port " + serverOptions.ajpPort());
-            serverBuilder.addAjpListener(serverOptions.ajpPort(), host);
+            serverBuilder.addAjpListener(serverOptions.ajpPort(), realHost);
             if (serverOptions.undertowOptions().getMap().size() == 0) {
                 // if no options is set, default to the large packet size
                 serverBuilder.setServerOption(UndertowOptions.MAX_AJP_PACKET_SIZE, 65536);
@@ -524,37 +511,24 @@ public class Server {
         servletBuilder.addOuterHandlerChainWrapper(next -> new HttpHandler() {
             @Override
             public void handleRequest(HttpServerExchange exchange) throws Exception {
-                if( exchange.getStatusCode() > 399 && exchange.getResponseContentLength() == -1 ) {
+                if (exchange.getStatusCode() > 399 && exchange.getResponseContentLength() == -1) {
                     ServletRequestContext src = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                    ((HttpServletResponse)src.getServletResponse()).sendError(exchange.getStatusCode());
+                    ((HttpServletResponse) src.getServletResponse()).sendError(exchange.getStatusCode());
                 } else {
                     next.handleRequest(exchange);
                 }
             }
+
             @Override
             public String toString() {
                 return "Runwar OuterHandlerChainWrapper";
             }
         });
-        
+
         manager = defaultContainer().addDeployment(servletBuilder);
-
-        //hack for older adobe versions
-        String originalJavaVersion = System.getProperty("java.version", "");
-        if (serverOptions.cfEngineName().equalsIgnoreCase("adobe") && !servletBuilder.getDisplayName().contains("2018")) {
-            if (LaunchUtil.versionGreaterThanOrEqualTo(originalJavaVersion, "1.9")) {
-                LOG.debug("Setting java version from " + originalJavaVersion + " to 1.8 temporarily because we're running " + servletBuilder.getDisplayName());
-                System.setProperty("java.version", "1.8");
-            }
-        }
-
         manager.deploy();
         HttpHandler servletHandler = manager.start();
         LOG.debug("started servlet deployment manager");
-
-        if (!System.getProperty("java.version", "").equalsIgnoreCase(originalJavaVersion)) {
-            System.setProperty("java.version", originalJavaVersion);
-        }
 
         if (serverOptions.bufferSize() != 0) {
             LOG.info("Buffer Size: " + serverOptions.bufferSize());
@@ -593,49 +567,52 @@ public class Server {
                     super.handleRequest(exchange);
                 }
             }
+
             @Override
             public String toString() {
                 return "Runwar PathHandler";
             }
         };
-        
+
         pathHandler.addPrefixPath(contextPath, servletHandler);
         HttpHandler httpHandler = pathHandler;
-        
-        if ( serverOptions.predicateFile() != null ) {
-            LOG.debug("Predicates file: " + serverOptions.predicateFile().getAbsolutePath() );
-            
-            if( !serverOptions.predicateFile().exists() ) {
-                throw new RuntimeException( "The predicate file [" + serverOptions.predicateFile().getAbsolutePath() + "] does not exist on disk." );
+
+        if (serverOptions.predicateFile() != null) {
+            LOG.debug("Predicates file: " + serverOptions.predicateFile().getAbsolutePath());
+
+            if (!serverOptions.predicateFile().exists()) {
+                throw new RuntimeException("The predicate file [" + serverOptions.predicateFile().getAbsolutePath() + "] does not exist on disk.");
             }
-            
-            BufferedReader br = new BufferedReader( new FileReader( serverOptions.predicateFile() ) );
+
+            BufferedReader br = new BufferedReader(new FileReader(serverOptions.predicateFile()));
             String predicatesLines = "";
-	        String st;
+            String st;
             try {
-		        while ((st = br.readLine()) != null) {
-		            LOG.trace( st );
-		            predicatesLines = predicatesLines + st + "\n";
-		        }
+                while ((st = br.readLine()) != null) {
+                    LOG.trace(st);
+                    predicatesLines = predicatesLines + st + "\n";
+                }
             } finally {
-            	br.close();
+                br.close();
             }
-            
-	        List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
-	        LOG.debug( ph.size() + " predicate(s) loaded" );
-	
-	        httpHandler = Handlers.predicates(ph, httpHandler);
+
+            List<PredicatedHandler> ph = PredicatedHandlersParser.parse(predicatesLines, _classLoader);
+            LOG.debug(ph.size() + " predicate(s) loaded");
+
+            httpHandler = Handlers.predicates(ph, httpHandler);
         }
-        
-        httpHandler = new LifecyleHandler(httpHandler,serverOptions);
-        
+
+        httpHandler = new LifecyleHandler(httpHandler, serverOptions);
+
         if (serverOptions.gzipEnable()) {
+            //the default packet size on the internet is 1500 bytes so 
+            //any file less than 1.5k can be sent in a single packet 
+            if (serverOptions.gzipPredicate() != null) {
+                LOG.debug("Setting GZIP predicate to = " + serverOptions.gzipPredicate());
+            }
+            // The max-content-size predicate was replaced with request-larger-than
             httpHandler = new EncodingHandler(new ContentEncodingRepository().addEncodingHandler(
-            		// The max-content-size predicate doesn't do what you think it does.  
-            		// The "Predicate ... returns true if the Content-Size of a request is above a given value."
-            		// This means gzip is only applied if the content length is LARGER than 5 bytes
-                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse("max-content-size(5)")))
-                    .setNext(httpHandler);
+                    "gzip", new GzipEncodingProvider(), 50, Predicates.parse(serverOptions.gzipPredicate()))).setNext(httpHandler);
         }
 
         if (serverOptions.logAccessEnable()) {
@@ -663,11 +640,6 @@ public class Server {
         if (serverOptions.proxyPeerAddressEnable()) {
             LOG.debug("Enabling Proxy Peer Address handling");
             httpHandler = new SSLHeaderHandler(new ProxyPeerAddressHandler(httpHandler));
-        }
-
-        if (serverOptions.http2Enable()) {
-            http2proxy = new HTTP2Proxy(ports, xnio);
-            httpHandler = http2proxy.proxyHandler(httpHandler);
         }
 
         if (serverOptions.basicAuthEnable()) {
@@ -743,11 +715,6 @@ public class Server {
         try {
 
             undertow.start();
-
-            if (serverOptions.http2Enable() && http2proxy != null && sslContext != null) {
-                LOG.debug("Starting HTTP2 proxy");
-                http2proxy.start(sslContext);
-            }
 
             // two times to test system tray issue
             System.gc();
@@ -873,9 +840,6 @@ public class Server {
                                     manager.stop();
                                     manager.undeploy();
                             }
-                            if (http2proxy != null) {
-                                http2proxy.stop();
-                            }
                             if (undertow != null) {
                                 undertow.stop();
                             }
@@ -928,7 +892,7 @@ public class Server {
     }
 
     ResourceManager getResourceManager(File warFile, Long transferMinSize, Set<Path> contentDirs, Map<String, Path> aliases, File internalCFMLServerRoot) {
-        MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, contentDirs, aliases, internalCFMLServerRoot);
+        MappedResourceManager mappedResourceManager = new MappedResourceManager(warFile, transferMinSize, contentDirs, aliases, internalCFMLServerRoot,serverOptions);
         if (serverOptions.directoryListingRefreshEnable() || !serverOptions.bufferEnable()) {
             return mappedResourceManager;
         }
@@ -960,10 +924,24 @@ public class Server {
         }
     }
 
-    private InetAddress getInetAddress(String host) {
+    public static String getRealHost(String host) {
+    	return getInetAddress(host).getHostAddress();
+    }
+
+    public static InetAddress getInetAddress(String host) {
         try {
             return InetAddress.getByName(host);
         } catch (UnknownHostException e) {
+        	if( host.toLowerCase().endsWith( ".localhost" ) ) {
+    			// It's possible to have "fake" hosts such as mytest.localhost which aren't in DNS
+    			// or your hosts file.  Browsers will resolve them to localhost, but the call above 
+    			// will fail with a UnknownHostException since they aren't real
+                try {
+                	return InetAddress.getByName( "127.0.0.1" );
+                } catch (UnknownHostException e2) {
+                	throw new RuntimeException("Error getting inet address for " + host);
+                }
+        	}
             throw new RuntimeException("Error getting inet address for " + host);
         }
     }
@@ -1050,13 +1028,7 @@ public class Server {
     }
 
     public boolean serverWentDown() {
-        try {
-            return serverWentDown(serverOptions.launchTimeout(), 3000, InetAddress.getByName(serverOptions.host()), ports.get("http").socket);
-        } catch (UnknownHostException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return false;
+        return serverWentDown(serverOptions.launchTimeout(), 3000, getInetAddress(serverOptions.host()), ports.get("http").socket);
     }
 
     public static boolean serverWentDown(int timeout, long sleepTime, InetAddress server, int port) {
@@ -1159,9 +1131,9 @@ public class Server {
 
             LOG.info("Waiting up to " + (timeout / 1000) + " seconds for " + host + ":" + portNumber + "...");
             try {
-                if (serverCameUp(timeout, 3000, InetAddress.getByName(host), portNumber)) {
+                if (serverCameUp(timeout, 3000, getInetAddress(host), portNumber)) {
                     LOG.infof("Opening browser to url: %s", openbrowserURL);
-                    BrowserOpener.openURL(openbrowserURL.trim());
+                    BrowserOpener.openURL(openbrowserURL.trim(), serverOptions.browser());
                 } else {
                     LOG.errorf("Timeout of %s reached, could not open browser to url: %s", timeout, openbrowserURL);
                 }
@@ -1229,7 +1201,7 @@ public class Server {
             int exitCode = 0;
             serverSocket = null;
             try {
-                serverSocket = new ServerSocket(serverOptions.stopPort(), 1, InetAddress.getByName(serverOptions.host()));
+                serverSocket = new ServerSocket(serverOptions.stopPort(), 1, getInetAddress(serverOptions.host()));
                 listening = true;
                 LOG.info(bar);
                 LOG.info("*** starting 'stop' listener thread - Host: " + serverOptions.host()
@@ -1311,7 +1283,7 @@ public class Server {
             // send a char to the reader so it will stop waiting
             Socket s;
             try {
-                s = new Socket(InetAddress.getByName(serverOptions.host()), serverOptions.stopPort());
+                s = new Socket(getInetAddress(serverOptions.host()), serverOptions.stopPort());
                 OutputStream out = s.getOutputStream();
                 out.write('s');
                 out.flush();

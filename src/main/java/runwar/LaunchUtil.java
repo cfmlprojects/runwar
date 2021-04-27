@@ -17,7 +17,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Method;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,9 +31,6 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Pack200;
 import java.util.zip.GZIPInputStream;
 
-import javax.swing.JOptionPane;
-
-
 import com.vdurmont.semver4j.Semver;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
@@ -48,12 +44,13 @@ public class LaunchUtil {
 
     private static boolean relaunching;
     private static final int KB = 1024;
-    public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[] { "cfml.cli.home",
-            "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon" }));
+    public static final Set<String> replicateProps = new HashSet<String>(Arrays.asList(new String[]{"cfml.cli.home",
+        "cfml.server.config.dir", "cfml.web.config.dir", "cfml.server.trayicon", "cfml.server.dockicon"}));
 
     private static final String OS_NAME = System.getProperty("os.name");
     private static String uname;
     private static String linuxRelease;
+
     static {
         LoggerFactory.initialize();
     }
@@ -86,13 +83,15 @@ public class LaunchUtil {
             url = aclass.getResource(aclass.getSimpleName() + ".class");
         }
         extURL = url.toExternalForm();
-        if (extURL.endsWith(".jar"))   // from getCodeSource
+        if (extURL.endsWith(".jar")) // from getCodeSource
+        {
             extURL = extURL.substring(0, extURL.lastIndexOf("/"));
-        else {  // from getResource
-            String suffix = "/"+(aclass.getName()).replace(".", "/")+".class";
+        } else {  // from getResource
+            String suffix = "/" + (aclass.getName()).replace(".", "/") + ".class";
             extURL = extURL.replace(suffix, "");
-            if (extURL.startsWith("jar:") && extURL.endsWith(".jar!"))
+            if (extURL.startsWith("jar:") && extURL.endsWith(".jar!")) {
                 extURL = extURL.substring(4, extURL.lastIndexOf("/"));
+            }
         }
         try {
             url = new URL(extURL);
@@ -100,7 +99,7 @@ public class LaunchUtil {
         }
         try {
             return new File(url.toURI());
-        } catch(URISyntaxException ex) {
+        } catch (URISyntaxException ex) {
             return new File(url.getPath());
         }
     }
@@ -123,18 +122,20 @@ public class LaunchUtil {
         RunwarLogger.LOG.debug("launching background process with these args: ");
         // Pretty print out all the process args being sent to the background server.
         StringBuilder formattedArgs = new StringBuilder();
-    	formattedArgs.append( "\n  " );
-        for( String arg : cmdarray ) {
-        	// Don't print these.  They don't do anything and are just clutter.
-        	if( arg.startsWith( "--jvm-args" ) ) { continue; }
-        	
-        	if( arg.startsWith( "-" ) ) {
-            	formattedArgs.append( "\n  " );        		
-        	}
-        	formattedArgs.append( "  "+ arg );
+        formattedArgs.append("\n  ");
+        for (String arg : cmdarray) {
+            // Don't print these.  They don't do anything and are just clutter.
+            if (arg.startsWith("--jvm-args")) {
+                continue;
+            }
+
+            if (arg.startsWith("-")) {
+                formattedArgs.append("\n  ");
+            }
+            formattedArgs.append("  " + arg);
         }
-        RunwarLogger.LOG.debug("args ->" + formattedArgs.toString() );
-        
+        RunwarLogger.LOG.debug("args ->" + formattedArgs.toString());
+
         RunwarLogger.LOG.debug("timeout of " + timeout / 1000 + " seconds");
         String line;
         int exit = -1;
@@ -151,7 +152,7 @@ public class LaunchUtil {
                         while ((line = br.readLine()) != null) {
                             RunwarLogger.LOG.debug(line);
                         }
-                        if(andExit) {
+                        if (andExit) {
                             System.exit(0);
                         }
                         serverIsUp = true;
@@ -170,14 +171,15 @@ public class LaunchUtil {
                 }
             }
         }
-        if ((System.currentTimeMillis() - start) > timeout && !serverIsUp) {
+
+        if ((System.currentTimeMillis() - start) >= timeout && !serverIsUp) {
             process.destroy();
             System.out.println();
             System.err.println("ERROR: Startup exceeded timeout of " + timeout / 1000 + " seconds - aborting!");
             System.exit(1);
         }
         System.out.println("Server is up - ");
-        if(andExit) {
+        if (andExit) {
             System.exit(0);
         } else {
             relaunching = false;
@@ -187,10 +189,8 @@ public class LaunchUtil {
 
     private static boolean processOutout(String line, Process process, boolean exitWhenUp) {
         RunwarLogger.BACKGROUNDED_LOG.debug(line);
-        if (line.indexOf("Server is up - ") != -1) {
-            // start up was successful, quit out
-//             System.out.println(line);
-            if(exitWhenUp) {
+        if (line.indexOf("Server is up - ") != -1 || line.indexOf("Lucee warmup completed") != -1 ) {
+            if (exitWhenUp) {
                 System.exit(0);
             } else {
                 return true;
@@ -223,8 +223,9 @@ public class LaunchUtil {
 
     public static void relaunchAsBackgroundProcess(int timeout, String[] args, List<String> jvmArgs, String processName, boolean andExit) {
         try {
-            if (relaunching)
+            if (relaunching) {
                 return;
+            }
             relaunching = true;
             LoggerFactory.initialize();
             String path = LaunchUtil.class.getProtectionDomain().getCodeSource().getLocation().getPath();
@@ -307,25 +308,25 @@ public class LaunchUtil {
         return resultBuffer.toArray(result);
     }
 
- 
     public enum MessageType {
         INFO, WARNING, ERROR
     }
 
     public static void displayMessage(String type, String text) {
-        displayMessage("RunWAR",type, text);
+        displayMessage("RunWAR", type, text);
     }
-    
+
     public static void displayMessage(String type, String text, int hideAfter) {
-        displayMessage("RunWAR",type, text, hideAfter);
+        displayMessage("RunWAR", type, text, hideAfter);
     }
 
     public static void displayMessage(String processName, String type, String text) {
         displayMessage(processName, type, text, 5000);
     }
+
     public static void displayMessage(String processName, String type, String text, int hideAfter) {
-        try{
-            if(type.toLowerCase().startsWith("warn")) {
+        try {
+            if (type.toLowerCase().startsWith("warn")) {
                 displayMessage(processName, text, MessageType.WARNING, hideAfter);
             } else if (type.toLowerCase().startsWith("error")) {
                 displayMessage(processName, text, MessageType.ERROR, hideAfter);
@@ -338,19 +339,19 @@ public class LaunchUtil {
     }
 
     public static void printMessage(String title, String text, MessageType type) {
-        if(type == MessageType.ERROR) {
+        if (type == MessageType.ERROR) {
             System.err.println(title + " " + text);
         } else {
             System.out.println(title + " " + text);
         }
     }
-    
+
     public static void displayMessage(String title, String text, MessageType type) {
-        displayMessage(title,text,type,5000);
+        displayMessage(title, text, type, 5000);
     }
 
     public static void displayMessage(String title, String text, MessageType type, int hideAfter) {
-        if(GraphicsEnvironment.isHeadless()) {
+        if (GraphicsEnvironment.isHeadless()) {
             printMessage(title, text, type);
             return;
         }
@@ -369,26 +370,34 @@ public class LaunchUtil {
                     });
 
             // ensure the messages disappear
-            Timer timer = new Timer(true); timer.schedule(new TimerTask() { 
-                @Override public void run() { try{notify.close();} catch (Exception any) {};} }
-            , hideAfter*2);
-            
+            Timer timer = new Timer(true);
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    try {
+                        notify.close();
+                    } catch (Exception any) {
+                    };
+                }
+            },
+                    hideAfter * 2);
+
             switch (type) {
-            case INFO:
-                notify.showInformation();
-                break;
+                case INFO:
+                    notify.showInformation();
+                    break;
 
-            case WARNING:
-                notify.showWarning();
-                break;
+                case WARNING:
+                    notify.showWarning();
+                    break;
 
-            case ERROR:
-                notify.showError();
-                break;
+                case ERROR:
+                    notify.showError();
+                    break;
 
-            default:
-                notify.show();
-                break;
+                default:
+                    notify.show();
+                    break;
             }
         } catch (Exception e) {
             printMessage(title, text, type);
@@ -404,7 +413,7 @@ public class LaunchUtil {
             if (files.length > 0) {
                 // Get first child
                 File child = directory.listFiles()[0];
-                if (execute(new String[] {"open", "-R", child.getCanonicalPath()})) {
+                if (execute(new String[]{"open", "-R", child.getCanonicalPath()})) {
                     return;
                 }
             }
@@ -417,7 +426,7 @@ public class LaunchUtil {
             } catch (IOException io) {
                 if (isLinux()) {
                     // Fallback on xdg-open for Linux
-                    if (execute(new String[] {"xdg-open", path})) {
+                    if (execute(new String[]{"xdg-open", path})) {
                         return;
                     }
                 }
@@ -426,56 +435,23 @@ public class LaunchUtil {
         }
         throw new IOException("Unable to open " + path);
     }
-    
-    public static void openURL(String url) {
-        String osName = System.getProperty("os.name");
-        if (url == null) {
-            System.out.println("ERROR: No URL specified to open the browser to!");
-            return;
-        }
-        try {
-            System.out.println(url);
-            if (osName.startsWith("Mac OS")) {
-                Class<?> fileMgr = Class.forName("com.apple.eio.FileManager");
-                Method openURL = fileMgr.getDeclaredMethod("openURL", new Class[] { String.class });
-                openURL.invoke(null, new Object[] { url });
-            } else if (osName.startsWith("Windows"))
-                Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
-            else { // assume Unix or Linux
-                // try default first
-                try{
-                    Class<?> desktopClass = Class.forName("java.awt.Desktop");
-                    Object desktopObject = desktopClass.getMethod("getDesktop", (Class[]) null).invoke(null, (Object[]) null);
-                    Method openURL = desktopClass.getDeclaredMethod("browse", new Class[] { URI.class });
-                    openURL.invoke(desktopObject, new Object[] {new URI(url)});
-                } catch (Exception e) {
-                    String[] browsers = { "firefox", "chrome", "opera", "konqueror", "epiphany", "mozilla", "netscape" };
-                    String browser = null;
-                    for (int count = 0; count < browsers.length && browser == null; count++)
-                        if (Runtime.getRuntime().exec(new String[] { "which", browsers[count] }).waitFor() == 0)
-                            browser = browsers[count];
-                    if (browser == null)
-                        throw new Exception("Could not find web browser");
-                    else
-                        Runtime.getRuntime().exec(new String[] { browser, url });
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, e.getMessage() + ":\n" + e.getLocalizedMessage());
-        }
+
+    public static void openURL(String url, String preferred_browser) {
+        BrowserOpener.openURL(url, preferred_browser);
     }
 
     public static String getResourceAsString(String path) {
         InputStream streamPath = LaunchUtil.class.getClassLoader().getResourceAsStream(path);
-        if(streamPath == null)
+        if (streamPath == null) {
             return null;
+        }
         return readStream(streamPath);
     }
 
     public static void unzipInteralZip(ClassLoader classLoader, String resourcePath, File libDir, boolean debug) {
-        if (debug)
+        if (debug) {
             System.out.println("Extracting " + resourcePath);
+        }
         libDir.mkdir();
         URL resource = classLoader.getResource(resourcePath);
         if (resource == null) {
@@ -487,6 +463,7 @@ public class LaunchUtil {
 
     public static void unzipResource(URL resource, File libDir, boolean debug) {
         class PrintDot extends TimerTask {
+
             public void run() {
                 System.out.print(".");
             }
@@ -567,8 +544,9 @@ public class LaunchUtil {
             Pack200.Unpacker unpacker = Pack200.newUnpacker();
             out = new JarOutputStream(new FileOutputStream(outName));
             in = new FileInputStream(inName);
-            if (inName.endsWith(".gz"))
+            if (inName.endsWith(".gz")) {
                 in = new GZIPInputStream(in);
+            }
             unpacker.unpack(in, out);
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -614,9 +592,10 @@ public class LaunchUtil {
             e.printStackTrace();
         } finally {
             try {
-                if (is != null)
+                if (is != null) {
                     is.close();
-                    outPrint.close();
+                }
+                outPrint.close();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -667,14 +646,17 @@ public class LaunchUtil {
 
     public static void deleteRecursive(File f) throws IOException {
         if (f.isDirectory()) {
-          for (File c : f.listFiles())
-              deleteRecursive(c);
+            for (File c : f.listFiles()) {
+                deleteRecursive(c);
+            }
         }
-        if (!f.delete())
+        if (!f.delete()) {
             System.err.println("Could not delete file: " + f.getAbsolutePath());
+        }
     }
 
     public static class ExtFilter implements FilenameFilter {
+
         private String ext;
 
         public ExtFilter(String extension) {
@@ -687,6 +669,7 @@ public class LaunchUtil {
     }
 
     public static class PrefixFilter implements FilenameFilter {
+
         private String prefix;
 
         public PrefixFilter(String prefix) {
@@ -699,7 +682,7 @@ public class LaunchUtil {
     }
 
     public static void assertMinimumJavaVersion(String minVersion) {
-        Semver systemJavaVersion = new Semver(System.getProperty("java.version","").replace('_','.'), Semver.SemverType.LOOSE);
+        Semver systemJavaVersion = new Semver(System.getProperty("java.version", "").replace('_', '.'), Semver.SemverType.LOOSE);
         Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
         System.out.println("Java version " + systemJavaVersion.toString() + " (requires >= " + minVersion + ")");
         if (systemJavaVersion.toStrict().isLowerThan(minimumJavaVersion.toStrict())) {
@@ -709,13 +692,13 @@ public class LaunchUtil {
     }
 
     public static boolean versionLowerThanOrEqualTo(String version, String minVersion) {
-        Semver systemJavaVersion = new Semver(version.replace('_','.'), Semver.SemverType.LOOSE);
+        Semver systemJavaVersion = new Semver(version.replace('_', '.'), Semver.SemverType.LOOSE);
         Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
         return systemJavaVersion.isLowerThanOrEqualTo(minimumJavaVersion);
     }
 
     public static boolean versionGreaterThanOrEqualTo(String version, String minVersion) {
-        Semver systemJavaVersion = new Semver(version.replace('_','.'), Semver.SemverType.LOOSE);
+        Semver systemJavaVersion = new Semver(version.replace('_', '.'), Semver.SemverType.LOOSE);
         Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
         return systemJavaVersion.isGreaterThanOrEqualTo(minimumJavaVersion);
     }
@@ -743,22 +726,28 @@ public class LaunchUtil {
     public static boolean isWindows() {
         return (OS_NAME.contains("win"));
     }
+
     public static boolean isMac() {
         return (OS_NAME.contains("mac"));
     }
+
     public static boolean isLinux() {
         return (OS_NAME.contains("linux"));
     }
+
     public static boolean isUnix() {
         return (OS_NAME.contains("nix") || OS_NAME.contains("nux") || OS_NAME.indexOf("aix") > 0 || OS_NAME.contains("sunos"));
     }
+
     public static boolean isSolaris() {
         return (OS_NAME.contains("sunos"));
     }
+
     public static boolean isUbuntu() {
         getUname();
         return uname != null && uname.contains("Ubuntu");
     }
+
     public static boolean isFedora() {
         getLinuxRelease();
         return linuxRelease != null && linuxRelease.contains("Fedora");
@@ -766,9 +755,9 @@ public class LaunchUtil {
 
     public static String getLinuxRelease() {
         if (isLinux() && linuxRelease == null) {
-            String[] releases = { "/etc/lsb-release", "/etc/redhat-release" };
+            String[] releases = {"/etc/lsb-release", "/etc/redhat-release"};
             for (String release : releases) {
-                String result = execute(new String[] { "cat", release }, null, false);
+                String result = execute(new String[]{"cat", release}, null, false);
                 if (!result.isEmpty()) {
                     linuxRelease = result;
                     break;
@@ -780,7 +769,7 @@ public class LaunchUtil {
 
     public static String getUname() {
         if (isLinux() && uname == null) {
-            uname = execute(new String[] { "uname", "-a" }, null, false);
+            uname = execute(new String[]{"uname", "-a"}, null, false);
         }
         return uname;
     }
@@ -822,7 +811,7 @@ public class LaunchUtil {
                 }
             }
         } catch (IOException ex) {
-            RunwarLogger.LOG.error("Error executing command",ex);
+            RunwarLogger.LOG.error("Error executing command", ex);
         } finally {
             if (stdInput != null) {
                 try {
@@ -833,13 +822,13 @@ public class LaunchUtil {
         }
         return "";
     }
-    
+
     public static final String SUN_JAVA_COMMAND = "sun.java.command";
+
     /**
      * Restart the current Java application
-     * 
-     * @param runBeforeRestart
-     *            some custom code to be run before restarting
+     *
+     * @param runBeforeRestart some custom code to be run before restarting
      * @throws IOException if one happens
      */
     public static void restartApplication(Runnable runBeforeRestart) throws IOException {
@@ -899,7 +888,7 @@ public class LaunchUtil {
     }
 
     public static int getPortOrErrorOut(int portNumber, String host) {
-        try(ServerSocket nextAvail = new ServerSocket(portNumber, 1, getInetAddress(host))) {
+        try (ServerSocket nextAvail = new ServerSocket(portNumber, 1, Server.getInetAddress(host))) {
             portNumber = nextAvail.getLocalPort();
             nextAvail.close();
             return portNumber;
@@ -911,14 +900,5 @@ public class LaunchUtil {
             throw new RuntimeException(e);
         }
     }
-
-    public static InetAddress getInetAddress(String host) {
-        try {
-            return InetAddress.getByName(host);
-        } catch (UnknownHostException e) {
-            throw new RuntimeException("Error getting inet address for " + host);
-        }
-    }
-
-
+    
 }

@@ -17,6 +17,7 @@ import io.undertow.util.LocaleUtils;
 
 import java.util.*;
 
+@SuppressWarnings("deprecation")
 public class RequestDebugHandler implements HttpHandler {
 
     private final HttpHandler next;
@@ -38,7 +39,7 @@ public class RequestDebugHandler implements HttpHandler {
         sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
         sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE)).append("\n");
         isAuthenticatedAppend(sb, sc);
-
+        
         Map<String, Cookie> cookies = exchange.getRequestCookies();
         if (cookies != null) {
             for (Map.Entry<String, Cookie> entry : cookies.entrySet()) {

@@ -80,6 +80,7 @@ public interface ServerOptions {
         final static String TRANSFERMINSIZE = "transferminsize";
         final static String SENDFILE = "sendfile";
         final static String GZIP = "gzip";
+        final static String GZIP_PREDICATE = "gzipPredicate";
         final static String MARIADB4J = "mariadb4j";
         final static String MARIADB4JPORT = "mariadb4jport";
         final static String MARIADB4JBASEDIR = "mariadb4jbasedir";
@@ -110,6 +111,12 @@ public interface ServerOptions {
         final static String SERVICE = "service";
         final static String UNDERTOWOPTIONS = "undertowOptions";
         final static String XNIOOPTIONS = "xnioOptions";
+        final static String BROWSER = "browser";
+        final static String DEFAULTSERVLETALLOWEDEXT = "defaultServletAllowedExt";
+        final static String CASESENSITIVEWEBSERVER="caseSensitiveWebServer";
+        final static String RESOURCEMANAGERLOGGING="resourceManagerLogging";
+        final static String CACHESERVLETPATHS="cacheServletPaths";
+        
     }
     
     String defaultShell();
@@ -353,7 +360,27 @@ public interface ServerOptions {
     ServerOptions welcomeFiles(String[] welcomeFiles);
 
     String warUriString();
+    
+    String browser();
+    
+    ServerOptions browser(String browser);
+    
+    String defaultServletAllowedExt();
+    
+    ServerOptions defaultServletAllowedExt(String defaultServletAllowedExt);
 
+    Boolean caseSensitiveWebServer();
+    
+    ServerOptions caseSensitiveWebServer(Boolean caseSensitiveWebServer);
+
+    Boolean resourceManagerLogging();
+    
+    Boolean cacheServletPaths();
+
+    ServerOptions resourceManagerLogging(Boolean resourceManagerLogging);
+    
+    ServerOptions cacheServletPaths(Boolean cacheServletPaths);
+        
     ServerOptions sslCertificate(File file);
 
     File sslCertificate();
@@ -391,6 +418,10 @@ public interface ServerOptions {
     ServerOptions gzipEnable(boolean enable);
 
     boolean gzipEnable();
+    
+    ServerOptions gzipPredicate(String enable);
+
+    String gzipPredicate();
 
     ServerOptions mariaDB4jEnable(boolean enable);
 
@@ -512,10 +543,6 @@ public interface ServerOptions {
 
     ServerOptions startedFromCommandLine(boolean enable);
 
-    int http2ProxySSLPort();
-
-    ServerOptions http2ProxySSLPort(int portNumber);
-
     boolean ignoreWebXmlWelcomePages();
 
     boolean ignoreWebXmlRestMappings();
@@ -539,4 +566,5 @@ public interface ServerOptions {
     File predicateFile();
     
     ServerOptions predicateFile(File predicateFile);
+    String getLogPattern();
 }

@@ -1,8 +1,5 @@
 package runwar.options;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
 import io.undertow.UndertowOptions;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -23,112 +20,129 @@ import java.util.stream.Stream;
 import static runwar.util.Reflection.setOptionMapValue;
 
 public class ServerOptionsImpl implements ServerOptions {
-    @Expose
+    
     private String serverName = null, processName = "RunWAR", logLevel = "INFO";
-    @Expose
+    
     private String host = "127.0.0.1", contextPath = "/";
-    @Expose
-    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779, http2ProxySSLPort = 1444;
-    @Expose
+    
+    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
+    
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
-    @Expose
+    
     private boolean debug = false, isBackground = true, logAccessEnable = false, logRequestsEnable = false, openbrowser = false, startedFromCommandline = false;
-    @Expose
+    
     private String pidFile, openbrowserURL, cfmlDirs, logFileBaseName="server", logRequestBaseFileName="requests", logAccessBaseFileName="access", logSuffix="txt", libDirs = null;
-    @Expose
+    
     private int launchTimeout = 50 * 1000; // 50 secs
-    @Expose
+    
     private URL jarURL = null;
-    @Expose
+    
     private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicateFile;
-    @Expose
+    
     private String iconImage = null;
-    @Expose
+    
     private String urlRewriteCheckInterval = null, urlRewriteStatusPath = null;
-    @Expose
+    
     private String cfmlServletConfigWebDir = null, cfmlServletConfigServerDir = null;
-    @Expose
+    
     private String defaultShell = "";
-    @Expose
+    
     private boolean trayEnable = true;
-    @Expose
+    
     private boolean dockEnable = true; // for mac users
-    @Expose
+    
     private boolean directoryListingEnable = true;
-    @Expose
+    
     private boolean directoryListingRefreshEnable = false;
-    @Expose
+    
     private boolean cacheEnable = false;
-    @Expose
+    
     private String[] welcomeFiles;
-    @Expose
+    
     private File sslCertificate, sslKey, configFile;
-    @Expose
+    
     private char[] sslKeyPass = null;
-    @Expose
+    
     private char[] stopPassword = "klaatuBaradaNikto".toCharArray();
-    @Expose
+    
     private String action = "start";
-    @Expose
+
+    private String browser = "";
+    
     private String cfengineName = "";
-    @Expose
+    
     private boolean customHTTPStatusEnable = true;
-    @Expose
+    
     private boolean gzipEnable = false;
-    @Expose
+
+    private String gzipPredicate = "request-larger-than(1500)";
+
     private Long transferMinSize = (long) 100;
-    @Expose
+    
     private boolean mariadb4jEnable = false;
-    @Expose
+    
     private int mariadb4jPort = 13306;
-    @Expose
+    
     private File mariadb4jBaseDir, mariadb4jDataDir, mariadb4jImportSQLFile = null;
-    @Expose
+    
     private List<String> jvmArgs = null;
-    @Expose
+    
     private Map<Integer, String> errorPages = null;
-    @Expose
+    
     private boolean servletRestEnable = false;
-    @Expose
+    
     private String[] servletRestMappings = { "/rest" };
-    @Expose
+    
     private boolean filterPathInfoEnable = true;
-    @Expose
+    
     private String[] sslAddCerts = null;
-    @Expose
+    
     private String[] cmdlineArgs = null;
-    @Expose
+    
     private String[] loadBalance = null;
-    @Expose
+    
     private static Map<String, String> userPasswordList;
-    @Expose
+    
     private boolean enableBasicAuth = false;
-    @Expose
+    
     private boolean directBuffers = true;
-    @Expose
+    
     int bufferSize, ioThreads, workerThreads = 0;
-    @Expose
+    
     private boolean proxyPeerAddressEnable = false;
-    @Expose
+    
     private boolean http2enable = false;
-    @Expose
+    
     private boolean secureCookies = false, cookieHttpOnly = false, cookieSecure = false;
-    @Expose
+    
     private JSONArray trayConfigJSON;
-    @Expose
+    
     private boolean bufferEnable = false;
-    @Expose
+    
     private boolean sslEccDisable = true;
-    @Expose
+    
     private boolean sslSelfSign = false;
-    @Expose
+    
     private boolean service = false;
-    @Expose
-    private static String logPattern = "[%-5p] %c: %m%n";
-    @Expose
+    
+    public String logPattern = "[%-5p] %c: %m%n";
+    
+    private String defaultServletAllowedExt = "";
+
+    private Boolean caseSensitiveWebServer= null;
+    
+    private Boolean resourceManagerLogging= false;
+    
+    private Boolean cacheServletPaths= false;
+        
     private final Map<String, String> aliases = new HashMap<>();
-    @Expose
+    
     private Set<String> contentDirectories = new HashSet<>();
+
+    public String getLogPattern() {
+        return logPattern;
+    }
+    
     private OptionMap.Builder serverXnioOptions = OptionMap.builder()
             .set(Options.WORKER_IO_THREADS, 8)
             .set(Options.CONNECTION_HIGH_WATER, 1000000)
@@ -137,7 +151,7 @@ public class ServerOptionsImpl implements ServerOptions {
             .set(Options.WORKER_TASK_MAX_THREADS, 30)
             .set(Options.TCP_NODELAY, true)
             .set(Options.CORK, true);
-    @Expose
+    
     private boolean testing = false;
     private OptionMap.Builder undertowOptions = OptionMap.builder();
 
@@ -148,11 +162,11 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
 
-    public String toJson(){
-        final Gson gson=new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
-            .excludeFieldsWithModifiers(Modifier.TRANSIENT).create();
-        return gson.toJson(this);
-    }
+//    public String toJson(){
+//        final Gson gson=new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
+//            .excludeFieldsWithModifiers(Modifier.TRANSIENT).create();
+//        return gson.toJson(this);
+//    }
 
     public String toJson(Set<String> set){
         JSONArray jsonArray = new JSONArray();
@@ -1170,6 +1184,16 @@ public class ServerOptionsImpl implements ServerOptions {
     public String defaultShell() {
         return defaultShell;
     }
+    
+    @Override
+    public String browser() {
+        return browser;
+    }
+    
+    public ServerOptions browser(String browser){
+        this.browser = browser;
+        return this;
+    }
 
     public ServerOptions defaultShell(String defaultShell) {
         this.defaultShell = defaultShell;
@@ -1510,6 +1534,18 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public boolean gzipEnable() {
         return this.gzipEnable;
+    }
+    
+    
+    @Override
+    public ServerOptions gzipPredicate(String predicate) {
+        this.gzipPredicate = predicate;
+        return this;
+    }
+
+    @Override
+    public String gzipPredicate() {
+        return this.gzipPredicate;
     }
 
     /** 
@@ -2024,23 +2060,6 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
     /*
-     * @see runwar.options.ServerOptions#http2ProxySSLPort()
-     */
-    @Override
-    public int http2ProxySSLPort() {
-        return http2ProxySSLPort;
-    }
-
-    /*
-     * @see runwar.options.ServerOptions#setsetHttp2ProxySSLPort(int)
-     */
-    @Override
-    public ServerOptions http2ProxySSLPort(int portNumber) {
-        http2ProxySSLPort = portNumber;
-        return this;
-    }
-
-    /*
      * @see runwar.options.ServerOptions#SSLECCDISABLE(boolean)
      */
     @Override
@@ -2105,6 +2124,74 @@ public class ServerOptionsImpl implements ServerOptions {
         return this;
     }
 
+    /*
+     * @see runwar.options.ServerOptions#defaultServletAllowedExt()
+     */
+    @Override
+    public String defaultServletAllowedExt() {
+        return defaultServletAllowedExt;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#defaultServletAllowedExt(String)
+     */
+    @Override
+    public ServerOptions defaultServletAllowedExt(String defaultServletAllowedExt) {
+    	this.defaultServletAllowedExt = defaultServletAllowedExt;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#resourceManagerLogging()
+     */
+    @Override
+    public Boolean resourceManagerLogging() {
+        return resourceManagerLogging;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#resourceManagerLogging(boolean)
+     */
+    @Override
+    public ServerOptions resourceManagerLogging(Boolean resourceManagerLogging) {
+    	this.resourceManagerLogging = resourceManagerLogging;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#cacheServletPaths()
+     */
+    @Override
+    public Boolean cacheServletPaths() {
+        return cacheServletPaths;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#cacheServletPaths(boolean)
+     */
+    @Override
+    public ServerOptions cacheServletPaths(Boolean cacheServletPaths) {
+    	this.cacheServletPaths = cacheServletPaths;
+        return this;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#caseSensitiveWebServer()
+     */
+    @Override
+    public Boolean caseSensitiveWebServer() {
+        return caseSensitiveWebServer;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#caseSensitiveWebServer(boolean)
+     */
+    @Override
+    public ServerOptions caseSensitiveWebServer(Boolean caseSensitiveWebServer) {
+    	this.caseSensitiveWebServer = caseSensitiveWebServer;
+        return this;
+    }
+    
     /**
      * @see runwar.options.ServerOptions#xnioOptions(java.lang.String)
      */

@@ -51,6 +51,7 @@ import runwar.gui.SubmitActionlistioner;
 import runwar.util.dae.OSType;
 
 import java.lang.reflect.Method;
+import runwar.BrowserOpener;
 import static runwar.util.Reflection.invoke;
 import static runwar.util.Reflection.method;
 
@@ -219,7 +220,7 @@ public class Tray {
                     menuItem.setShortcut('v');
                 } else if (action.equalsIgnoreCase("openbrowser")) {
                     String url = Utils.getIgnoreCase(itemInfo, "url").toString();
-                    menuItem = new MenuItem(label, is, new OpenBrowserAction(url));
+                    menuItem = new MenuItem(label, is, new OpenBrowserAction(url, server.getServerOptions().browser()));
                     menuItem.setShortcut('o');
                 } else if (action.equalsIgnoreCase("openfilesystem")) {
                     File path = new File(getString(itemInfo, "path", server.getServerOptions().warUriString()));
@@ -724,7 +725,7 @@ public class Tray {
         @Override
         public void actionPerformed(ActionEvent e) {
             RunwarLogger.LOG.info("ServerOptionsJsonAction ------");
-            showDialog(serverOptions.toJson());
+//            showDialog(serverOptions.toJson());
         }
     }
 
@@ -799,9 +800,11 @@ public class Tray {
     private static class OpenBrowserAction implements ActionListener {
 
         private String url;
+        private String browser;
 
-        public OpenBrowserAction(String url) {
+        public OpenBrowserAction(String url, String browser) {
             this.url = url;
+            this.browser = browser;
         }
 
         @Override
@@ -809,7 +812,7 @@ public class Tray {
             // if binding to all IPs, swap out with localhost.
             url = Utils.replaceHost(url, "0.0.0.0", "127.0.0.1");
             displayMessage(variableMap.get("processName"), "Info", "Opening browser to " + url);
-            openURL(url);
+            openURL(url, browser);
         }
     }
 
