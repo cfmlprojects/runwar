@@ -55,6 +55,9 @@ public class LoggerFactory {
         Logger UNDERTOW_PREDICATE_LOG = Logger.getLogger("io.undertow.predicate");
         loggers.add(UNDERTOW_PREDICATE_LOG);
 
+        Logger UNDERTOW_REQUEST_DUMPER_LOG = Logger.getLogger("io.undertow.request.dump");
+        loggers.add(UNDERTOW_REQUEST_DUMPER_LOG);
+        
         Logger UNDERTOW_IO_LOG = Logger.getLogger("io.undertow");
         loggers.add(UNDERTOW_IO_LOG);
 
@@ -107,6 +110,7 @@ public class LoggerFactory {
         UNDERTOW_IO_LOG.setLevel(Level.WARN);
         XNIO_LOG.setLevel(Level.WARN);
         HTTP_CLIENT_LOG.setLevel(Level.WARN);
+        UNDERTOW_REQUEST_DUMPER_LOG.setLevel(Level.INFO);
         System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
 
 
