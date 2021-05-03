@@ -602,6 +602,11 @@ public class CommandLineHandler {
                 .hasArg().withArgName("true|false")
                 .create(Keys.RESOURCEMANAGERLOGGING));
         
+        options.addOption(OptionBuilder
+                .withLongOpt("cache-servlet-paths")
+                .withDescription("Enable file system caching in resource manager of servlet.getRealPath() calls")
+                .hasArg().withArgName("true|false")
+                .create(Keys.CACHESERVLETPATHS));
         
         options.addOption(new Option("h", Keys.HELP, false, "print this message"));
         options.addOption(new Option("v", "version", false, "print runwar version and undertow version"));
@@ -902,6 +907,10 @@ public class CommandLineHandler {
                 serverOptions.resourceManagerLogging(Boolean.valueOf(line.getOptionValue(Keys.RESOURCEMANAGERLOGGING)));
             }
             
+            if (hasOptionValue(line, Keys.CACHESERVLETPATHS)) {
+                serverOptions.cacheServletPaths(Boolean.valueOf(line.getOptionValue(Keys.CACHESERVLETPATHS)));
+            }
+            
             if (line.hasOption(Keys.OPENURL)) {
                 serverOptions.openbrowserURL(line.getOptionValue(Keys.OPENURL));
                 if (!line.hasOption(Keys.OPENBROWSER)) {
@@ -984,9 +993,10 @@ public class CommandLineHandler {
             }
             if (hasOptionValue(line, Keys.JVMARGS)) {
                 List<String> jvmArgs = new ArrayList<String>();
-                String[] jvmArgArray = line.getOptionValue(Keys.JVMARGS).split("(?<!\\\\);");
+                // A \\ is an escaped backslash and a \; is an escaped semicolon
+                String[] jvmArgArray = line.getOptionValue(Keys.JVMARGS).replaceAll("\\\\\\\\", "__backSlash__" ).replaceAll("\\\\;", "__semicolon__" ).split(";");
                 for (String arg : jvmArgArray) {
-                    jvmArgs.add(arg.replaceAll("\\\\;", ";"));
+                    jvmArgs.add(arg.replaceAll("__semicolon__", ";").replaceAll("__backSlash__", "\\\\"));
                 }
                 serverOptions.jvmArgs(jvmArgs);
             }
@@ -1039,10 +1049,6 @@ public class CommandLineHandler {
                 serverOptions.proxyPeerAddressEnable(Boolean.valueOf(line.getOptionValue(Keys.PROXYPEERADDRESS)));
             }
             if (hasOptionValue(line, Keys.HTTP2)) {
-                if (!hasOptionValue(line, Keys.SECURECOOKIES)) {
-                    CONF_LOG.trace("SSL enable and secure cookies explicitly disabled; enabling secure cookies");
-                    serverOptions.secureCookies(true);
-                }
                 serverOptions.http2Enable(Boolean.valueOf(line.getOptionValue(Keys.HTTP2)));
             }
             

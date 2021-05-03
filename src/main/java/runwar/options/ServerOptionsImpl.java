@@ -25,7 +25,7 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private String host = "127.0.0.1", contextPath = "/";
     
-    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779, http2ProxySSLPort = 1444;
+    private int portNumber = 8088, ajpPort = 8009, sslPort = 1443, socketNumber = 8779;
     
     private boolean enableAJP = false, enableSSL = false, enableHTTP = true, enableURLRewrite = false;
     
@@ -129,11 +129,12 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private String defaultServletAllowedExt = "";
 
-    private Boolean caseSensitiveWebServer= false;
+    private Boolean caseSensitiveWebServer= null;
     
     private Boolean resourceManagerLogging= false;
     
-    
+    private Boolean cacheServletPaths= false;
+        
     private final Map<String, String> aliases = new HashMap<>();
     
     private Set<String> contentDirectories = new HashSet<>();
@@ -2059,23 +2060,6 @@ public class ServerOptionsImpl implements ServerOptions {
     }
 
     /*
-     * @see runwar.options.ServerOptions#http2ProxySSLPort()
-     */
-    @Override
-    public int http2ProxySSLPort() {
-        return http2ProxySSLPort;
-    }
-
-    /*
-     * @see runwar.options.ServerOptions#setsetHttp2ProxySSLPort(int)
-     */
-    @Override
-    public ServerOptions http2ProxySSLPort(int portNumber) {
-        http2ProxySSLPort = portNumber;
-        return this;
-    }
-
-    /*
      * @see runwar.options.ServerOptions#SSLECCDISABLE(boolean)
      */
     @Override
@@ -2172,7 +2156,24 @@ public class ServerOptionsImpl implements ServerOptions {
     public ServerOptions resourceManagerLogging(Boolean resourceManagerLogging) {
     	this.resourceManagerLogging = resourceManagerLogging;
         return this;
-    }    
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#cacheServletPaths()
+     */
+    @Override
+    public Boolean cacheServletPaths() {
+        return cacheServletPaths;
+    }
+
+    /*
+     * @see runwar.options.ServerOptions#cacheServletPaths(boolean)
+     */
+    @Override
+    public ServerOptions cacheServletPaths(Boolean cacheServletPaths) {
+    	this.cacheServletPaths = cacheServletPaths;
+        return this;
+    }
 
     /*
      * @see runwar.options.ServerOptions#caseSensitiveWebServer()

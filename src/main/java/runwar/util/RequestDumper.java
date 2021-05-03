@@ -21,6 +21,7 @@ import net.minidev.json.JSONObject;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 
+@SuppressWarnings("deprecation")
 public class RequestDumper implements HttpHandler {
 
     @Override

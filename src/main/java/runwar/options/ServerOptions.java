@@ -115,6 +115,8 @@ public interface ServerOptions {
         final static String DEFAULTSERVLETALLOWEDEXT = "defaultServletAllowedExt";
         final static String CASESENSITIVEWEBSERVER="caseSensitiveWebServer";
         final static String RESOURCEMANAGERLOGGING="resourceManagerLogging";
+        final static String CACHESERVLETPATHS="cacheServletPaths";
+        
     }
     
     String defaultShell();
@@ -373,8 +375,12 @@ public interface ServerOptions {
 
     Boolean resourceManagerLogging();
     
+    Boolean cacheServletPaths();
+
     ServerOptions resourceManagerLogging(Boolean resourceManagerLogging);
     
+    ServerOptions cacheServletPaths(Boolean cacheServletPaths);
+        
     ServerOptions sslCertificate(File file);
 
     File sslCertificate();
@@ -536,10 +542,6 @@ public interface ServerOptions {
     boolean startedFromCommandLine();
 
     ServerOptions startedFromCommandLine(boolean enable);
-
-    int http2ProxySSLPort();
-
-    ServerOptions http2ProxySSLPort(int portNumber);
 
     boolean ignoreWebXmlWelcomePages();
 

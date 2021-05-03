@@ -27,7 +27,7 @@ import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
 
-@SuppressWarnings("depricated")
+@SuppressWarnings("deprecation")
 public class MockRequest implements HttpServletRequest {
 
     private String requestURI;

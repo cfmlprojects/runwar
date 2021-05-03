@@ -17,6 +17,7 @@ import io.undertow.util.LocaleUtils;
 
 import java.util.*;
 
+@SuppressWarnings("deprecation")
 public class RequestDebugHandler implements HttpHandler {
 
     private final HttpHandler next;

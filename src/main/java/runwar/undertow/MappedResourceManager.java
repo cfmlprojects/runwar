@@ -6,13 +6,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.Optional;
 
 import io.undertow.server.handlers.resource.FileResource;
 import io.undertow.server.handlers.resource.FileResourceManager;
@@ -26,12 +29,16 @@ public class MappedResourceManager extends FileResourceManager {
     private ServerOptions serverOptions;
     private Boolean forceCaseSensitiveWebServer;
     private Boolean forceCaseInsensitiveWebServer;
+    private Boolean cacheServletPaths;
     private HashMap<String, Path> aliases;
+    private ConcurrentHashMap<String, Path> caseInsensitiveCache = new ConcurrentHashMap<String, Path>();
+    private ConcurrentHashMap<String, Optional<Resource>> servletPathCache = new ConcurrentHashMap<String, Optional<Resource>>();
     private HashSet<Path> contentDirs;
     private File WEBINF = null, CFIDE = null;
     private static boolean isCaseSensitiveFS = caseSensitivityCheck(); 
     private static final Pattern CFIDE_REGEX_PATTERN;
     private static final Pattern WEBINF_REGEX_PATTERN;
+    private final FileResource baseResource;
 
     static {
         CFIDE_REGEX_PATTERN = Pattern.compile("(?i)^.*[\\\\/]?CFIDE([\\\\/].*)?");
@@ -45,9 +52,11 @@ public class MappedResourceManager extends FileResourceManager {
         this.allowResourceChangeListeners = false;
         this.contentDirs = (HashSet<Path>) contentDirs;
         this.aliases = (HashMap<String, Path>) aliases;
-        this.serverOptions = serverOptions;
+        this.serverOptions = serverOptions; 
         this.forceCaseSensitiveWebServer = serverOptions.caseSensitiveWebServer() != null && serverOptions.caseSensitiveWebServer();
         this.forceCaseInsensitiveWebServer = serverOptions.caseSensitiveWebServer() != null && !serverOptions.caseSensitiveWebServer();
+        this.cacheServletPaths = serverOptions.cacheServletPaths();
+        this.baseResource = new FileResource( getBase(), this, "/");
         
         if(webinfDir != null){
             WEBINF = webinfDir;
@@ -67,6 +76,26 @@ public class MappedResourceManager extends FileResourceManager {
             return null;
         }
         MAPPER_LOG.debug("* requested: '" + path + "'");
+        
+        // If cache is enabled and this path is found, return it
+        if( cacheServletPaths ) {
+        	Optional<Resource> cacheCheck = servletPathCache.get( path );
+        	if( cacheCheck != null ) {
+        		if( cacheCheck.isPresent() ) {
+                	MAPPER_LOG.debugf("** path mapped to (cached): '%s'", cacheCheck.get().getFile().toString() );	
+        		} else {
+                	MAPPER_LOG.debugf("** path mapped to (cached): '%s'", "null (not found)" );        			
+        		}
+            	return cacheCheck.orElse( null );	
+        	}
+        }
+        
+        if( path.equals( "/" ) ) {
+        	MAPPER_LOG.debugf("** path mapped to (cached): '%s'", getBase());
+            return this.baseResource;
+        }
+
+        
         try {
 	        Path reqFile = null;
 	        final Matcher webInfMatcher = WEBINF_REGEX_PATTERN.matcher(path);
@@ -108,8 +137,12 @@ public class MappedResourceManager extends FileResourceManager {
 	        }
 	        
 	        if (reqFile == null ) {
- 	            MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.toString() : "null");
- 	            return super.getResource(path);
+ 	           MAPPER_LOG.debugf("** No mapped resource for: '%s' (reqFile was: '%s')",path,reqFile != null ? reqFile.toString() : "null");
+ 	           Resource superResult = super.getResource(path); 	            
+			   if( cacheServletPaths ) {
+				   servletPathCache.put( path, Optional.ofNullable( superResult ) );  
+			   }
+ 	           return superResult;
 	        }	        		
 	        		
             if(reqFile.toString().indexOf('\\') > 0) {
@@ -118,9 +151,10 @@ public class MappedResourceManager extends FileResourceManager {
             
             // Check for Windows doing silly things with file canonicalization
             String originalPath = reqFile.toString();
+
             // The real path will return the actual file on the file system that is matched
             // the original path may be in the wrong case and may have extra junk on the end that Windows removes when it canonicalizes
-            String realPath = reqFile.toRealPath().toString();
+            String realPath = reqFile.toRealPath(LinkOption.NOFOLLOW_LINKS).toString();
             String originalPathCase;
             String realPathCase;
 
@@ -143,15 +177,27 @@ public class MappedResourceManager extends FileResourceManager {
             }
             
             MAPPER_LOG.debugf("** path mapped to: '%s'", reqFile);
+	            
+		   if( cacheServletPaths ) {
+			   servletPathCache.put( path, Optional.of( new FileResource(reqFile.toFile(), this, path) ) );  
+		   }
             return new FileResource(reqFile.toFile(), this, path);
             
         } catch( InvalidPathException e ){
             MAPPER_LOG.debugf("** InvalidPathException for: '%s'",path != null ? path : "null");
             MAPPER_LOG.debug("** " + e.getMessage());
+            
+ 		    if( cacheServletPaths ) {
+ 		 	   servletPathCache.put( path, Optional.empty() );  
+ 		    }
             return null;
         } catch( IOException e ){
             MAPPER_LOG.debugf("** IOException for: '%s'",path != null ? path : "null");
             MAPPER_LOG.debug("** " + e.getMessage());
+
+ 		    if( cacheServletPaths ) {
+ 		 	   servletPathCache.put( path, Optional.empty() );  
+ 		    }
             return null;
         }
     }
@@ -186,12 +232,22 @@ public class MappedResourceManager extends FileResourceManager {
     }
 
     Path pathExists(Path path) {
-        Boolean defaultCheck = Files.exists( path );
-        if( defaultCheck ) {
-            return path;
-        }
-        if( isCaseSensitiveFS && forceCaseInsensitiveWebServer ) {
+       Boolean defaultCheck = Files.exists( path );
+       if( defaultCheck ) {
+           return path;
+       }
+       if( isCaseSensitiveFS && forceCaseInsensitiveWebServer ) {
             MAPPER_LOG.debugf("*** Case insensitive check for %s",path);
+            
+            Path cacheLookup = caseInsensitiveCache.get(path.toString());
+            if( cacheLookup != null && Files.exists( cacheLookup ) ) {
+                MAPPER_LOG.tracef("*** Case insensitive lookup found in cache %s -> %s",path, cacheLookup);
+            	return cacheLookup;
+            } else if( cacheLookup != null ) {
+                MAPPER_LOG.tracef("*** Case insensitive lookup removed from cache %s",path);
+            	caseInsensitiveCache.remove(path.toString());
+            }
+            
         	String realPath = "";
         	String[] pathSegments = path.toString().replace('\\', '/').split( "/" );
         	if( pathSegments.length > 0 && pathSegments[0].contains(":") ){
@@ -209,7 +265,7 @@ public class MappedResourceManager extends FileResourceManager {
         			continue;
         		}
         		
-        		Boolean found = false;	            
+        		Boolean found = false;
         		for( String thisChild : new File( realPath + "/" ).list() ) {
         			// We're taking the FIRST MATCH.  Buyer beware
         			if( thisSegment.equalsIgnoreCase(thisChild)) {
@@ -224,9 +280,13 @@ public class MappedResourceManager extends FileResourceManager {
         		}
         	}
 			// If we made it through the outer loop, we've found a match
-        	return Paths.get( realPath );
-        }
-        return null;
+        	Path realPathFinal = Paths.get( realPath );
+
+            MAPPER_LOG.tracef("*** Case insensitive lookup put in cache %s -> %s",path,realPathFinal);
+        	caseInsensitiveCache.put(path.toString(), realPathFinal );
+        	return realPathFinal;
+      }
+      return null;
     }
 
     private void processMappings(String cfmlDirList) {
@@ -292,8 +352,7 @@ public class MappedResourceManager extends FileResourceManager {
     }
     
     private static boolean caseSensitivityCheck() {
-    	return true;
-	    /*try {
+	    try {
 	        File currentWorkingDir = new File(System.getProperty("user.dir"));
 	        File case1 = new File(currentWorkingDir, "case1");
 	        File case2 = new File(currentWorkingDir, "Case1");
@@ -313,7 +372,11 @@ public class MappedResourceManager extends FileResourceManager {
 	    	e.printStackTrace();
 	    }
         return true;
-        */
 	}
+    
+    public void clearCaches() {
+    	caseInsensitiveCache.clear();
+        servletPathCache.clear();
+    }
 
 }
