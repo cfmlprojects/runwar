@@ -6,14 +6,11 @@
 package runwar.util;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import net.minidev.json.JSONObject;
-import runwar.logging.RunwarLogger;
 
 /**
  *

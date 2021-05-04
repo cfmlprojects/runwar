@@ -51,7 +51,6 @@ import runwar.gui.SubmitActionlistioner;
 import runwar.util.dae.OSType;
 
 import java.lang.reflect.Method;
-import runwar.BrowserOpener;
 import static runwar.util.Reflection.invoke;
 import static runwar.util.Reflection.method;
 
@@ -220,6 +219,7 @@ public class Tray {
                     menuItem.setShortcut('v');
                 } else if (action.equalsIgnoreCase("openbrowser")) {
                     String url = Utils.getIgnoreCase(itemInfo, "url").toString();
+                    url = checkAndFixUrl(url, server.getServerOptions());
                     menuItem = new MenuItem(label, is, new OpenBrowserAction(url, server.getServerOptions().browser()));
                     menuItem.setShortcut('o');
                 } else if (action.equalsIgnoreCase("openfilesystem")) {
@@ -264,6 +264,25 @@ public class Tray {
                 e.printStackTrace();
             }
         }
+    }
+    
+    public String checkAndFixUrl(String url, ServerOptions serverOptions){
+        if(!url.startsWith("http")){
+            if(url.startsWith("/")){
+                if(!serverOptions.sslEnable()){
+                    url = "http://" + serverOptions.host() + ":" +serverOptions.httpPort() + url;
+                }else{
+                    url = "https://" + serverOptions.host() + ":" + serverOptions.sslPort() + url;
+                }
+            }else{
+                if(!serverOptions.sslEnable()){
+                    url = "http://" + serverOptions.host() + ":" +serverOptions.httpPort() + "/" + url;
+                }else{
+                    url = "https://" + serverOptions.host() + ":" + serverOptions.sslPort() + "/" + url;
+                }
+            }
+        }
+        return url;
     }
 
     public static JSONObject getTrayConfig(String jsonText, String defaultTitle, HashMap<String, String> variableMap) {

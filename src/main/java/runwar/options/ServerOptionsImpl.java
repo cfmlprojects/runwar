@@ -9,7 +9,6 @@ import runwar.Server;
 import runwar.Server.Mode;
 
 import java.io.File;
-import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
