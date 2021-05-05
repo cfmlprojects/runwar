@@ -315,57 +315,43 @@ class RunwarConfigurer {
     }
 
 
-    static List<URL> getJarList(String libDirs) throws IOException {
+    static List<URL> getJarList( String libDirs ) throws IOException {
         List<URL> classpath = new ArrayList<>();
         String[] list = libDirs.split( "," );
         for( String path : list ) 
         {
-            if(".".equals( path ) || "..".equals( path ))
+            if( ".".equals( path ) || "..".equals( path ) )
             {
                 continue;
             }
 
             File file = new File( path );
-            if( file.exists() && file.isDirectory() ) {
-                File fileList[] = file.listFiles();
-                RecursiveSearch( fileList,0,0,classpath );
-            }
-        }
-        return classpath;
-    }
-
-    static void RecursiveSearch(File[] fileList, int index, int level, List<URL> classpath) throws IOException
-    {
-        //terminate condition
-        if( index == fileList.length )
-        {
-            return;
-        }
-
-        if( fileList[index].isFile() )
-        {
-            File item = fileList[index];
-            String fileName = item.getAbsolutePath().toLowerCase();
-            if (fileName.endsWith(".jar") || fileName.endsWith(".zip")) 
+            if( file.exists() && file.isDirectory() ) 
             {
-                if(!fileName.contains("slf4j") && !fileName.contains("log4j")) 
+                File fileList[] = file.listFiles();
+                for( File item : fileList )
                 {
-                    URL url = item.toURI().toURL();
-                    classpath.add(url);
-                    LOG.trace( "lib: added to classpath: " + item.getAbsolutePath() );
+                    String directoryName = item.getAbsolutePath();
+                    classpath.addAll( getJarList( directoryName ) );
                 }
             }
-
+            else if( file.exists() && file.isFile() )
+            {
+                String fileName = file.getAbsolutePath().toLowerCase();
+                if ( fileName.endsWith( ".jar" ) || fileName.endsWith( ".zip" ) ) 
+                {
+                    if( !fileName.contains( "slf4j" ) && !fileName.contains( "log4j" ) ) 
+                    {
+                        URL url = file.toURI().toURL();
+                        classpath.add( url );
+                        LOG.trace( "lib: adding to classpath: " + file.getAbsolutePath() );
+                    }
+                }
+            }
         }
-        else if( fileList[index].isDirectory() )
-        {
-            //recursion for subdirectories
-            RecursiveSearch(fileList[index].listFiles(), 0, level + 1, classpath);
-        }
-
-        //recursion for main directory
-        RecursiveSearch(fileList, ++index, level, classpath);
+        return classpath;        
     }
+
 
     private void addCacheHandler(final DeploymentInfo servletBuilder) {
         // this handles mime types and adds a simple cache for static files
