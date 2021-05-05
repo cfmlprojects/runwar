@@ -352,7 +352,7 @@ class RunwarConfigurer {
                 {
                     URL url = item.toURI().toURL();
                     classpath.add(url);
-                    LOG.trace( "adding to classpath: " + item.getAbsolutePath() );
+                    LOG.trace( "lib: added to classpath: " + item.getAbsolutePath() );
                 }
             }
 
