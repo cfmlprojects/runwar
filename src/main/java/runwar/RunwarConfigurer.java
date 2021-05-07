@@ -315,36 +315,43 @@ class RunwarConfigurer {
     }
 
 
-    static List<URL> getJarList(String libDirs) throws IOException {
+    static List<URL> getJarList( String libDirs ) throws IOException {
         List<URL> classpath = new ArrayList<>();
-        String[] list = libDirs.split(",");
-        for (String path : list) {
-            if (".".equals(path) || "..".equals(path))
-                continue;
-
-            File file = new File(path);
-            // Ignore non-existent dirs
-            if( !file.exists() ) {
-                LOG.debug("lib: Skipping non-existent: " + file.getAbsolutePath());
+        String[] list = libDirs.split( "," );
+        for( String path : list ) 
+        {
+            if( ".".equals( path ) || "..".equals( path ) )
+            {
                 continue;
             }
-            for (File item : Objects.requireNonNull(file.listFiles())) {
-                String fileName = item.getAbsolutePath().toLowerCase();
-                if (!item.isDirectory()) {
-                    if (fileName.endsWith(".jar") || fileName.endsWith(".zip")) {
-                        if(fileName.contains("slf4j") || fileName.contains("log4j")) {
-                            LOG.debug("lib: Skipping slf4j jar: " + item.getAbsolutePath());
-                        } else {
-                            URL url = item.toURI().toURL();
-                            classpath.add(url);
-                            LOG.trace("lib: added to classpath: " + item.getAbsolutePath());
-                        }
+
+            File file = new File( path );
+            if( file.exists() && file.isDirectory() ) 
+            {
+                File fileList[] = file.listFiles();
+                for( File item : fileList )
+                {
+                    String directoryName = item.getAbsolutePath();
+                    classpath.addAll( getJarList( directoryName ) );
+                }
+            }
+            else if( file.exists() && file.isFile() )
+            {
+                String fileName = file.getAbsolutePath().toLowerCase();
+                if ( fileName.endsWith( ".jar" ) || fileName.endsWith( ".zip" ) ) 
+                {
+                    if( !fileName.contains( "slf4j" ) && !fileName.contains( "log4j" ) ) 
+                    {
+                        URL url = file.toURI().toURL();
+                        classpath.add( url );
+                        LOG.trace( "lib: adding to classpath: " + file.getAbsolutePath() );
                     }
                 }
             }
         }
-        return classpath;
+        return classpath;        
     }
+
 
     private void addCacheHandler(final DeploymentInfo servletBuilder) {
         // this handles mime types and adds a simple cache for static files
