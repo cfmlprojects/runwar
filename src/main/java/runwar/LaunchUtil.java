@@ -31,7 +31,6 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Pack200;
 import java.util.zip.GZIPInputStream;
 
-import com.vdurmont.semver4j.Semver;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
 import dorkbox.util.ActionHandler;
@@ -679,28 +678,6 @@ public class LaunchUtil {
         public boolean accept(File dir, String name) {
             return name.toLowerCase().startsWith(prefix);
         }
-    }
-
-    public static void assertMinimumJavaVersion(String minVersion) {
-        Semver systemJavaVersion = new Semver(System.getProperty("java.version", "").replace('_', '.'), Semver.SemverType.LOOSE);
-        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
-        System.out.println("Java version " + systemJavaVersion.toString() + " (requires >= " + minVersion + ")");
-        if (systemJavaVersion.toStrict().isLowerThan(minimumJavaVersion.toStrict())) {
-            System.out.println("** Requires Java " + minimumJavaVersion.toStrict() + " or later, current: " + systemJavaVersion.toStrict());
-            System.exit(1);
-        }
-    }
-
-    public static boolean versionLowerThanOrEqualTo(String version, String minVersion) {
-        Semver systemJavaVersion = new Semver(version.replace('_', '.'), Semver.SemverType.LOOSE);
-        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
-        return systemJavaVersion.isLowerThanOrEqualTo(minimumJavaVersion);
-    }
-
-    public static boolean versionGreaterThanOrEqualTo(String version, String minVersion) {
-        Semver systemJavaVersion = new Semver(version.replace('_', '.'), Semver.SemverType.LOOSE);
-        Semver minimumJavaVersion = new Semver(minVersion, Semver.SemverType.LOOSE);
-        return systemJavaVersion.isGreaterThanOrEqualTo(minimumJavaVersion);
     }
 
     public static String getOS() {

@@ -103,7 +103,7 @@ dependencies {
     // ssl
     compile("org.bouncycastle:bcpkix-jdk15on:1.57")
     // version compare
-    compile("com.vdurmont:semver4j:2.2.0") { transitive = false }
+    //compile("com.vdurmont:semver4j:2.2.0") { transitive = false }
     // ansi colors for logging system output
     compile("com.jcabi:jcabi-log:0.18.1") { transitive = false }
 

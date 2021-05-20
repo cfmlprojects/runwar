@@ -16,6 +16,6 @@ module runwar {
     requires beta.jboss.servlet.api_4_0;
     requires json.smart.mini;
     requires javashim;
-    requires semver4j;
+//    requires semver4j;
 }
 
