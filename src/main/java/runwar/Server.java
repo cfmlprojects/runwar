@@ -228,7 +228,6 @@ public class Server {
 
         LOG.info("Starting RunWAR " + getVersion());
         LOG.debug("Starting Server: " + options.host());
-        LaunchUtil.assertMinimumJavaVersion("1.8");
         requisitionPorts();
 
         Builder serverBuilder = Undertow.builder();
