@@ -326,6 +326,12 @@ public class CommandLineHandler {
                 .withDescription("full path to default web.xml file for configuring the server")
                 .hasArg().withArgName("path")
                 .create(Keys.WEBXMLPATH));
+
+        options.addOption(OptionBuilder
+                .withLongOpt("web-xml-override-path")
+                .withDescription("full path to override web.xml file for configuring the server")
+                .hasArg().withArgName("path")
+                .create(Keys.WEBXMLOVERRIDEPATH));
         
         options.addOption(OptionBuilder
                 .withLongOpt("cfengine-name")
