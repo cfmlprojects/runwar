@@ -125,6 +125,8 @@ class RunwarConfigurer {
     private void configureServerWar(DeploymentInfo servletBuilder) {
         File warFile = serverOptions.warFile();
         File webInfDir = serverOptions.webInfDir();
+        File webXMLOverrideFile = serverOptions.webXmlOverrideFile();
+        LOG.debug("found web xml override: '" + webXMLOverrideFile.getAbsolutePath() + "'");
         Long transferMinSize= serverOptions.transferMinSize();
         LOG.debug("found WEB-INF: '" + webInfDir.getAbsolutePath() + "'");
         if (getClassLoader() == null) {

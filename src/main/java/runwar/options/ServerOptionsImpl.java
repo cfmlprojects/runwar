@@ -36,7 +36,7 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private URL jarURL = null;
     
-    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicateFile;
+    private File workingDir, warFile, webInfDir, webXmlFile, webXmlOverrideFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicateFile;
     
     private String iconImage = null;
     
@@ -1081,6 +1081,24 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public String webXmlPath() throws MalformedURLException {
         return webXmlFile.toURI().toURL().toString();
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#webXmlOverrideFile()
+     */
+    public File webXmlOverrideFile(){
+        if(webXmlOverrideFile == null){
+            webXmlOverrideFile = new File(webXmlOverridePath());
+        }
+        return webXmlOverrideFile;
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#webXmlOverridePath()
+     */
+    @Override
+    public String webXmlOverridePath() throws MalformedURLException {
+        return webXmlOverrideFile.toURI().toURL().toString();
     }
 
     /** 

@@ -120,6 +120,7 @@ public class Start {
 
             Server server = new Server();
             try {
+                RunwarLogger.LOG.info("test bal here startServer /*/*/*/*...");
                 server.startServer(serverOptions);
             } catch (Exception e) {
                 e.printStackTrace();
