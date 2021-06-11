@@ -708,10 +708,6 @@ public class Server {
 
             undertow.start();
 
-            // two times to test system tray issue
-            System.gc();
-            System.gc();
-
         } catch (Exception any) {
             if (any.getCause() instanceof java.net.SocketException && any.getCause().getMessage().equals("Permission denied")) {
                 System.err.println("You need to be root or Administrator to bind to a port below 1024!");
