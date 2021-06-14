@@ -1,5 +1,8 @@
 package runwar;
 
+import static runwar.util.Reflection.invoke;
+import static runwar.util.Reflection.method;
+
 import java.awt.Desktop;
 import java.awt.GraphicsEnvironment;
 import java.io.BufferedInputStream;
@@ -17,6 +20,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Method;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -117,8 +121,22 @@ public class LaunchUtil {
         InputStream is = process.getInputStream();
         InputStreamReader isr = new InputStreamReader(is);
         BufferedReader br = new BufferedReader(isr);
+        
 
-        RunwarLogger.LOG.debug("launching background process with these args: ");
+        long PID = 0;
+        // PID is only accessable on Java 9+
+        Method pidMethod = method(process.getClass(), "pid");
+        if (pidMethod != null) {
+            pidMethod.setAccessible(true);
+            PID = (long) invoke(pidMethod, process);
+        }
+
+        if (PID > 0) {
+            RunwarLogger.LOG.debug("launching background process as PID [" + PID + "] with these args: ");
+        } else {
+            RunwarLogger.LOG.debug("launching background process with these args: ");
+        }
+
         // Pretty print out all the process args being sent to the background server.
         StringBuilder formattedArgs = new StringBuilder();
         formattedArgs.append("\n  ");
@@ -136,17 +154,20 @@ public class LaunchUtil {
         RunwarLogger.LOG.debug("args ->" + formattedArgs.toString());
 
         RunwarLogger.LOG.debug("timeout of " + timeout / 1000 + " seconds");
-        String line;
+        String line=null;
         int exit = -1;
         long start = System.currentTimeMillis();
         System.out.print("Starting in background - ");
         while ((System.currentTimeMillis() - start) < timeout && !serverIsUp) {
-            if (br.ready() && (line = br.readLine()) != null) {
+         //   RunwarLogger.LOG.debug( "About to read line..." );
+            if ( !process.isAlive() || ( br.ready() && (line = br.readLine()) != null ) ) {
                 // Outputs your process execution
                 try {
                     exit = process.exitValue();
                     if (exit == 0) {
-                        RunwarLogger.LOG.debug(line);
+                    	if( line != null ) {
+                    		RunwarLogger.LOG.debug(line);	
+                    	}
                         // Process finished
                         while ((line = br.readLine()) != null) {
                             RunwarLogger.LOG.debug(line);
@@ -156,17 +177,22 @@ public class LaunchUtil {
                         }
                         serverIsUp = true;
                         break;
-                    } else if (exit == 1) {
-                        printExceptionLine(line);
+                    } else {
+                    	if( line != null ) {
+                            printExceptionLine(line);	
+                    	}
                         while ((line = br.readLine()) != null) {
                             printExceptionLine(line);
                         }
+                        RunwarLogger.LOG.debug( "Server exit code is: " + exit );
                         System.exit(1);
                     }
                 } catch (IllegalThreadStateException t) {
                     // This exceptions means the process has not yet finished.
                     // decide to continue, exit(0), or exit(1)
-                    serverIsUp = processOutout(line, process, andExit);
+                	if( line != null ) {
+                		serverIsUp = processOutout(line, process, andExit);
+                	}
                 }
             }
         }
