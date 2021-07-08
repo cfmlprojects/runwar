@@ -26,14 +26,13 @@ public class WebXMLParser {
 
     /**
      * Parses the web.xml and configures the context.
-     * @param webinf WEB-INF directory
      * @param webxml web.xml file
      * @param info DeploymentInfo
      * @param ignoreRestMappings rest mappings
      * @param ignoreWelcomePages ignore welcome pages or not
      */
     @SuppressWarnings("unchecked")
-    public static void parseWebXml(File webxml, File webinf, DeploymentInfo info,
+    public static void parseWebXml(File webxml, DeploymentInfo info,
             boolean ignoreWelcomePages, boolean ignoreRestMappings) {
         CONF_LOG.infof("Parsing '%s'", webxml.getPath());
         if (!webxml.exists() || !webxml.canRead()) {

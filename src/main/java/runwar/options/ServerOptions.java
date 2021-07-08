@@ -306,7 +306,6 @@ public interface ServerOptions {
 
     ServerOptions webInfDir(File WebInfDir);
 
-
     File webXmlFile();
 
     String webXmlPath() throws MalformedURLException;
@@ -314,11 +313,8 @@ public interface ServerOptions {
     ServerOptions webXmlFile(File webXmlFile);
 
     File webXmlOverrideFile();
-
-    String webXmlOverridePath() throws MalformedURLException;
     
     ServerOptions webXmlOverrideFile(File webXmlOverrideFile);
-
     
     String iconImage();
 

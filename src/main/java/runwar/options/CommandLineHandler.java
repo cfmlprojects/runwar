@@ -764,6 +764,16 @@ public class CommandLineHandler {
                     throw new RuntimeException("Could not find web.xml! " + webXmlPath);
                 }
             }
+
+            if (hasOptionValue(line, Keys.WEBXMLOVERRIDEPATH)) {
+                String webXmlOverridePath = line.getOptionValue(Keys.WEBXMLOVERRIDEPATH);
+                File webXmlOverrideFile = new File(webXmlOverridePath);
+                if (webXmlOverrideFile.exists()) {
+                    serverOptions.webXmlOverrideFile(webXmlOverrideFile);
+                } else {
+                    throw new RuntimeException("Could not find web.xml override! " + webXmlOverridePath);
+                }
+            }            
             
             if (line.hasOption(Keys.STOP)) {
                 serverOptions.action(Keys.STOP);

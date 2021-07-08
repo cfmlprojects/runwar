@@ -1087,18 +1087,16 @@ public class ServerOptionsImpl implements ServerOptions {
      * @see runwar.options.ServerOptions#webXmlOverrideFile()
      */
     public File webXmlOverrideFile(){
-        if(webXmlOverrideFile == null){
-            webXmlOverrideFile = new File(webXmlOverridePath());
-        }
         return webXmlOverrideFile;
     }
 
-    /**
-     * @see runwar.options.ServerOptions#webXmlOverridePath()
+    /** 
+     * @see runwar.options.ServerOptions#webXmlOverrideFile(java.io.File)
      */
     @Override
-    public String webXmlOverridePath() throws MalformedURLException {
-        return webXmlOverrideFile.toURI().toURL().toString();
+    public ServerOptions webXmlOverrideFile(File webXmlOverrideFile) {
+        this.webXmlOverrideFile = webXmlOverrideFile;
+        return this;
     }
 
     /** 

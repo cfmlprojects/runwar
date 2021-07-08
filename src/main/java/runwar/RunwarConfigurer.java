@@ -125,8 +125,6 @@ class RunwarConfigurer {
     private void configureServerWar(DeploymentInfo servletBuilder) {
         File warFile = serverOptions.warFile();
         File webInfDir = serverOptions.webInfDir();
-        File webXMLOverrideFile = serverOptions.webXmlOverrideFile();
-        LOG.debug("found web xml override: '" + webXMLOverrideFile.getAbsolutePath() + "'");
         Long transferMinSize= serverOptions.transferMinSize();
         LOG.debug("found WEB-INF: '" + webInfDir.getAbsolutePath() + "'");
         if (getClassLoader() == null) {
@@ -138,7 +136,12 @@ class RunwarConfigurer {
         serverOptions.contentDirectories().forEach(s -> contentDirs.add(Paths.get(s)));
         serverOptions.aliases().forEach((s, s2) -> aliases.put(s,Paths.get(s2)));
         servletBuilder.setResourceManager(server.getResourceManager(warFile, transferMinSize, contentDirs, aliases, webInfDir));
-        WebXMLParser.parseWebXml(serverOptions.webXmlFile(), webInfDir, servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), serverOptions.ignoreWebXmlRestMappings());
+        WebXMLParser.parseWebXml(serverOptions.webXmlFile(), servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), serverOptions.ignoreWebXmlRestMappings());
+        File webXMLOverrideFile = serverOptions.webXmlOverrideFile();
+        if(webXMLOverrideFile!=null){
+            LOG.debug("Using webxml override: '" + webXMLOverrideFile.getAbsolutePath() + "'");
+            WebXMLParser.parseWebXml(webXMLOverrideFile, servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), serverOptions.ignoreWebXmlRestMappings());
+        }
     }
 
     private void configureServerServlet(DeploymentInfo servletBuilder) {
@@ -187,7 +190,7 @@ class RunwarConfigurer {
         servletBuilder.setClassLoader(getClassLoader());
         if (webXmlFile != null) {
             LOG.debug("using specified web.xml : " + webXmlFile.getAbsolutePath());
-            WebXMLParser.parseWebXml(webXmlFile, webInfDir, servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), serverOptions.ignoreWebXmlRestMappings());
+            WebXMLParser.parseWebXml(webXmlFile, servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), serverOptions.ignoreWebXmlRestMappings());
         } else {
             Class<Servlet> cfmlServlet = getCFMLServletClass(cfengine);
             Class<Servlet> restServletClass = getRestServletClass(cfengine);
