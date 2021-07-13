@@ -35,7 +35,7 @@ public class WebXMLParser {
     public static void parseWebXml(File webxml, DeploymentInfo info,
             boolean ignoreWelcomePages, boolean ignoreRestMappings, boolean overrideEnabled) {
         CONF_LOG.infof("Parsing '%s'", webxml.getPath());
-        CONF_LOG.debugf("Overiding previous web.xml '%s'", overrideEnabled?"True":"False");
+        CONF_LOG.debugf("Overriding previous web.xml '%s'", overrideEnabled?"True":"False");
 
         if (!webxml.exists() || !webxml.canRead()) {
             CONF_LOG.error("Error reading web.xml! exists:" + webxml.exists() + "readable:" + webxml.canRead());
