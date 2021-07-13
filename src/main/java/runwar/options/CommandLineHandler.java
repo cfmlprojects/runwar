@@ -332,6 +332,12 @@ public class CommandLineHandler {
                 .withDescription("full path to override web.xml file for configuring the server")
                 .hasArg().withArgName("path")
                 .create(Keys.WEBXMLOVERRIDEPATH));
+
+        options.addOption(OptionBuilder
+                .withLongOpt("web-xml-override-force")
+                .withDescription("if true it will force the web.xml override to switch from 'append' to 'override' functionality")
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.WEBXMLOVERRIDEFORCE));
         
         options.addOption(OptionBuilder
                 .withLongOpt("cfengine-name")
@@ -773,7 +779,10 @@ public class CommandLineHandler {
                 } else {
                     throw new RuntimeException("Could not find web.xml override! " + webXmlOverridePath);
                 }
-            }            
+            }
+            if (hasOptionValue(line, Keys.WEBXMLOVERRIDEFORCE)) {
+                serverOptions.webXmlOverrideForce(Boolean.valueOf(line.getOptionValue(Keys.WEBXMLOVERRIDEFORCE)));
+            }
             
             if (line.hasOption(Keys.STOP)) {
                 serverOptions.action(Keys.STOP);

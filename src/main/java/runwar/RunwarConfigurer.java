@@ -140,7 +140,8 @@ class RunwarConfigurer {
         File webXMLOverrideFile = serverOptions.webXmlOverrideFile();
         if(webXMLOverrideFile!=null){
             LOG.debug("Using webxml override: '" + webXMLOverrideFile.getAbsolutePath() + "'");
-            WebXMLParser.parseWebXml(webXMLOverrideFile, servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), serverOptions.ignoreWebXmlRestMappings(), true);
+            WebXMLParser.parseWebXml(webXMLOverrideFile, servletBuilder, serverOptions.ignoreWebXmlWelcomePages(), 
+                                        serverOptions.ignoreWebXmlRestMappings(), serverOptions.webXmlOverrideForce());
         }
     }
 

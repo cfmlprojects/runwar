@@ -47,6 +47,8 @@ public class ServerOptionsImpl implements ServerOptions {
     private String defaultShell = "";
     
     private boolean trayEnable = true;
+
+    private boolean webXmlOverrideForce = false;
     
     private boolean dockEnable = true; // for mac users
     
@@ -1096,6 +1098,23 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public ServerOptions webXmlOverrideFile(File webXmlOverrideFile) {
         this.webXmlOverrideFile = webXmlOverrideFile;
+        return this;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#webXmlOverrideForce()
+     */
+    @Override
+    public boolean webXmlOverrideForce() {
+        return webXmlOverrideForce;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#webXmlOverrideForce(boolean)
+     */
+    @Override
+    public ServerOptions webXmlOverrideForce(boolean enable) {
+        this.webXmlOverrideForce = enable;
         return this;
     }
 
