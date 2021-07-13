@@ -56,8 +56,8 @@ dependencies {
     }
 
     //For Tuckey Proxy
-    compile group: 'commons-codec', name: 'commons-codec', version: '1.15'
-    compile group: 'commons-httpclient', name: 'commons-httpclient', version: '3.1'
+    //compile group: 'commons-codec', name: 'commons-codec', version: '1.15'
+    //compile group: 'commons-httpclient', name: 'commons-httpclient', version: '3.1'
     /////
 
     // squish the dorkbox stuff together for java 9+
