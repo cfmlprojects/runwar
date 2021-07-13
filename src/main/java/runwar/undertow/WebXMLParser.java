@@ -33,8 +33,10 @@ public class WebXMLParser {
      */
     @SuppressWarnings("unchecked")
     public static void parseWebXml(File webxml, DeploymentInfo info,
-            boolean ignoreWelcomePages, boolean ignoreRestMappings) {
+            boolean ignoreWelcomePages, boolean ignoreRestMappings, boolean overrideEnabled) {
         CONF_LOG.infof("Parsing '%s'", webxml.getPath());
+        CONF_LOG.debugf("Overiding previous web.xml '%s'", overrideEnabled?"True":"False");
+
         if (!webxml.exists() || !webxml.canRead()) {
             CONF_LOG.error("Error reading web.xml! exists:" + webxml.exists() + "readable:" + webxml.canRead());
         }
@@ -68,8 +70,14 @@ public class WebXMLParser {
             });
             trace("Total No. of context-params: %s", info.getServletContextAttributes().size());
 
+            //do listeners
             Match listeners = $(doc).find("listener");
-            trace("Total No. of listeners: %s", listeners.size());
+            int sizeListeners = listeners.size();
+            trace("Total No. of listeners: %s", sizeListeners);
+            if ( overrideEnabled && sizeListeners > 0 ) {
+                trace("Removing %s listener(s) from deployment due to web.xml override", info.getListeners().size());
+                info.getListeners().clear();
+            }              
             listeners.each(ctx -> {
                 String pName = getRequired(ctx,"listener-class");
                 CONF_LOG.tracef("Listener: %s", pName);
@@ -83,8 +91,14 @@ public class WebXMLParser {
                 }
             });
 
+            //do servlets
             Match servlets = $(doc).find("servlet");
-            trace("Total No. of servlets: %s", servlets.size());
+            int sizeServlets = servlets.size();
+            trace("Total No. of servlets: %s", sizeServlets);  
+            if ( overrideEnabled && sizeServlets > 0 ) {
+                trace("Removing %s servlet(s) from deployment due to web.xml override", info.getServlets().size());
+                info.getServlets().clear();
+            }           
             servlets.each(servletElement -> {
                 String servletName = getRequired(servletElement, "servlet-name");
                 String servletClassName = getRequired(servletElement, "servlet-class");
@@ -118,7 +132,7 @@ public class WebXMLParser {
             });
 
             Match servletMappings = $(doc).find("servlet-mapping");
-            trace("Total No. of servlet-mappings: %s", servletMappings.size());
+            trace("Total No. of servlet-mappings: %s", servletMappings.size());        
             servletMappings.each(mappingElement -> {
                 String servletName = getRequired(mappingElement, "servlet-name");
                 ServletInfo servlet = servletMap.get(servletName);
@@ -144,7 +158,12 @@ public class WebXMLParser {
             info.addServlets(servletMap.values());
             // do filters
             Match filters = $(doc).find("filter");
-            trace("Total No. of filters: %s", filters.size());
+            int sizeFilters = filters.size();
+            trace("Total No. of filters: %s", sizeFilters);
+            if ( overrideEnabled && sizeFilters > 0 ) {
+                trace("Removing %s filter(s) from deployment due to web.xml override", info.getFilters().size());
+                info.getFilters().clear();
+            }
             filters.each(ctx -> {
                 String filterName = $(ctx).find("filter-name").text();
                 String className = $(ctx).find("filter-class").text();
@@ -171,8 +190,14 @@ public class WebXMLParser {
             });
             info.addFilters(filterMap.values());
 
+            // do filter mappings
             Match filterMappings = $(doc).find("filter-mapping");
-            trace("Total No. of filters-mappings: %s", filterMappings.size());
+            int sizeFilterMappings = filterMappings.size();
+            trace("Total No. of filters-mappings: %s", sizeFilterMappings);
+            if ( overrideEnabled && sizeFilterMappings > 0 ) {
+                trace("Removing %s filter mapping(s) from deployment due to web.xml override", info.getFilterMappings().size());
+                info.getFilterMappings().clear();
+            }
             filterMappings.each(ctx -> {
                 String filterName = $(ctx).find("filter-name").text();
                 FilterInfo filter = filterMap.get(filterName);
@@ -207,7 +232,12 @@ public class WebXMLParser {
                 CONF_LOG.info("Ignoring any welcome pages in web.xml");
             } else {
                 Match welcomeFileList = $(doc).find("welcome-file-list");
-                trace("Total No. of welcome files: %s", welcomeFileList.find("welcome-file").size());
+                int sizeWelcomeFiles = welcomeFileList.find("welcome-file").size();
+                trace("Total No. of welcome files: %s", sizeWelcomeFiles);
+                if ( overrideEnabled && sizeWelcomeFiles > 0 ) {
+                    trace("Removing %s welcome page(s) from deployment due to web.xml override", info.getWelcomePages().size());
+                    info.getWelcomePages().clear();
+                }
                 welcomeFileList.find("welcome-file").each(welcomeFileElement -> {
                     String welcomeFile = $(welcomeFileElement).text();
                     CONF_LOG.debugf("welcome-file: %s", welcomeFile);
@@ -215,8 +245,14 @@ public class WebXMLParser {
                 });
             }
 
+            // do mime mappings
             Match mimeMappings = $(doc).find("mime-mapping");
-            trace("Total No. of mime-mappings: %s", mimeMappings.size());
+            int sizeMimeMapping = mimeMappings.size();
+            trace("Total No. of mime-mappings: %s", sizeMimeMapping);            
+            if ( overrideEnabled && sizeMimeMapping > 0 ) {
+                trace("Removing %s mime mapping(s) from deployment due to web.xml override", info.getMimeMappings().size());
+                info.getMimeMappings().clear();
+            }            
             mimeMappings.each(ctx -> {
                 String extension = $(ctx).find("extension").text();
                 String mimeType = $(ctx).find("mime-type").text();
@@ -224,8 +260,14 @@ public class WebXMLParser {
                 info.addMimeMapping(new MimeMapping(extension, mimeType));
             });
 
+            // do error pages
             Match errorPages = $(doc).find("error-page");
-            trace("Total No. of error-pages: %s", errorPages.size());
+            int sizeErrorPages = errorPages.size();
+            trace("Total No. of error-pages: %s", sizeErrorPages);
+            if ( overrideEnabled && sizeErrorPages > 0 ) {
+                trace("Removing %s error page(s) from deployment due to web.xml override", info.getErrorPages().size());
+                info.getErrorPages().clear();
+            }              
             errorPages.each(ctx -> {
                 String location = $(ctx).find("location").text();
                 String errorCode = $(ctx).find("error-code").text();
@@ -252,6 +294,7 @@ public class WebXMLParser {
                 }
             });
 
+            // do session configuration
             Match sessionConfigElement = $(doc).find("session-config");
             trace("Total No. of cookie config elements: %s", sessionConfigElement.find("cookie-config").size());
             sessionConfigElement.find("cookie-config").each(welcomeFileElement -> {
@@ -262,6 +305,7 @@ public class WebXMLParser {
                 CONF_LOG.debugf("http-only: %s", Boolean.valueOf(httpOnly).toString());
                 CONF_LOG.debugf("secure: %s", Boolean.valueOf(secure).toString());
             });
+
         } catch (Exception e) {
             CONF_LOG.error("Error reading web.xml", e);
             throw new RuntimeException(e);

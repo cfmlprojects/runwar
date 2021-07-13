@@ -485,7 +485,6 @@ public class Server {
         System.setProperty("java.library.path", javaLibraryPath);
         LOG.trace("java.library.path:" + System.getProperty("java.library.path"));
 
-        LOG.trace("test bal here configureServerResourceHandler /*/*/*/*...");
         configurer.configureServerResourceHandler(servletBuilder);
         if (serverOptions.basicAuthEnable()) {
             securityManager.configureAuth(servletBuilder, serverOptions);//SECURITY_MANAGER
