@@ -326,6 +326,18 @@ public class CommandLineHandler {
                 .withDescription("full path to default web.xml file for configuring the server")
                 .hasArg().withArgName("path")
                 .create(Keys.WEBXMLPATH));
+
+        options.addOption(OptionBuilder
+                .withLongOpt("web-xml-override-path")
+                .withDescription("full path to override web.xml file for configuring the server")
+                .hasArg().withArgName("path")
+                .create(Keys.WEBXMLOVERRIDEPATH));
+
+        options.addOption(OptionBuilder
+                .withLongOpt("web-xml-override-force")
+                .withDescription("if true it will force the web.xml override to switch from 'append' to 'override' functionality")
+                .hasArg().withArgName("true|false").withType(Boolean.class)
+                .create(Keys.WEBXMLOVERRIDEFORCE));
         
         options.addOption(OptionBuilder
                 .withLongOpt("cfengine-name")
@@ -757,6 +769,19 @@ public class CommandLineHandler {
                 } else {
                     throw new RuntimeException("Could not find web.xml! " + webXmlPath);
                 }
+            }
+
+            if (hasOptionValue(line, Keys.WEBXMLOVERRIDEPATH)) {
+                String webXmlOverridePath = line.getOptionValue(Keys.WEBXMLOVERRIDEPATH);
+                File webXmlOverrideFile = new File(webXmlOverridePath);
+                if (webXmlOverrideFile.exists()) {
+                    serverOptions.webXmlOverrideFile(webXmlOverrideFile);
+                } else {
+                    throw new RuntimeException("Could not find web.xml override! " + webXmlOverridePath);
+                }
+            }
+            if (hasOptionValue(line, Keys.WEBXMLOVERRIDEFORCE)) {
+                serverOptions.webXmlOverrideForce(Boolean.valueOf(line.getOptionValue(Keys.WEBXMLOVERRIDEFORCE)));
             }
             
             if (line.hasOption(Keys.STOP)) {

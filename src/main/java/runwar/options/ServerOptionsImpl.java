@@ -36,7 +36,7 @@ public class ServerOptionsImpl implements ServerOptions {
     
     private URL jarURL = null;
     
-    private File workingDir, warFile, webInfDir, webXmlFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicateFile;
+    private File workingDir, warFile, webInfDir, webXmlFile, webXmlOverrideFile, logDir, logRequestsDir, logAccessDir, urlRewriteFile, urlRewriteLog, trayConfig, statusFile = null, predicateFile;
     
     private String iconImage = null;
     
@@ -47,6 +47,8 @@ public class ServerOptionsImpl implements ServerOptions {
     private String defaultShell = "";
     
     private boolean trayEnable = true;
+
+    private boolean webXmlOverrideForce = false;
     
     private boolean dockEnable = true; // for mac users
     
@@ -1081,6 +1083,39 @@ public class ServerOptionsImpl implements ServerOptions {
     @Override
     public String webXmlPath() throws MalformedURLException {
         return webXmlFile.toURI().toURL().toString();
+    }
+
+    /**
+     * @see runwar.options.ServerOptions#webXmlOverrideFile()
+     */
+    public File webXmlOverrideFile(){
+        return webXmlOverrideFile;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#webXmlOverrideFile(java.io.File)
+     */
+    @Override
+    public ServerOptions webXmlOverrideFile(File webXmlOverrideFile) {
+        this.webXmlOverrideFile = webXmlOverrideFile;
+        return this;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#webXmlOverrideForce()
+     */
+    @Override
+    public boolean webXmlOverrideForce() {
+        return webXmlOverrideForce;
+    }
+
+    /** 
+     * @see runwar.options.ServerOptions#webXmlOverrideForce(boolean)
+     */
+    @Override
+    public ServerOptions webXmlOverrideForce(boolean enable) {
+        this.webXmlOverrideForce = enable;
+        return this;
     }
 
     /** 

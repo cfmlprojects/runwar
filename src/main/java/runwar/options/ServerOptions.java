@@ -49,6 +49,8 @@ public interface ServerOptions {
         final static String STARTTIMEOUT = "startTimeout";
         final static String TIMEOUT = "timeout";
         final static String WEBXMLPATH = "webxmlpath";
+        final static String WEBXMLOVERRIDEPATH = "webxmloverridepath";
+        final static String WEBXMLOVERRIDEFORCE = "webxmloverrideforce";
         final static String AJPPORT = "ajpport";
         final static String REQUESTLOG = "requestlog";
         final static String OPENBROWSER = "open-browser";
@@ -310,6 +312,14 @@ public interface ServerOptions {
     String webXmlPath() throws MalformedURLException;
 
     ServerOptions webXmlFile(File webXmlFile);
+
+    File webXmlOverrideFile();
+    
+    ServerOptions webXmlOverrideFile(File webXmlOverrideFile);
+    
+    boolean webXmlOverrideForce();
+
+    ServerOptions webXmlOverrideForce(boolean enable);
 
     String iconImage();
 

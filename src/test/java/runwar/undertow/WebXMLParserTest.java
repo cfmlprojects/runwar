@@ -36,7 +36,7 @@ public class WebXMLParserTest {
         File webxml = new File(webinf, "lucee4.web.xml");
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
-        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, ignoreWelcomePages, ignoreRestMappings);
+        WebXMLParser.parseWebXml(webxml, deploymentInfo, ignoreWelcomePages, ignoreRestMappings, false);
         Map<String, ServletInfo> gfg = deploymentInfo.getServlets();
         for (Map.Entry<String, ServletInfo> entry : gfg.entrySet()) {
             Map<String, String> gfg2 = entry.getValue().getInitParams();
@@ -54,7 +54,7 @@ public class WebXMLParserTest {
         File webxml = new File(webinf, "web.xml");
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
-        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, ignoreWelcomePages, ignoreRestMappings);
+        WebXMLParser.parseWebXml(webxml, deploymentInfo, ignoreWelcomePages, ignoreRestMappings, false);
         Map<String, ServletInfo> gfg = deploymentInfo.getServlets();
         for (Map.Entry<String, ServletInfo> entry : gfg.entrySet()) {
             Map<String, String> gfg2 = entry.getValue().getInitParams();
@@ -72,7 +72,7 @@ public class WebXMLParserTest {
         File webxml = new File(webinf, "web.xml");
         boolean ignoreWelcomePages = false;
         boolean ignoreRestMappings = false;
-        WebXMLParser.parseWebXml(webxml, webinf, deploymentInfo, ignoreWelcomePages, ignoreRestMappings);
+        WebXMLParser.parseWebXml(webxml, deploymentInfo, ignoreWelcomePages, ignoreRestMappings, false);
         assertEquals(2, deploymentInfo.getServlets().size());
     }
 
