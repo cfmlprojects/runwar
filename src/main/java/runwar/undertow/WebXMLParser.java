@@ -194,10 +194,11 @@ public class WebXMLParser {
             Match filterMappings = $(doc).find("filter-mapping");
             int sizeFilterMappings = filterMappings.size();
             trace("Total No. of filters-mappings: %s", sizeFilterMappings);
-            if ( overrideEnabled && sizeFilterMappings > 0 ) {
+            //TODO: waiting for UNDERTOW-1930: https://github.com/undertow-io/undertow/pull/1212
+            /* if ( overrideEnabled && sizeFilterMappings > 0 ) {
                 trace("Removing %s filter mapping(s) from deployment due to web.xml override", info.getFilterMappings().size());
                 info.getFilterMappings().clear();
-            }
+            } */
             filterMappings.each(ctx -> {
                 String filterName = $(ctx).find("filter-name").text();
                 FilterInfo filter = filterMap.get(filterName);
