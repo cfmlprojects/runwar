@@ -66,6 +66,28 @@ which will run the `clean` and `shadow` tasks.  Resulting jar is in `./dist/libs
 
 To fire up a pre-configured IDE for working on the project, execute the `ide` task (`./gradlew ide`).
 
+## Testing with VS Code
+
+- Open VS Code on the repository
+- Install the extension `Java Test Runner` by Microsoft
+- After installing you might have to close and reopen VS Code
+
+Open the extension and you will see this side menu: 
+
+![image](https://user-images.githubusercontent.com/80276017/126355536-0180c973-a173-4479-b862-464aa2a982cc.png)
+
+Click on the runwar label to open the rest of the tests in the proyect:
+
+![image](https://user-images.githubusercontent.com/80276017/126355813-3fc28625-368f-469d-945a-a7293e853a67.png)
+
+Click on the check or fail section `show test reports` to open the test reports:
+
+![image](https://user-images.githubusercontent.com/80276017/126356239-9b84e1fb-6c22-4798-87c9-c25e0fea6f9e.png)
+
+This is a look on the test reports dashboard:
+
+![image](https://user-images.githubusercontent.com/80276017/126356537-c06a2d52-9683-4910-ada8-0fedcf1ce4e6.png)
+
 ## CommandBox
 Runwar also powers the servers for CommandBox, a CLI, REPL, package manager, and server for CFML developers.  
 
