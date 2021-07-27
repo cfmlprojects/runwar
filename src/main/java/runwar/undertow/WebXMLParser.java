@@ -40,8 +40,6 @@ public class WebXMLParser {
         if (!webxml.exists() || !webxml.canRead()) {
             CONF_LOG.error("Error reading web.xml! exists:" + webxml.exists() + "readable:" + webxml.canRead());
         }
-        Map<String, ServletInfo> servletMap = new HashMap<String, ServletInfo>();
-        Map<String, FilterInfo> filterMap = new HashMap<String, FilterInfo>();
         try {
             DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 
@@ -128,14 +126,14 @@ public class WebXMLParser {
                     CONF_LOG.tracef("%s init-param: param-name: '%s'  param-value: '%s'", servletName, pName, pValue);
                     servlet.addInitParam(pName, pValue);
                 });
-                servletMap.put(servlet.getName(), servlet);
+                info.addServlet(servlet);
             });
 
             Match servletMappings = $(doc).find("servlet-mapping");
             trace("Total No. of servlet-mappings: %s", servletMappings.size());        
             servletMappings.each(mappingElement -> {
                 String servletName = getRequired(mappingElement, "servlet-name");
-                ServletInfo servlet = servletMap.get(servletName);
+                ServletInfo servlet = info.getServlets().get(servletName);
                 if (servlet == null) {
                     CONF_LOG.errorf("No servlet found for servlet-mapping: %s", servletName);
                 } else {
@@ -154,8 +152,6 @@ public class WebXMLParser {
                 }
             });
 
-            // add servlets to deploy info
-            info.addServlets(servletMap.values());
             // do filters
             Match filters = $(doc).find("filter");
             int sizeFilters = filters.size();
@@ -183,12 +179,11 @@ public class WebXMLParser {
                         trace("Async supported: %s", $(ctx).find("async-supported").text());
                         filter.setAsyncSupported(Boolean.valueOf($(ctx).find("async-supported").text()));
                     }
-                    filterMap.put(filterName, filter);
+                    info.addFilter(filter);
                 } catch (ClassNotFoundException e) {
                     CONF_LOG.error(e);
                 }
             });
-            info.addFilters(filterMap.values());
 
             // do filter mappings
             Match filterMappings = $(doc).find("filter-mapping");
@@ -201,13 +196,8 @@ public class WebXMLParser {
             } */
             filterMappings.each(ctx -> {
                 String filterName = $(ctx).find("filter-name").text();
-                FilterInfo filter = filterMap.get(filterName);
-                if (filter == null) {
-                    CONF_LOG.errorf("No filter found for filter-mapping: %s", filterName);
-                } else {
-                    String className = $(ctx).find("filter-class").text() != null ? $(ctx).find("filter-class").text() : filter.getFilterClass().getName();
-                    CONF_LOG.tracef("filter-name: %s, filter-class: %s", filterName, className);
-                    String urlPattern = $(ctx).find("url-pattern").text();
+                String urlPattern = $(ctx).find("url-pattern").text();
+                if( urlPattern != null ) {
                     Match dispatchers = $(ctx).find("dispatcher");
                     if (dispatchers == null) {
                         CONF_LOG.debugf("filter-name: %s url-pattern: %s dispatcher: REQUEST", filterName, urlPattern);
@@ -219,12 +209,12 @@ public class WebXMLParser {
                                     dispatcher);
                             info.addFilterUrlMapping(filterName, urlPattern, DispatcherType.valueOf(dispatcher));
                         });
-                    }
-                    String servletName = $(ctx).find("servlet-name").text();
-                    if (servletName != null) {
-                        CONF_LOG.debugf("Adding servlet mapping: %s", servletName);
-                        info.addFilterServletNameMapping(filterName, servletName, DispatcherType.valueOf("REQUEST"));
-                    }
+                    }	
+                }
+                String servletName = $(ctx).find("servlet-name").text();
+                if (servletName != null) {
+                    CONF_LOG.debugf("Adding servlet mapping: %s", servletName);
+                    info.addFilterServletNameMapping(filterName, servletName, DispatcherType.valueOf("REQUEST"));
                 }
             });
 
