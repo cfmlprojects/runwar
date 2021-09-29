@@ -41,8 +41,8 @@ public class MappedResourceManager extends FileResourceManager {
     private final FileResource baseResource;
 
     static {
-        CFIDE_REGEX_PATTERN = Pattern.compile("(?i)^.*[\\\\/]?CFIDE([\\\\/].*)?");
-        WEBINF_REGEX_PATTERN = Pattern.compile("(?i)^.*[\\\\/]?WEB-INF([\\\\/].*)?");
+        CFIDE_REGEX_PATTERN = Pattern.compile("(?i)^[\\\\/]?CFIDE([\\\\/].*)?");
+        WEBINF_REGEX_PATTERN = Pattern.compile("(?i)^[\\\\/]?WEB-INF([\\\\/].*)?");
    }
 
     private final boolean allowResourceChangeListeners;
@@ -120,7 +120,7 @@ public class MappedResourceManager extends FileResourceManager {
 	            if (!Files.exists(reqFile)) {
 	                reqFile = getAliasedFile(aliases, path);
 	            }
-	            if (reqFile == null) {
+	           /* if (reqFile == null) {
 	                for (Path cfmlDirsFile : contentDirs) {
 	                    reqFile = Paths.get(cfmlDirsFile.toString(), path.replace(cfmlDirsFile.toAbsolutePath().toString(), ""));
 	                    MAPPER_LOG.tracef("checking: '%s' = '%s'", cfmlDirsFile.toAbsolutePath().toString(), reqFile.toAbsolutePath());
@@ -129,7 +129,7 @@ public class MappedResourceManager extends FileResourceManager {
 	                        break;
 	                    }
 	                }
-	            }
+	            }*/
 	        }
 	        
 	        if (reqFile != null ) {

@@ -556,6 +556,17 @@ public class Server {
                 if (serverOptions.debug() && serverOptions.testing() && exchange.getRequestPath().endsWith("/dumprunwarrequest")) {
                     new RequestDumper().handleRequest(exchange);
                 } else {
+                	 String requestPath = exchange.getRequestPath();
+                	 while( !requestPath.isEmpty() && ( requestPath.startsWith( "/" ) || requestPath.startsWith( "\\" ) ) ) {
+                		 requestPath = requestPath.substring( 1 );
+                	 }
+                	 requestPath = requestPath.toUpperCase();
+                	 // Undertow has checks for this, but a more careful check is required with a case insensitive resource manager
+                	if( !requestPath.isEmpty() && ( requestPath.startsWith( "WEB-INF/" ) || requestPath.startsWith( "WEB-INF\\" ) ) ) {
+                       	CONTEXT_LOG.trace("Blocking suspicious access to : " + exchange.getRequestPath() );
+                       	// Not ending the exchange here so the servlet can still send any custom error page.
+               			exchange.setStatusCode( 404 );
+                	}
                     super.handleRequest(exchange);
                 }
             }
