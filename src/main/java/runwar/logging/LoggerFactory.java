@@ -55,6 +55,9 @@ public class LoggerFactory {
         Logger UNDERTOW_PREDICATE_LOG = Logger.getLogger("io.undertow.predicate");
         loggers.add(UNDERTOW_PREDICATE_LOG);
 
+        Logger UNDERTOW_PROXY_LOG = Logger.getLogger("io.undertow.proxy");
+        loggers.add(UNDERTOW_PROXY_LOG);        
+
         Logger UNDERTOW_REQUEST_DUMPER_LOG = Logger.getLogger("io.undertow.request.dump");
         loggers.add(UNDERTOW_REQUEST_DUMPER_LOG);
         
@@ -121,6 +124,7 @@ public class LoggerFactory {
                 appenders.forEach(DORKBOX_LOG::addAppender);
                 UNDERTOW_LOG.setLevel(level);
                 UNDERTOW_PREDICATE_LOG.setLevel(level);
+                UNDERTOW_PROXY_LOG.setLevel(level);                
                 HTTP_CLIENT_LOG.setLevel(level);
                 RUNWAR_CONFIG.setLevel(level);
                 RUNWAR_SERVER.setLevel(level);
@@ -139,6 +143,7 @@ public class LoggerFactory {
                 RUNWAR_REQUEST.setLevel(Level.INFO);
                 RUNWAR_SECURITY.setLevel(Level.DEBUG);
                 UNDERTOW_PREDICATE_LOG.setLevel(Level.DEBUG);
+                UNDERTOW_PROXY_LOG.setLevel(Level.DEBUG);                
                 configureUrlRewriteLoggers(false);
             }
         }
