@@ -130,7 +130,7 @@ public class WebXMLParser {
             });
 
             Match servletMappings = $(doc).find("servlet-mapping");
-            trace("Total No. of servlet-mappings: %s", servletMappings.size());        
+            trace("Total No. of servlet-mappings: %s", servletMappings.size());
             servletMappings.each(mappingElement -> {
                 String servletName = getRequired(mappingElement, "servlet-name");
                 ServletInfo servlet = info.getServlets().get(servletName);
@@ -146,7 +146,10 @@ public class WebXMLParser {
                                     urlPattern);
                         } else {
                             CONF_LOG.tracef("mapping servlet-name: %s, url-pattern: %s", servletName, urlPattern);
-                            servlet.addMapping(urlPattern);
+                            trace( "does mapping exist already %s", servlet.getMappings().contains( urlPattern ) );
+                            if( !servlet.getMappings().contains( urlPattern ) ){
+                                servlet.addMapping(urlPattern);
+                            }
                         }
                     });
                 }
